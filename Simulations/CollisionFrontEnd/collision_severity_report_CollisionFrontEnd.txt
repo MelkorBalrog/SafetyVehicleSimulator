@@ -1,0 +1,15 @@
+
+Collision Severity Inputs:
+- Collision Type for Vehicle 1: Head-On Collision
+- Collision Type for Vehicle 2: Head-On Collision
+- Initial Speed of Target: 23.60 kph
+- Initial Speed of Bullet: 35.98 kph
+- Average J2980 Vehicle Mass: 4500.00 kg
+- Average Vehicle Under Analysis Mass: 36500.00 kg
+- Bound Type: Average
+
+Collision Severity Results:
+- Target Severity: S3
+- Bullet Severity: S1
+- Target Delta-V: 68.01 kph
+- Bullet Delta-V: 9.29 kph
