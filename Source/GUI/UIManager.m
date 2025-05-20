@@ -7,7 +7,7 @@
 % * user interactions. The class ensures that all UI components are properly initialized and interact seamlessly
 % * with other modules such as ConfigurationManager, DataManager, and PlotManager.
 % *
-% * @autor Miguel Marina
+% * @author Miguel Marina
 % * @version 1.5
 % * @date 2024-12-21
 % */

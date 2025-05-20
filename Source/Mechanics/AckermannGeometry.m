@@ -7,7 +7,7 @@
 % * steering angle, wheelbase, and track width. This ensures realistic and mechanically feasible
 % * steering behavior in vehicle simulations.
 % *
-% * @autor Miguel Marina
+% * @author Miguel Marina
 % * @version 1.0
 % * @date 2024-10-04
 % */

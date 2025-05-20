@@ -7,7 +7,7 @@
 % * angles considering lateral accelerations and roll moments. Additionally, it manages separate
 % * roll dynamics for the tractor and trailer.
 % *
-% * @autor Miguel
+% * @author Miguel
 % * @version 2.0
 % * @date 2024-10-22
 % */

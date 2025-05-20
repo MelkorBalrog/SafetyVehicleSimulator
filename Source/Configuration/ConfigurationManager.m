@@ -7,7 +7,7 @@
 % * XML files. It interacts with various UI components and simulation configuration objects
 % * to ensure that all relevant parameters are accurately stored and retrieved.
 % *
-% * @autor Miguel Marina
+% * @author Miguel Marina
 % * @version 2.5
 % * @date 2024-10-15
 % */
