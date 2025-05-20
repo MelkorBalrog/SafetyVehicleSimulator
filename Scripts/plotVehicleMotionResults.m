@@ -1,3 +1,10 @@
+%{
+% @file plotVehicleMotionResults.m
+% @brief Utility script to visualize logged vehicle motion data.
+%        Calculates steering rates and exports all signals.
+% @author Miguel Marina
+%}
+
 % MATLAB Script to Calculate and Plot Steering Rate from Steering Angle using Net Method
 % Additionally, calculates Steering Wheel Angle and Steering Wheel Rate.
 % Extracts and plots Orientation, VelocityU, LateralVelocityV, YawRateR,

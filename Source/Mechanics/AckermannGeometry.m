@@ -1,3 +1,8 @@
+%{
+% @file AckermannGeometry.m
+% @brief Calculates steering angles using Ackermann geometry.
+% @author Miguel Marina
+%}
 %/**
 % * @class AckermannGeometry
 % * @brief Handles Ackermann steering geometry calculations for vehicle dynamics.

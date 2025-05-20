@@ -2,6 +2,7 @@
 % * @file VehicleGUIManager.m
 % * @brief Manages the graphical user interface (GUI) for the Vehicle Simulation.
 % */
+% * @author Miguel Marina
 classdef VehicleGUIManager < handle
     % VehicleGUIManager Manages the graphical user interface (GUI) for the Vehicle Simulation.
     %

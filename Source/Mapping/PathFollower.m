@@ -1,3 +1,10 @@
+%{
+% @file PathFollower.m
+% @brief Generates adaptive waypoints for pure pursuit path following.
+%        Commands steering based on radius of curvature.
+% @author Miguel Marina
+%}
+
 classdef PathFollower
     % PathFollower - An advanced pure pursuit path follower that integrates
     % trajectory predictions to generate adaptive waypoints for smoother and

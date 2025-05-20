@@ -5,6 +5,7 @@
 % * The BrakeSystem class manages brake commands, computes braking forces,
 % * and ensures that braking forces are applied smoothly over time based on system capabilities.
 % *
+% * @author Miguel Marina
 % * @version 2.3
 % * @date 2024-11-03
 % */

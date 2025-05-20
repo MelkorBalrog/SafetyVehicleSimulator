@@ -1,3 +1,8 @@
+%{
+% @file VehicleCollisionSeverity.m
+% @brief Estimates crash severity using 3D collision dynamics.
+% @author Miguel Marina
+%}
 %/**
 % * @class VehicleCollisionSeverity
 % * @brief Simulates partially elastic 3D collisions between two vehicles and estimates crash severities based on SAE J2980.

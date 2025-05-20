@@ -1,3 +1,8 @@
+%{
+% @file PacejkaMagicFormula.m
+% @brief Implements the Pacejka Magic Formula for lateral tire forces.
+% @author Miguel Marina
+%}
 %/**
 % * @class PacejkaMagicFormula
 % * @brief Implements the Pacejka Magic Formula for tire lateral force calculation.

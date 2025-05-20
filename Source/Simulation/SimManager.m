@@ -1,3 +1,9 @@
+%{
+% @file SimManager.m
+% @brief Runs the vehicle simulation and coordinates plotting.
+%        Handles collision detection in parallel with trajectory updates.
+% @author Miguel Marina
+%}
 %/**
 % * @class SimManager
 % * @brief Handles running simulations, detecting collisions, and plotting results for Vehicles in parallel.

@@ -1,3 +1,9 @@
+%{
+% @file VehiclePlotter.m
+% @brief Static utilities for drawing vehicle shapes in plots.
+%        Provides helper functions for geometry calculations.
+% @author Miguel Marina
+%}
 %/**
 % * @class VehiclePlotter
 % * @brief Provides static methods for plotting vehicle components in simulations.

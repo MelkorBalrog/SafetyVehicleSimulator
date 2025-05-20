@@ -1,3 +1,9 @@
+%{
+% @file Engine.m
+% @brief Simple engine model for torque and RPM updates.
+% @author Miguel Marina
+%}
+
 classdef Engine < handle
     properties
         maxTorque
@@ -13,6 +19,18 @@ classdef Engine < handle
     end
     
     methods
+        %% Engine constructor
+        % Initializes engine parameters and linked clutch.
+        %
+        % @param maxTorque         Maximum torque output (N*m)
+        % @param torqueCurve       [RPM,Torque] curve data
+        % @param maxRPM            Maximum engine speed
+        % @param minRPM            Idle engine speed
+        % @param gearRatios        Vector of gear ratios
+        % @param differentialRatio Differential ratio
+        % @param efficiency        Drivetrain efficiency
+        % @param engineInertia     Engine rotational inertia
+        % @param clutch            Clutch object handle
         function obj = Engine(maxTorque, torqueCurve, maxRPM, minRPM, ...
                               gearRatios, differentialRatio, efficiency, ...
                               engineInertia, clutch)

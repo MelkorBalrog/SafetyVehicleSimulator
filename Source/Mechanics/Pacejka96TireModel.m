@@ -1,3 +1,8 @@
+%{
+% @file Pacejka96TireModel.m
+% @brief Implements the Pacejka '96 tire force model.
+% @author Miguel Marina
+%}
 %/**
 % * @class Pacejka96TireModel
 % * @brief Implements the Pacejka '96 tire model for simulating tire forces.

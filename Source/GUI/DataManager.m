@@ -1,3 +1,9 @@
+%{
+% @file DataManager.m
+% @brief Handles data loading and exporting for the simulation.
+%        Provides persistence utilities for the UI.
+% @author Miguel Marina
+%}
 %/**
 % * @class DataManager
 % * @brief Handles all data-related operations for the simulation.

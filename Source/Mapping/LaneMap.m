@@ -1,3 +1,9 @@
+%{
+% @file LaneMap.m
+% @brief Represents a 2D lane occupancy grid used for mapping.
+% @author Miguel Marina
+%}
+
 classdef LaneMap
     properties
         NumCellsX    % Number of cells in the X direction
@@ -8,6 +14,11 @@ classdef LaneMap
         LaneColor
     end
     methods
+        %% LaneMap constructor
+        % Initializes the lane map with the given dimensions.
+        %
+        % @param numCellsX  Number of cells along the X axis.
+        % @param numCellsY  Number of cells along the Y axis.
         function obj = LaneMap(numCellsX, numCellsY)
             % Constructor to initialize the map with the specified number of cells
             if nargin < 2
@@ -19,6 +30,12 @@ classdef LaneMap
             obj.LaneWidth = 5; % Default lane width (can be updated later)
         end
 
+        %% setCellValue
+        % Sets the value of a map cell.
+        %
+        % @param x      Column index in the map grid.
+        % @param y      Row index in the map grid.
+        % @param value  Value to assign (0 or 1).
         function obj = setCellValue(obj, x, y, value)
             % Set the value of a cell at position (x, y)
             if x >= 1 && x <= obj.NumCellsX && y >= 1 && y <= obj.NumCellsY
@@ -28,6 +45,12 @@ classdef LaneMap
             end
         end
 
+        %% getCellValue
+        % Retrieves the value of a map cell.
+        %
+        % @param x  Column index in the grid.
+        % @param y  Row index in the grid.
+        % @retval value  Stored value at the given location.
         function value = getCellValue(obj, x, y)
             % Get the value of a cell at position (x, y)
             if x >= 1 && x <= obj.NumCellsX && y >= 1 && y <= obj.NumCellsY

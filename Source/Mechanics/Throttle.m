@@ -1,3 +1,9 @@
+%{
+% @file Throttle.m
+% @brief Models throttle input filtering and limits.
+% @author Miguel Marina
+%}
+
 classdef Throttle < handle
     properties
         maxThrottle              % Maximum throttle value (0 to 1)

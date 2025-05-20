@@ -1,7 +1,21 @@
+%{
+% @file SpeedControllerTest.m
+% @brief Unit tests for the SpeedController class.
+% @author Miguel Marina
+%}
+
+%% SpeedControllerTest
+% Entry point that returns the function-based tests structure.
+%
+% @retval tests  Structure containing local test functions.
 function tests = SpeedControllerTest
     tests = functiontests(localfunctions);
 end
 
+%% setup
+% Creates a SpeedController instance and stores test data.
+%
+% @param testCase  matlab.unittest.TestCase object for test context.
 function setup(testCase)
     desiredSpeed = 20;      % m/s
     maxSpeed = 30;          % m/s
@@ -21,6 +35,10 @@ function setup(testCase)
     testCase.TestData.maxSpeed = maxSpeed;
 end
 
+%% testInfAndNegativeRadiusReturnsMax
+% Ensures non-positive turn radius returns the max speed.
+%
+% @param testCase  matlab.unittest.TestCase object.
 function testInfAndNegativeRadiusReturnsMax(testCase)
     ctrl = testCase.TestData.ctrl;
     ms = testCase.TestData.maxSpeed;
@@ -28,6 +46,10 @@ function testInfAndNegativeRadiusReturnsMax(testCase)
     verifyEqual(testCase, ctrl.computeCorneringSpeed(-5), ms);
 end
 
+%% testPositiveRadiusFormula
+% Validates cornering speed formula for a positive radius.
+%
+% @param testCase  matlab.unittest.TestCase object.
 function testPositiveRadiusFormula(testCase)
     ctrl = testCase.TestData.ctrl;
     mu = testCase.TestData.mu;
