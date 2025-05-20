@@ -1,9 +1,3 @@
-%{
-% @file SimManager.m
-% @brief Runs the vehicle simulation and coordinates plotting.
-%        Handles collision detection in parallel with trajectory updates.
-% @author Miguel Marina
-%}
 %/**
 % * @class SimManager
 % * @brief Handles running simulations, detecting collisions, and plotting results for Vehicles in parallel.
@@ -160,33 +154,44 @@ classdef SimManager < handle
                 hWaitbar = waitbar(0.15, 'Starting Simulations...', 'Name', 'Simulation Progress');
                 cleanupObj = onCleanup(@() closeIfOpen(hWaitbar));
 
-                %% 8. Run Vehicle Simulations (sync or async)
-                Debug = 1;
-                if Debug == 0
-                    disp('Running simulations asynchronously...');
-                    futures = cell(1, 2);
-                    futures{1} = parfeval(@SimManager.runVehicleSim1, 1, obj.vehicleSim1);
-                    futures{2} = parfeval(@SimManager.runVehicleSim2, 1, obj.vehicleSim2);
-
-                    simResultsArray = cell(1, 2);
-                    for idx = 1:2
-                        disp(['Fetching outputs for simulation ', num2str(idx), '...']);
-                        result = fetchOutputs(futures{idx});
-                        simResultsArray{idx} = result;
-                        progress = 0.15 + (0.85 / 2) * (idx / 2);
-                        waitbar(progress, hWaitbar, ...
-                            sprintf('Simulation Progress: %.2f%%', progress * 100));
-                    end
-
-                    obj.sim1Results = simResultsArray{1};
-                    obj.sim2Results = simResultsArray{2};
+                %% 8. Instantiate Vehicle and Trailer Parameters for Plotting (for real-time animation)
+                disp('Instantiating vehicle parameters for plotting...');
+                vehicleParams1 = obj.createVehicleParams(obj.vehicleSim1.simParams, wheelHeightTruck1, wheelWidthTruck1);
+                if obj.vehicleSim1.simParams.includeTrailer
+                    trailerParams1 = obj.createTrailerParams(obj.vehicleSim1.simParams, wheelHeightTrailer1, wheelWidthTrailer1, 1);
                 else
-                    disp('Running simulations synchronously...');
-                    obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
-                    disp('VehicleSim1 simulation completed.');
-                    obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
-                    disp('VehicleSim2 simulation completed.');
+                    trailerParams1 = [];
                 end
+                vehicleParams2 = obj.createVehicleParams(obj.vehicleSim2.simParams, wheelHeightTractor2, wheelWidthTractor2);
+                if obj.vehicleSim2.simParams.includeTrailer
+                    trailerParams2 = obj.createTrailerParams(obj.vehicleSim2.simParams, wheelHeightTrailer2, wheelWidthTrailer2, 2);
+                else
+                    trailerParams2 = [];
+                end
+
+                %% Retrieve and validate mass values for collision detection
+                disp('Retrieving and validating mass values for real-time animation...');
+                VehicleUnderAnalysisMaxMass = obj.uiManager.getVehicle1Mass();
+                J2980AssumedMaxMass        = obj.uiManager.getVehicle2Mass();
+                if ~isnumeric(VehicleUnderAnalysisMaxMass) || VehicleUnderAnalysisMaxMass <= 0
+                    uialert(obj.uiManager.fig, 'Invalid Tractor Vehicle Mass entered. Please enter a positive numeric value.', 'Input Error');
+                    return;
+                end
+                if ~isnumeric(J2980AssumedMaxMass) || J2980AssumedMaxMass <= 0
+                    uialert(obj.uiManager.fig, 'Invalid Vehicle Under Analysis Mass entered. Please enter a positive numeric value.', 'Input Error');
+                    return;
+                end
+
+                %% Determine total steps for real-time animation
+                totalSteps = length(obj.vehicleSim1.simParams.steeringCommands);
+                fprintf('Total Simulation Steps set to: %d\n', totalSteps);
+                
+                %% 9. Run Vehicle Simulations (synchronous full-run mode)
+                disp('Running simulations synchronously...');
+                obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
+                disp('VehicleSim1 simulation completed.');
+                obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
+                disp('VehicleSim2 simulation completed.');
 
                 %% 9. Transfer Simulation Results
                 disp('Transferring simulation results to DataManager...');
@@ -245,12 +250,12 @@ classdef SimManager < handle
                 end
 
                 %% 14. Apply Offsets (Vehicle 2)
-                disp('Applying offsets to Vehicle 2 positions...');
-                obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X + offsetX;
-                obj.dataManager.globalVehicle2Data.Y = obj.dataManager.globalVehicle2Data.Y + offsetY;
+                disp('Applying offsets to Tractor Vehicle positions...');
+                obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X;
+                obj.dataManager.globalVehicle2Data.Y = obj.dataManager.globalVehicle2Data.Y;
                 if obj.vehicleSim2.simParams.includeTrailer
-                    obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X + offsetX;
-                    obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y + offsetY;
+                    obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X;
+                    obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y;
                 end
 
                 %% 15. Apply Rotation and Offset to Vehicle 1 if Enabled
@@ -319,36 +324,6 @@ classdef SimManager < handle
                     end
                 end
 
-                %% 17. Instantiate Vehicle Parameters for Plotting
-                disp('Instantiating vehicle parameters for plotting...');
-                vehicleParams1 = obj.createVehicleParams(obj.vehicleSim1.simParams, wheelHeightTruck1, wheelWidthTruck1);
-                if obj.vehicleSim1.simParams.includeTrailer
-                    trailerParams1 = obj.createTrailerParams(obj.vehicleSim1.simParams, wheelHeightTrailer1, wheelWidthTrailer1, 1);
-                else
-                    trailerParams1 = [];
-                end
-
-                vehicleParams2 = obj.createVehicleParams(obj.vehicleSim2.simParams, wheelHeightTractor2, wheelWidthTractor2);
-                if obj.vehicleSim2.simParams.includeTrailer
-                    trailerParams2 = obj.createTrailerParams(obj.vehicleSim2.simParams, wheelHeightTrailer2, wheelWidthTrailer2, 2);
-                else
-                    trailerParams2 = [];
-                end
-
-                %% 18. Retrieve and Validate Mass Values
-                disp('Retrieving and validating mass values from GUI...');
-                VehicleUnderAnalysisMaxMass = obj.uiManager.getVehicle1Mass(); 
-                J2980AssumedMaxMass        = obj.uiManager.getVehicle2Mass();
-
-                if ~isnumeric(VehicleUnderAnalysisMaxMass) || VehicleUnderAnalysisMaxMass <= 0
-                    uialert(obj.uiManager.fig, 'Invalid Tractor Vehicle Mass entered. Please enter a positive numeric value.', 'Input Error');
-                    return;
-                end
-
-                if ~isnumeric(J2980AssumedMaxMass) || J2980AssumedMaxMass <= 0
-                    uialert(obj.uiManager.fig, 'Invalid Vehicle Under Analysis Mass entered. Please enter a positive numeric value.', 'Input Error');
-                    return;
-                end
 
                 %% 19. Launch Collision Detection in Parallel
                 disp('Launching collision detection in background...');
@@ -359,9 +334,11 @@ classdef SimManager < handle
                     VehicleUnderAnalysisMaxMass, J2980AssumedMaxMass);
 
                 %% 20. Animate Vehicles
-                disp('Starting real-time animation...');
+                disp('Starting animation...');
+                zoom(obj.plotManager.sharedAx, 'on');
+                set(obj.plotManager.sharedAx, 'XLimMode', 'manual', 'YLimMode', 'manual');
                 % For demonstration, we animate from step 1 to totalSteps.
-                % Clear the axes each iteration so old frames don’t overlap.
+                % Clear the axes each iteration so old frames don't overlap.
                 mapWidth  = 600;
                 mapHeight = 600;
                 mapObj = LaneMap(mapWidth, mapHeight);
@@ -392,8 +369,8 @@ classdef SimManager < handle
                         obj.dataManager.globalVehicle1Data.SteeringAngle, ...
                         obj.dataManager.globalVehicle2Data.SteeringAngle);
 
-                    % drawnow;  % Force MATLAB to update the figure
-                    % pause(0.05);  % Adjust speed to your liking
+                    drawnow;  % Force MATLAB to update the figure
+                    pause(0.05);  % Adjust speed to your liking
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
@@ -746,9 +723,12 @@ classdef SimManager < handle
     end
 
     methods(Static)
-        function simResults = runVehicleSim1(vehicleSim)
+        function simResults = runVehicleSim1(vehicleSim, stepCallback)
+            if nargin < 2 || isempty(stepCallback)
+                stepCallback = [];
+            end
             [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation();
+                steeringAngles, speedData] = vehicleSim.runSimulation(stepCallback);
             simResults = struct(...
                 'X', X, ...
                 'Y', Y, ...
@@ -762,9 +742,12 @@ classdef SimManager < handle
             );
         end
 
-        function simResults = runVehicleSim2(vehicleSim)
+        function simResults = runVehicleSim2(vehicleSim, stepCallback)
+            if nargin < 2 || isempty(stepCallback)
+                stepCallback = [];
+            end
             [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation();
+                steeringAngles, speedData] = vehicleSim.runSimulation(stepCallback);
             simResults = struct(...
                 'X', X, ...
                 'Y', Y, ...
