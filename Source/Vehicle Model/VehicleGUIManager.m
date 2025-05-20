@@ -35,6 +35,7 @@ classdef VehicleGUIManager < handle
         engineConfigTab        % Tab for Engine Configuration
         brakeConfigTab         % Tab for Brake Configuration
         clutchConfigTab        % Tab for Clutch Configuration
+        commandsTab            % New tab for driving commands
 
         % *** New Command Input Boxes ***
         commandPanel
@@ -637,6 +638,10 @@ classdef VehicleGUIManager < handle
             % *** Create Path Follower Tab ***
             obj.pathFollowerTab = uitab(obj.configTabGroup, 'Title', 'Path Follower');
             obj.createPathFollowerTab(); % Create the Path Follower UI components
+
+            % Commands Tab for steering, acceleration and tire pressure inputs
+            obj.commandsTab = uitab(obj.configTabGroup, 'Title', 'Commands');
+            obj.createCommandsTab();
 
             %% Basic Configuration Panel
             % Tractor Mass
@@ -1542,30 +1547,6 @@ classdef VehicleGUIManager < handle
                 'Position', [220, 330, 150, 20], 'Value', 0.5, ... % Hardcoded value
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % *** Add Steering, Acceleration, and Tire Pressure Commands Panel ***
-            obj.commandPanel = uipanel(parent, 'Position', [10, 10, 480, 170], 'Title', 'Commands');
-            
-            % Steering Commands
-            uilabel(obj.commandPanel, 'Position', [10, 120, 150, 20], 'Text', 'Steering Commands:');
-            obj.steeringCommandsBox = uieditfield(obj.commandPanel, 'text', ...
-                'Position', [170, 120, 300, 20], ...
-                'Value', 'simval_(195)|ramp_-30(1)|keep_-30(0.8)|ramp_0(0.2)|keep_0(1)', ...
-                'ValueChangedFcn', @(src, event)obj.steeringCommandsChanged(src, event));
-            
-            % Acceleration Commands
-            uilabel(obj.commandPanel, 'Position', [10, 80, 150, 20], 'Text', 'Acceleration Commands:');
-            obj.accelerationCommandsBox = uieditfield(obj.commandPanel, 'text', ...
-                'Position', [170, 80, 300, 20], ...
-                'Value', 'simval_(200)', ...
-                'ValueChangedFcn', @(src, event)obj.accelerationCommandsChanged(src, event));
-            
-            % Tire Pressure Commands
-            uilabel(obj.commandPanel, 'Position', [10, 40, 150, 20], 'Text', 'Tire Pressure Commands:');
-            obj.tirePressureCommandsBox = uieditfield(obj.commandPanel, 'text', ...
-                'Position', [170, 40, 300, 20], ...
-                'Value', 'pressure_(t:150-[tire:9,psi:70];[tire:2,psi:72];[tire:1,psi:7])', ...  % Default command
-                'ValueChangedFcn', @(src, event)obj.tirePressureCommandsChanged(src, event));
-            % *** End of Command Panel ***
 
 
             % Show the appropriate pressure matrix based on initial configuration
@@ -2166,6 +2147,33 @@ classdef VehicleGUIManager < handle
             obj.removeWaypointButton = uibutton(obj.pathFollowerTab, 'Text', 'Remove Selected Waypoint', ...
                 'Position', [120, 10, 150, 30], ...
                 'ButtonPushedFcn', @(src,event) obj.removeWaypoint());
+        end
+
+        %% Create Commands Tab
+        % Hosts steering, acceleration and tire pressure command inputs
+        function createCommandsTab(obj)
+            obj.commandPanel = uipanel(obj.commandsTab, 'Position', [10, 10, 480, 170], 'Title', 'Commands');
+
+            % Steering Commands
+            uilabel(obj.commandPanel, 'Position', [10, 120, 150, 20], 'Text', 'Steering Commands:');
+            obj.steeringCommandsBox = uieditfield(obj.commandPanel, 'text', ...
+                'Position', [170, 120, 300, 20], ...
+                'Value', 'simval_(195)|ramp_-30(1)|keep_-30(0.8)|ramp_0(0.2)|keep_0(1)', ...
+                'ValueChangedFcn', @(src, event)obj.steeringCommandsChanged(src, event));
+
+            % Acceleration Commands
+            uilabel(obj.commandPanel, 'Position', [10, 80, 150, 20], 'Text', 'Acceleration Commands:');
+            obj.accelerationCommandsBox = uieditfield(obj.commandPanel, 'text', ...
+                'Position', [170, 80, 300, 20], ...
+                'Value', 'simval_(200)', ...
+                'ValueChangedFcn', @(src, event)obj.accelerationCommandsChanged(src, event));
+
+            % Tire Pressure Commands
+            uilabel(obj.commandPanel, 'Position', [10, 40, 150, 20], 'Text', 'Tire Pressure Commands:');
+            obj.tirePressureCommandsBox = uieditfield(obj.commandPanel, 'text', ...
+                'Position', [170, 40, 300, 20], ...
+                'Value', 'pressure_(t:150-[tire:9,psi:70];[tire:2,psi:72];[tire:1,psi:7])', ...
+                'ValueChangedFcn', @(src, event)obj.tirePressureCommandsChanged(src, event));
         end
 
         % Add a new waypoint to the table
