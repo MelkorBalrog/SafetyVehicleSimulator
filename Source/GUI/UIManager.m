@@ -30,6 +30,7 @@ classdef UIManager < handle
         % Vehicle Configuration Tabs
         vehicleTab1
         vehicleTab2
+        commandsTab
 
         plotPanel
         sharedAx
@@ -146,6 +147,10 @@ classdef UIManager < handle
             % Vehicle 2 Tab
             obj.vehicleTab2 = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Configuration');
             obj.createVehicle2VehicleConfig(obj.vehicleTab2);
+
+            % Commands Tab for lane map configuration
+            obj.commandsTab = uitab(obj.tabGroup, 'Title', 'Commands');
+            obj.createCommandsTab(obj.commandsTab);
         end
 
         function createVehicle1Config(obj, parent)
@@ -242,6 +247,36 @@ classdef UIManager < handle
                 'Limits', [-360, 360], ...
                 'Value', 0, ...
                 'Enable', 'off');
+        end
+
+        function createCommandsTab(obj, parent)
+            % Layout for map commands
+            grid = uigridlayout(parent, [3, 1], ...
+                'RowHeight', {30, '1x', 30}, 'ColumnWidth', {'1x'}, ...
+                'Padding', [10, 10, 10, 10], ...
+                'RowSpacing', 10, ...
+                'ColumnSpacing', 10);
+
+            % Map Commands label
+            obj.laneCommandsLabel = uilabel(grid, ...
+                'Text', 'Map Commands:', ...
+                'HorizontalAlignment', 'left', ...
+                'FontWeight', 'bold');
+            obj.laneCommandsLabel.Layout.Row = 1;
+
+            % Text area for commands
+            obj.laneCommandsField = uitextarea(grid, ...
+                'Value', {
+                'straight(100,200,300,200)|curve(300,250,50,270,90,ccw)|straight(300,300,100,300)|curve(100,250,50,90,270,ccw)|straight(100,205,300,205)|curve(300,250,45,270,90,ccw)|straight(300,295,100,295)|curve(100,250,45,90,270,ccw)'
+                }, ...
+                'Editable', 'on');
+            obj.laneCommandsField.Layout.Row = 2;
+
+            % Button to build the map
+            obj.buildMapButton = uibutton(grid, 'push', ...
+                'Text', 'Build Map', ...
+                'ButtonPushedFcn', @(btn, event)obj.buildMapCallback());
+            obj.buildMapButton.Layout.Row = 3;
         end
 
         function createWaypointGUI(obj)
@@ -483,43 +518,19 @@ classdef UIManager < handle
             % Create Button Panel within the specified parent layout
             obj.buttonPanel = uipanel(parent, 'Title', '', 'BackgroundColor', [1 1 1]);
         
-            % Adjusted layout to have 3 rows and 2 columns
-            buttonGrid = uigridlayout(obj.buttonPanel, [3, 2], ...
-                'ColumnWidth', {'1x', '1x'}, ...
-                'RowHeight', {30, '1x', 50}, ...
+            % Simple layout with start button only
+            buttonGrid = uigridlayout(obj.buttonPanel, [1, 1], ...
+                'ColumnWidth', {'1x'}, ...
+                'RowHeight', {50}, ...
                 'Padding', [10, 10, 10, 10], ...
                 'RowSpacing', 10, ...
                 'ColumnSpacing', 20);
-        
-            % Create the label and set its layout afterwards
-            obj.laneCommandsLabel = uilabel(buttonGrid, ...
-                'Text', 'Map Commands:', ...
-                'HorizontalAlignment', 'left', ...
-                'FontWeight', 'bold');
-            obj.laneCommandsLabel.Layout.Row = 1;
-            obj.laneCommandsLabel.Layout.Column = [1 2];
-        
-            % Create the textarea and set its layout afterwards
-            obj.laneCommandsField = uitextarea(buttonGrid, ...
-                'Value', {
-                'straight(100,200,300,200)|curve(300,250,50,270,90,ccw)|straight(300,300,100,300)|curve(100,250,50,90,270,ccw)|straight(100,205,300,205)|curve(300,250,45,270,90,ccw)|straight(300,295,100,295)|curve(100,250,45,90,270,ccw)'
-                }, ...
-                'Editable', 'on');
-            obj.laneCommandsField.Layout.Row = 2;
-            obj.laneCommandsField.Layout.Column = [1 2];
-        
-            % Create the buttons and set their layout afterwards
-            obj.buildMapButton = uibutton(buttonGrid, 'push', ...
-                'Text', 'Build Map', ...
-                'ButtonPushedFcn', @(btn, event)obj.buildMapCallback());
-            obj.buildMapButton.Layout.Row = 3;
-            obj.buildMapButton.Layout.Column = 1;
-        
+
             obj.startSimulationButton = uibutton(buttonGrid, 'push', ...
                 'Text', 'Start Simulation', ...
                 'ButtonPushedFcn', @(btn, event) obj.Callbacks.StartSimulation());
-            obj.startSimulationButton.Layout.Row = 3;
-            obj.startSimulationButton.Layout.Column = 2;
+            obj.startSimulationButton.Layout.Row = 1;
+            obj.startSimulationButton.Layout.Column = 1;
         end
 
         function buildMapCallback(obj)
