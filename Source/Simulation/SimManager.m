@@ -239,12 +239,12 @@ classdef SimManager < handle
                 end
 
                 %% 14. Apply Offsets (Vehicle 2)
-                disp('Applying offsets to Tractor Vehicle positions...');
-                obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X;
-                obj.dataManager.globalVehicle2Data.Y = obj.dataManager.globalVehicle2Data.Y;
+                disp('Applying offsets to Vehicle 2 positions...');
+                obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X + offsetX;
+                obj.dataManager.globalVehicle2Data.Y = obj.dataManager.globalVehicle2Data.Y + offsetY;
                 if obj.vehicleSim2.simParams.includeTrailer
-                    obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X;
-                    obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y;
+                    obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X + offsetX;
+                    obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y + offsetY;
                 end
 
                 %% 15. Apply Rotation and Offset to Vehicle 1 if Enabled
