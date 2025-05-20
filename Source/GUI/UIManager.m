@@ -30,6 +30,7 @@ classdef UIManager < handle
         % Vehicle Configuration Tabs
         vehicleTab1
         vehicleTab2
+        commandsTab
 
         plotPanel
         sharedAx
@@ -82,6 +83,11 @@ classdef UIManager < handle
         generateWaypointsButton
         waypointsPanel
         waypointsTable
+
+        % High-Level Command Fields
+        steeringCommandsField
+        accelerationCommandsField
+        tirePressureCommandsField
     end
 
     methods
@@ -146,6 +152,10 @@ classdef UIManager < handle
             % Vehicle 2 Tab
             obj.vehicleTab2 = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Configuration');
             obj.createVehicle2VehicleConfig(obj.vehicleTab2);
+
+            % Commands Tab for vehicle commands
+            obj.commandsTab = uitab(obj.tabGroup, 'Title', 'Commands');
+            obj.createCommandsTab(obj.commandsTab);
         end
 
         function createVehicle1Config(obj, parent)
@@ -242,6 +252,30 @@ classdef UIManager < handle
                 'Limits', [-360, 360], ...
                 'Value', 0, ...
                 'Enable', 'off');
+        end
+
+        function createCommandsTab(obj, parent)
+            % Layout for high-level vehicle commands
+            grid = uigridlayout(parent, [3, 2], ...
+                'ColumnWidth', {150, '1x'}, 'RowHeight', {30, 30, 30});
+            grid.Padding = [10, 10, 10, 10];
+            grid.RowSpacing = 10;
+            grid.ColumnSpacing = 10;
+
+            % Steering commands
+            uilabel(grid, 'Text', 'Steering Commands:', 'HorizontalAlignment', 'right');
+            obj.steeringCommandsField = uieditfield(grid, 'text', 'Value', '', ...
+                'Placeholder', 'e.g., left, right');
+
+            % Acceleration commands
+            uilabel(grid, 'Text', 'Acceleration Commands:', 'HorizontalAlignment', 'right');
+            obj.accelerationCommandsField = uieditfield(grid, 'text', 'Value', '', ...
+                'Placeholder', 'e.g., accel, brake');
+
+            % Tire pressure commands
+            uilabel(grid, 'Text', 'Tire Pressure Commands:', 'HorizontalAlignment', 'right');
+            obj.tirePressureCommandsField = uieditfield(grid, 'text', 'Value', '', ...
+                'Placeholder', 'e.g., inflate');
         end
 
         function createWaypointGUI(obj)
