@@ -5,7 +5,7 @@
 % * loading vehicle configurations, and managing user interactions through callback functions.
 % * It leverages the `SimManager` class to execute simulations, detect collisions, and plot results.
 % *
-% * @autor Miguel Marina
+% * @author Miguel Marina
 % * @version 2.1
 % * @date 2024-11-03
 % */

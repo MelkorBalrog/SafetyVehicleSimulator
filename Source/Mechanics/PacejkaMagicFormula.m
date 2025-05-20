@@ -6,7 +6,7 @@
 % * based on slip angle and normal load using the Pacejka '96 Magic Formula. It encapsulates the
 % * tire model parameters (B, C, D, E) and ensures that calculations remain within realistic bounds.
 % *
-% * @autor Miguel
+% * @author Miguel
 % * @version 1.0
 % * @date 2024-10-04
 % */
