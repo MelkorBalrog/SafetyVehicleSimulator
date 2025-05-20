@@ -1,3 +1,9 @@
+%{
+% @file AccelerationLimiter.m
+% @brief Limits acceleration and deceleration with smoothing and ramping.
+% @author Miguel Marina
+%}
+
 classdef AccelerationLimiter < handle
     % AccelerationLimiter Limits the maximum acceleration and deceleration
     % rates based on speed using curve tables from Excel and ramps abrupt changes.
@@ -43,17 +49,16 @@ classdef AccelerationLimiter < handle
     end
     
     methods
-        %% Constructor
+        %% AccelerationLimiter constructor
+        % Creates a limiter instance with curves and smoothing parameters.
+        %
+        % @param accelCurve       Nx2 matrix [Speed, MaxAccel] for acceleration limits
+        % @param decelCurve       Nx2 matrix [Speed, MaxDecel] for deceleration limits
+        % @param maxSpeed         Maximum speed for limiting (m/s)
+        % @param rampWindow       Number of steps used for ramping
+        % @param gaussianWindow   Window size for Gaussian filter (odd integer)
+        % @param gaussianStd      Standard deviation of Gaussian filter
         function obj = AccelerationLimiter(accelCurve, decelCurve, maxSpeed, rampWindow, gaussianWindow, gaussianStd)
-            % AccelerationLimiter Constructor for AccelerationLimiter class
-            %
-            % Parameters:
-            %   accelCurve       - Nx2 matrix [Speed, MaxAccel] for acceleration limits
-            %   decelCurve       - Nx2 matrix [Speed, MaxDecel] for deceleration limits
-            %   maxSpeed         - Maximum speed for limiting (m/s)
-            %   rampWindow       - Number of steps over which to ramp acceleration (positive integer)
-            %   gaussianWindow   - Number of samples in Gaussian filter window (positive odd integer)
-            %   gaussianStd      - Standard deviation for Gaussian filter (positive)
             
             % Validate inputs
             arguments

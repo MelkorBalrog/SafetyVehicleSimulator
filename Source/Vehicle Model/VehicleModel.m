@@ -2,6 +2,7 @@
 % * @file VehicleModel.m
 % * @brief Simulates a Vehicle Model with integrated road conditions such as slope and friction.
 % */
+% * @author Miguel Marina
 classdef VehicleModel < handle
     % VehicleModel Simulates a Vehicle Model with integrated road conditions.
     %

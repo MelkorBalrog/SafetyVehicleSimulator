@@ -1,3 +1,8 @@
+%{
+% @file KinematicsCalculator.m
+% @brief Performs kinematic calculations for vehicle dynamics, including roll dynamics.
+% @author Miguel Marina
+%}
 %/**
 % * @class KinematicsCalculator
 % * @brief Performs kinematic calculations for vehicle dynamics, including roll dynamics.

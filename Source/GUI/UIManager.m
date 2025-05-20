@@ -1,3 +1,9 @@
+%{
+% @file UIManager.m
+% @brief Manages the graphical user interface for simulations.
+%        Handles callbacks and component creation.
+% @author Miguel Marina
+%}
 %/**
 % * @class UIManager
 % * @brief Handles the creation and management of the simulation UI.

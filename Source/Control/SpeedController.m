@@ -1,3 +1,10 @@
+%{
+% @file SpeedController.m
+% @brief PID-based speed controller with smoothing and cornering logic.
+%        Reduces speed for tight turns to avoid skidding.
+% @author Miguel Marina
+%}
+
 classdef SpeedController < handle
     % SpeedController Controls the speed of the truck using PID control with SMA and Gaussian filtering
     % and reduces desired speed if the turn radius is small (to avoid skidding).

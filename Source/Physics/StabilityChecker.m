@@ -1,3 +1,8 @@
+%{
+% @file StabilityChecker.m
+% @brief Monitors vehicle stability and detects rollover risk.
+% @author Miguel Marina
+%}
 %/**
 % * @class StabilityChecker
 % * @brief Monitors and detects various stability conditions in a vehicle-trailer system,

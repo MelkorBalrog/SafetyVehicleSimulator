@@ -1,3 +1,9 @@
+%{
+% @file DynamicsUpdater.m
+% @brief Updates vehicle dynamics using applied forces and moments.
+%        Includes roll dynamics in the state vector.
+% @author Miguel Marina
+%}
 %/**
 % * @class DynamicsUpdater
 % * @brief Updates the dynamics of a vehicle (tractor-trailer, tractor, or passenger vehicle) based on applied forces, including roll dynamics.

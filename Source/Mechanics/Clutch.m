@@ -1,3 +1,9 @@
+%{
+% @file Clutch.m
+% @brief Simple clutch model controlling torque transfer.
+% @author Miguel Marina
+%}
+
 classdef Clutch < handle
     properties
         isEngaged                   % Boolean indicating if the clutch is fully engaged

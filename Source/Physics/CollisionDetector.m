@@ -1,3 +1,8 @@
+%{
+% @file CollisionDetector.m
+% @brief Handles collision detection between rectangular vehicles using SAT.
+% @author Miguel Marina
+%}
 %/**
 % * @class CollisionDetector
 % * @brief Handles collision detection between two rectangular vehicles using the Separating Axis Theorem (SAT).

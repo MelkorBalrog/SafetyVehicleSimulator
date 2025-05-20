@@ -1,3 +1,9 @@
+%{
+% @file Transmission.m
+% @brief Simple transmission model providing gear ratios.
+% @author Miguel Marina
+%}
+
 classdef Transmission < handle
     properties
         maxGear
@@ -24,6 +30,18 @@ classdef Transmission < handle
     end
     
     methods
+        %% Transmission constructor
+        % Initializes the transmission state and shift parameters.
+        %
+        % @param maxGear            Highest selectable gear
+        % @param gearRatios         Vector of gear ratios
+        % @param finalDriveRatio    Final drive ratio
+        % @param shiftUpSpeed       Speed threshold to upshift
+        % @param shiftDownSpeed     Speed threshold to downshift
+        % @param engineBrakeTorque  Engine braking torque
+        % @param shiftDelay         Delay time between shifts
+        % @param clutch             Clutch object
+        % @param filterWindowSize   Averaging window for speed filter
         function obj = Transmission(maxGear, gearRatios, finalDriveRatio, ...
                                      shiftUpSpeed, shiftDownSpeed, ...
                                      engineBrakeTorque, shiftDelay, clutch, filterWindowSize)
