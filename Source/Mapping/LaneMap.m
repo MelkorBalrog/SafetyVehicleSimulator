@@ -1,3 +1,9 @@
+%{
+% @file LaneMap.m
+% @brief Represents a 2D lane occupancy grid used for mapping.
+% @author Miguel Marina
+%}
+
 classdef LaneMap
     properties
         NumCellsX    % Number of cells in the X direction
@@ -8,6 +14,11 @@ classdef LaneMap
         LaneColor
     end
     methods
+        %% LaneMap constructor
+        % Initializes the lane map with the given dimensions.
+        %
+        % @param numCellsX  Number of cells along the X axis.
+        % @param numCellsY  Number of cells along the Y axis.
         function obj = LaneMap(numCellsX, numCellsY)
             % Constructor to initialize the map with the specified number of cells
             if nargin < 2
@@ -19,6 +30,12 @@ classdef LaneMap
             obj.LaneWidth = 5; % Default lane width (can be updated later)
         end
 
+        %% setCellValue
+        % Sets the value of a map cell.
+        %
+        % @param x      Column index in the map grid.
+        % @param y      Row index in the map grid.
+        % @param value  Value to assign (0 or 1).
         function obj = setCellValue(obj, x, y, value)
             % Set the value of a cell at position (x, y)
             if x >= 1 && x <= obj.NumCellsX && y >= 1 && y <= obj.NumCellsY
@@ -28,6 +45,12 @@ classdef LaneMap
             end
         end
 
+        %% getCellValue
+        % Retrieves the value of a map cell.
+        %
+        % @param x  Column index in the grid.
+        % @param y  Row index in the grid.
+        % @retval value  Stored value at the given location.
         function value = getCellValue(obj, x, y)
             % Get the value of a cell at position (x, y)
             if x >= 1 && x <= obj.NumCellsX && y >= 1 && y <= obj.NumCellsY
@@ -37,6 +60,18 @@ classdef LaneMap
             end
         end
 
+        %% addStraightLane
+        % Adds a straight lane segment with consistent width.
+        %
+        % @param startX  Starting X coordinate in cell units.
+        % @param startY  Starting Y coordinate in cell units.
+        % @param endX    Ending X coordinate in cell units.
+        % @param endY    Ending Y coordinate in cell units.
+        % @param width   Optional lane width in meters.
+        %
+        % @retval obj   Updated LaneMap instance.
+        % @retval endX  Final X coordinate after the lane is added.
+        % @retval endY  Final Y coordinate after the lane is added.
         function [obj, endX, endY] = addStraightLane(obj, startX, startY, endX, endY, width)
             % Add a straight lane with consistent width
             % startX, startY, endX, endY: Coordinates in cell units
@@ -86,6 +121,20 @@ classdef LaneMap
             endY = yIndices_orig(end);
         end
 
+        %% addCurvedLane
+        % Adds a curved lane segment with consistent width.
+        %
+        % @param centerX     Center X coordinate of curvature (cell units).
+        % @param centerY     Center Y coordinate of curvature (cell units).
+        % @param radius      Radius of curvature in cells.
+        % @param startAngle  Starting angle in degrees.
+        % @param endAngle    Ending angle in degrees.
+        % @param direction   'cw' for clockwise or 'ccw' for counter-clockwise.
+        % @param width       Optional lane width in meters.
+        %
+        % @retval obj   Updated LaneMap instance.
+        % @retval endX  Final X coordinate after the lane is added.
+        % @retval endY  Final Y coordinate after the lane is added.
         function [obj, endX, endY] = addCurvedLane(obj, centerX, centerY, radius, startAngle, endAngle, direction, width)
             % Adds a curved lane with consistent width and specified direction
             % centerX, centerY: Center of curvature in cell units
@@ -160,6 +209,14 @@ classdef LaneMap
             endY = round(endY);
         end
 
+        %% plotLaneMapWithCommands
+        % Plots a continuous lane map using a string of lane commands.
+        %
+        % @param ax           Axes handle where the map will be plotted.
+        % @param laneCommands Commands separated by '|' describing lane segments.
+        % @param laneColor    1x3 RGB vector specifying the lane color.
+        %
+        % @retval obj Updated LaneMap instance.
         function plotLaneMapWithCommands(obj, ax, laneCommands, laneColor)
             % plotLaneMapWithCommands Plots a continuous lane map into the specified axes based on command strings.
             %
@@ -193,6 +250,11 @@ classdef LaneMap
             obj.displayMap(ax, laneColor);
         end
 
+        %% displayMap
+        % Displays the lane map on a set of axes.
+        %
+        % @param ax        Axes handle used for plotting.
+        % @param laneColor RGB triplet for the lane color.
         function displayMap(obj, ax, laneColor)
             % Display the map with lanes in the specified color and overlay grid lines
             % ax: Axes handle where the map will be plotted
@@ -274,6 +336,16 @@ classdef LaneMap
     end
 
     methods (Access = private)
+        %% bresenhamLine
+        % Implements Bresenham's line algorithm.
+        %
+        % @param x1  Starting column index.
+        % @param y1  Starting row index.
+        % @param x2  Ending column index.
+        % @param y2  Ending row index.
+        %
+        % @retval x  Vector of column indices along the line.
+        % @retval y  Vector of row indices along the line.
         function [x, y] = bresenhamLine(~, x1, y1, x2, y2)
             % Bresenham's line algorithm to compute the points of a line
             x1 = round(x1); y1 = round(y1);
@@ -310,6 +382,14 @@ classdef LaneMap
             end
         end
 
+        %% setCircularArea
+        % Sets all cells within a circular area to 1.
+        %
+        % @param x      Center column index.
+        % @param y      Center row index.
+        % @param radius Radius in cells.
+        %
+        % @retval obj Updated LaneMap instance.
         function obj = setCircularArea(obj, x, y, radius)
             % Set all cells within a circle of given radius around (x, y) to 1
             % Vectorized implementation
@@ -325,6 +405,12 @@ classdef LaneMap
             obj.MapData(y_min:y_max, x_min:x_max) = obj.MapData(y_min:y_max, x_min:x_max) | mask;
         end
 
+        %% processLaneCommands
+        % Processes lane command strings and updates the lane map.
+        %
+        % @param laneCommands String containing lane commands separated by '|'.
+        %
+        % @retval obj Updated LaneMap instance.
         function obj = processLaneCommands(obj, laneCommands)
             % processLaneCommands Processes lane command strings to interpret lane segments
             % and add them to the LaneMap object.
