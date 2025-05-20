@@ -558,7 +558,7 @@ classdef ForceCalculator
                     end
 
                     [~,M_susp] = obj.suspensionModel.calculateForcesAndMoments(vehicleState);
-                    M_z = 0;
+                    M_z = M_z + M_susp;
 
                     obj.calculatedForces('momentZ') = M_z;
                     obj.calculatedForces('F_y_total')= F_y_total;
