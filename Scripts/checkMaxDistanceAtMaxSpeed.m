@@ -1,4 +1,4 @@
-% MATLAB Script: compare_max_distances.m
+% MATLAB Script: checkMaxDistanceAtMaxSpeed.m
 % Description: Compares the maximum distances traveled by two vehicles over the complete simulation.
 
 % Clear workspace and command window
