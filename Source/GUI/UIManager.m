@@ -83,6 +83,11 @@ classdef UIManager < handle
         generateWaypointsButton
         waypointsPanel
         waypointsTable
+
+        % High-Level Command Fields
+        steeringCommandsField
+        accelerationCommandsField
+        tirePressureCommandsField
     end
 
     methods
@@ -148,7 +153,6 @@ classdef UIManager < handle
             obj.vehicleTab2 = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Configuration');
             obj.createVehicle2VehicleConfig(obj.vehicleTab2);
 
-            % Commands Tab for lane map configuration
             obj.commandsTab = uitab(obj.tabGroup, 'Title', 'Commands');
             obj.createCommandsTab(obj.commandsTab);
         end
@@ -250,33 +254,28 @@ classdef UIManager < handle
         end
 
         function createCommandsTab(obj, parent)
-            % Layout for map commands
-            grid = uigridlayout(parent, [3, 1], ...
-                'RowHeight', {30, '1x', 30}, 'ColumnWidth', {'1x'}, ...
-                'Padding', [10, 10, 10, 10], ...
-                'RowSpacing', 10, ...
-                'ColumnSpacing', 10);
+            % Layout for high-level vehicle commands
+            grid = uigridlayout(parent, [3, 2], ...
+                'ColumnWidth', {150, '1x'}, 'RowHeight', {30, 30, 30});
+            grid.Padding = [10, 10, 10, 10];
+            grid.RowSpacing = 10;
+            grid.ColumnSpacing = 10;
 
-            % Map Commands label
-            obj.laneCommandsLabel = uilabel(grid, ...
-                'Text', 'Map Commands:', ...
-                'HorizontalAlignment', 'left', ...
-                'FontWeight', 'bold');
-            obj.laneCommandsLabel.Layout.Row = 1;
+            % Steering commands
+            uilabel(grid, 'Text', 'Steering Commands:', 'HorizontalAlignment', 'right');
+            obj.steeringCommandsField = uieditfield(grid, 'text', 'Value', '', ...
+                'Placeholder', 'e.g., left, right');
 
-            % Text area for commands
-            obj.laneCommandsField = uitextarea(grid, ...
-                'Value', {
-                'straight(100,200,300,200)|curve(300,250,50,270,90,ccw)|straight(300,300,100,300)|curve(100,250,50,90,270,ccw)|straight(100,205,300,205)|curve(300,250,45,270,90,ccw)|straight(300,295,100,295)|curve(100,250,45,90,270,ccw)'
-                }, ...
-                'Editable', 'on');
-            obj.laneCommandsField.Layout.Row = 2;
+            % Acceleration commands
+            uilabel(grid, 'Text', 'Acceleration Commands:', 'HorizontalAlignment', 'right');
+            obj.accelerationCommandsField = uieditfield(grid, 'text', 'Value', '', ...
+                'Placeholder', 'e.g., accel, brake');
 
-            % Button to build the map
-            obj.buildMapButton = uibutton(grid, 'push', ...
-                'Text', 'Build Map', ...
-                'ButtonPushedFcn', @(btn, event)obj.buildMapCallback());
-            obj.buildMapButton.Layout.Row = 3;
+            % Tire pressure commands
+            uilabel(grid, 'Text', 'Tire Pressure Commands:', 'HorizontalAlignment', 'right');
+            obj.tirePressureCommandsField = uieditfield(grid, 'text', 'Value', '', ...
+                'Placeholder', 'e.g., inflate');
+                'Enable', 'off');
         end
 
         function createWaypointGUI(obj)
