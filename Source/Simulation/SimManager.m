@@ -743,13 +743,10 @@ classdef SimManager < handle
             end
 
             tireFuture = parfeval(@computeTireData, 1, vehicleSim);
-            brakeFuture = parfeval(@computeBrakeData, 1, vehicleSim);
             tireData = fetchOutputs(tireFuture);
-            brakeSystem = fetchOutputs(brakeFuture);
 
             [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation(tireData, brakeSystem);
-
+                steeringAngles, speedData] = vehicleSim.runSimulation(tireData);
             simResults = struct(...
                 'X', X, ...
                 'Y', Y, ...
@@ -769,12 +766,10 @@ classdef SimManager < handle
             end
 
             tireFuture = parfeval(@computeTireData, 1, vehicleSim);
-            brakeFuture = parfeval(@computeBrakeData, 1, vehicleSim);
             tireData = fetchOutputs(tireFuture);
-            brakeSystem = fetchOutputs(brakeFuture);
 
             [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation(tireData, brakeSystem);
+                steeringAngles, speedData] = vehicleSim.runSimulation(tireData);
             simResults = struct(...
                 'X', X, ...
                 'Y', Y, ...
@@ -844,9 +839,4 @@ function tireData = computeTireData(vehicleSim)
         'flatTireIndices', flatIdx, ...
         'mu', mu, ...
         'logMessages', {logMsgs});
-end
-
-function brakeSystem = computeBrakeData(vehicleSim)
-    sp = vehicleSim.simParams;
-    [brakeSystem, ~] = vehicleSim.handleBrakeSystem(sp, {});
 end
