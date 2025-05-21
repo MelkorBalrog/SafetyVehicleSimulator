@@ -186,12 +186,35 @@ classdef SimManager < handle
                 totalSteps = length(obj.vehicleSim1.simParams.steeringCommands);
                 fprintf('Total Simulation Steps set to: %d\n', totalSteps);
                 
-                %% 9. Run Vehicle Simulations (synchronous full-run mode)
-                disp('Running simulations synchronously...');
-                obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
-                disp('VehicleSim1 simulation completed.');
-                obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
-                disp('VehicleSim2 simulation completed.');
+                %% 9. Run Vehicle Simulations
+                Debug = 1;
+                if Debug == 0
+                    disp('Running simulations asynchronously...');
+                    futures = cell(1, 2);
+
+                    futures{1} = parfeval(@SimManager.runVehicleSim1, 1, obj.vehicleSim1);
+                    futures{2} = parfeval(@SimManager.runVehicleSim2, 1, obj.vehicleSim2);
+
+                    simResultsArray = cell(1, 2);
+                    for idx = 1:2
+                        future = futures{idx};
+                        disp(['Fetching outputs for simulation ', num2str(idx), '...']);
+                        result = fetchOutputs(future);
+                        simResultsArray{idx} = result;
+
+                        progress = 0.15 + (0.85 / 2) * (idx / 2);
+                        waitbar(progress, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress * 100));
+                    end
+
+                    obj.sim1Results = simResultsArray{1};
+                    obj.sim2Results = simResultsArray{2};
+                else
+                    disp('Running simulations synchronously...');
+                    obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
+                    disp('VehicleSim1 simulation completed.');
+                    obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
+                    disp('VehicleSim2 simulation completed.');
+                end
 
                 %% 9. Transfer Simulation Results
                 disp('Transferring simulation results to DataManager...');
@@ -348,13 +371,16 @@ classdef SimManager < handle
                 mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
                                                mapObj.LaneCommands, ...
                                                mapObj.LaneColor);
+
                 hold(obj.plotManager.sharedAx, 'on');
+
                 obj.plotManager.highlightInitialPositions(obj.dataManager);
 
                 includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
                                       obj.vehicleSim2.simParams.includeTrailer;
 
                 for iStep = 1:totalSteps
+
                     % Clear axes so each frame is fresh
                     obj.plotManager.clearPlots();
 
@@ -365,18 +391,16 @@ classdef SimManager < handle
                     hold(obj.plotManager.sharedAx, 'on');
 
                     % Plot the partial trajectory up to iStep
+
                     obj.plotManager.plotTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
-
-                    % Plot each vehicle at this step
                     obj.plotManager.plotVehicles(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, ...
-                        vehicleParams2, trailerParams2, ...
-                        obj.dataManager.globalVehicle1Data.SteeringAngle, ...
-                        obj.dataManager.globalVehicle2Data.SteeringAngle);
+                        vehicleParams2, trailerParams2);
 
                     drawnow;
                     pause(0.05);
+
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
