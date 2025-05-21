@@ -337,14 +337,19 @@ classdef SimManager < handle
                 disp('Starting animation...');
                 zoom(obj.plotManager.sharedAx, 'on');
                 set(obj.plotManager.sharedAx, 'XLimMode', 'manual', 'YLimMode', 'manual');
-                % For demonstration, we animate from step 1 to totalSteps.
-                % Clear the axes each iteration so old frames don't overlap.
+                % Prepare lane map and initial markers once
                 mapWidth  = 600;
                 mapHeight = 600;
                 mapObj = LaneMap(mapWidth, mapHeight);
                 mapObj.LaneCommands = obj.map;
                 mapObj.LaneColor    = [0.8275, 0.8275, 0.8275];
                 mapObj.LaneWidth    = 5;
+
+                mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
+                                               mapObj.LaneCommands, ...
+                                               mapObj.LaneColor);
+                hold(obj.plotManager.sharedAx, 'on');
+                obj.plotManager.highlightInitialPositions(obj.dataManager);
 
                 includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
                                       obj.vehicleSim2.simParams.includeTrailer;
@@ -353,12 +358,13 @@ classdef SimManager < handle
                     % Clear axes so each frame is fresh
                     obj.plotManager.clearPlots();
 
-                    % Plot the lane map
+                    % Plot the lane map again
                     mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
                                                    mapObj.LaneCommands, ...
                                                    mapObj.LaneColor);
+                    hold(obj.plotManager.sharedAx, 'on');
 
-                    % Plot the partial trajectory up to iStep (for demonstration)
+                    % Plot the partial trajectory up to iStep
                     obj.plotManager.plotTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
 
@@ -369,8 +375,8 @@ classdef SimManager < handle
                         obj.dataManager.globalVehicle1Data.SteeringAngle, ...
                         obj.dataManager.globalVehicle2Data.SteeringAngle);
 
-                    drawnow;  % Force MATLAB to update the figure
-                    pause(0.05);  % Adjust speed to your liking
+                    drawnow;
+                    pause(0.05);
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
