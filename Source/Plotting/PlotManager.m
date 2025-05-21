@@ -21,6 +21,12 @@ classdef PlotManager < handle
         trl2Line
         trl2RearLine
 
+        % Handles to vehicle outlines for animation
+        veh1Outline
+        trl1Outline
+        veh2Outline
+        trl2Outline
+
         % Handles to initial-position markers
         veh1StartMarker
         trl1StartMarker
@@ -80,6 +86,12 @@ classdef PlotManager < handle
                 'DisplayName', 'Vehicle 2 Start');
             obj.trl2StartMarker = scatter(obj.sharedAx, NaN, NaN, 100, 'c', 'filled', ...
                 'DisplayName', 'Trailer 2 Start');
+
+            % Create vehicle outline handles for animation
+            obj.veh1Outline = plot(obj.sharedAx, NaN, NaN, 'r-', 'LineWidth', 2);
+            obj.trl1Outline = plot(obj.sharedAx, NaN, NaN, 'b-', 'LineWidth', 2);
+            obj.veh2Outline = plot(obj.sharedAx, NaN, NaN, 'm-', 'LineWidth', 2);
+            obj.trl2Outline = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
         end
 
         %% Clear Plots
@@ -103,6 +115,12 @@ classdef PlotManager < handle
             obj.trl1StartMarker = scatter(obj.sharedAx, NaN, NaN, 100, 'b', 'filled');
             obj.veh2StartMarker = scatter(obj.sharedAx, NaN, NaN, 100, 'm', 'filled');
             obj.trl2StartMarker = scatter(obj.sharedAx, NaN, NaN, 100, 'c', 'filled');
+
+            % Recreate vehicle outline handles
+            obj.veh1Outline = plot(obj.sharedAx, NaN, NaN, 'r-', 'LineWidth', 2);
+            obj.trl1Outline = plot(obj.sharedAx, NaN, NaN, 'b-', 'LineWidth', 2);
+            obj.veh2Outline = plot(obj.sharedAx, NaN, NaN, 'm-', 'LineWidth', 2);
+            obj.trl2Outline = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
 
             % Keep existing axes settings
             xlabel(obj.sharedAx, 'Longitudinal Distance (m)');
@@ -177,6 +195,53 @@ classdef PlotManager < handle
                                          'YData', dataManager.globalTrailer2Data.Y(1));
             else
                 set(obj.trl2StartMarker, 'XData', NaN, 'YData', NaN);
+            end
+        end
+
+        %% Update Vehicle Outlines
+        function updateVehicleOutlines(obj, dataManager, iStep, vehicleParams1, trailerParams1, vehicleParams2, trailerParams2)
+            % Update polygon outlines for each vehicle and trailer
+
+            sa1 = rad2deg(dataManager.globalVehicle1Data.SteeringAngle(iStep));
+            corners1 = VehiclePlotter.getVehicleCorners(
+                dataManager.globalVehicle1Data.X(iStep), ...
+                dataManager.globalVehicle1Data.Y(iStep), ...
+                dataManager.globalVehicle1Data.Theta(iStep), ...
+                vehicleParams1, true, sa1, vehicleParams1.numTiresPerAxle);
+            set(obj.veh1Outline, 'XData', [corners1(:,1); corners1(1,1)], ...
+                                     'YData', [corners1(:,2); corners1(1,2)]);
+
+            if ~isempty(trailerParams1)
+                cornersT1 = VehiclePlotter.getVehicleCorners(
+                    dataManager.globalTrailer1Data.X(iStep), ...
+                    dataManager.globalTrailer1Data.Y(iStep), ...
+                    dataManager.globalTrailer1Data.Theta(iStep), ...
+                    trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
+                set(obj.trl1Outline, 'XData', [cornersT1(:,1); cornersT1(1,1)], ...
+                                         'YData', [cornersT1(:,2); cornersT1(1,2)]);
+            else
+                set(obj.trl1Outline, 'XData', NaN, 'YData', NaN);
+            end
+
+            sa2 = rad2deg(dataManager.globalVehicle2Data.SteeringAngle(iStep));
+            corners2 = VehiclePlotter.getVehicleCorners(
+                dataManager.globalVehicle2Data.X(iStep), ...
+                dataManager.globalVehicle2Data.Y(iStep), ...
+                dataManager.globalVehicle2Data.Theta(iStep), ...
+                vehicleParams2, true, sa2, vehicleParams2.numTiresPerAxle);
+            set(obj.veh2Outline, 'XData', [corners2(:,1); corners2(1,1)], ...
+                                     'YData', [corners2(:,2); corners2(1,2)]);
+
+            if ~isempty(trailerParams2)
+                cornersT2 = VehiclePlotter.getVehicleCorners(
+                    dataManager.globalTrailer2Data.X(iStep), ...
+                    dataManager.globalTrailer2Data.Y(iStep), ...
+                    dataManager.globalTrailer2Data.Theta(iStep), ...
+                    trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
+                set(obj.trl2Outline, 'XData', [cornersT2(:,1); cornersT2(1,1)], ...
+                                         'YData', [cornersT2(:,2); cornersT2(1,2)]);
+            else
+                set(obj.trl2Outline, 'XData', NaN, 'YData', NaN);
             end
         end
 
