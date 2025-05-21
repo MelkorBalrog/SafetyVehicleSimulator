@@ -129,26 +129,6 @@ classdef VehicleModel < handle
             logMessages{end+1} = sprintf('Adjusted friction coefficient (mu) based on road surface type (%s): %.2f', ...
                 simParams.roadSurfaceType, mu);
         end
-
-        %% Handle Brake System
-        function [brakeSystem, logMessages] = handleBrakeSystem(obj, simParams, logMessages)
-            maxBrakingForce = simParams.maxBrakingForce;
-            brakeEfficiency = simParams.brakeEfficiency;
-            brakeType = simParams.brakeType;
-            brakeResponseRate = 1;
-            brakeBias = simParams.brakeBias;
-
-            brakeSystem = BrakeSystem( ...
-                maxBrakingForce, ...
-                brakeEfficiency, ...
-                brakeType, ...
-                brakeResponseRate, ...
-                brakeBias ...
-                );
-            if nargin >= 3
-                logMessages{end+1} = 'BrakeSystem initialized successfully.';
-            end
-        end
         
         %% Initialize Default Parameters
         function obj = initializeDefaultParameters(obj)
@@ -1274,14 +1254,11 @@ classdef VehicleModel < handle
             end
         end
                                 
-        function [tractorX, tractorY, tractorTheta, trailerX, trailerY, trailerTheta, globalVehicleFlags, steeringAnglesSim, speedData] = runSimulation(obj, tireData, brakeSystem)
+        function [tractorX, tractorY, tractorTheta, trailerX, trailerY, trailerTheta, globalVehicleFlags, steeringAnglesSim, speedData] = runSimulation(obj, tireData)
             % runSimulation Executes the vehicle simulation and computes the dynamics
-
+        
             if nargin < 2
                 tireData = [];
-            end
-            if nargin < 3
-                brakeSystem = [];
             end
 
             % Initialize output variables
@@ -1556,11 +1533,21 @@ classdef VehicleModel < handle
                 % end
         
                 % --- Retrieve Brake System Parameters ---
-                if isempty(brakeSystem)
-                    [brakeSystem, logMessages] = obj.handleBrakeSystem(simParams, logMessages);
-                else
-                    logMessages{end+1} = 'BrakeSystem provided externally.';
-                end
+                maxBrakingForce = simParams.maxBrakingForce;
+                brakeEfficiency = simParams.brakeEfficiency;
+                brakeType = simParams.brakeType;
+                brakeResponseRate = 1;
+                brakeBias = simParams.brakeBias;
+        
+                % Initialize BrakeSystem with parameters from simParams
+                brakeSystem = BrakeSystem( ...
+                    maxBrakingForce, ...
+                    brakeEfficiency, ...
+                    brakeType, ...
+                    brakeResponseRate, ...
+                    brakeBias ...
+                    );
+                logMessages{end+1} = 'BrakeSystem initialized successfully.';
                 % --- End of Brake System Parameters ---
         
                 % --- Retrieve Transmission Parameters ---
