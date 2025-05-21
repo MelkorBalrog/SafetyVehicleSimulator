@@ -741,8 +741,14 @@ classdef SimManager < handle
             if nargin < 2 || isempty(stepCallback)
                 stepCallback = [];
             end
+
+            tireFuture = parfeval(@computeTireData, 1, vehicleSim);
+            brakeFuture = parfeval(@computeBrakeData, 1, vehicleSim);
+            tireData = fetchOutputs(tireFuture);
+            brakeSystem = fetchOutputs(brakeFuture);
+
             [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation();
+                steeringAngles, speedData] = vehicleSim.runSimulation(tireData, brakeSystem);
             simResults = struct(...
                 'X', X, ...
                 'Y', Y, ...
@@ -760,8 +766,14 @@ classdef SimManager < handle
             if nargin < 2 || isempty(stepCallback)
                 stepCallback = [];
             end
+
+            tireFuture = parfeval(@computeTireData, 1, vehicleSim);
+            brakeFuture = parfeval(@computeBrakeData, 1, vehicleSim);
+            tireData = fetchOutputs(tireFuture);
+            brakeSystem = fetchOutputs(brakeFuture);
+
             [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation();
+                steeringAngles, speedData] = vehicleSim.runSimulation(tireData, brakeSystem);
             simResults = struct(...
                 'X', X, ...
                 'Y', Y, ...
@@ -794,4 +806,46 @@ function closeIfOpen(h)
     if isvalid(h)
         close(h);
     end
+end
+
+function tireData = computeTireData(vehicleSim)
+    sp = vehicleSim.simParams;
+
+    totalTiresTractor = 2 + (sp.tractorNumAxles * sp.numTiresPerAxleTractor);
+    if sp.includeTrailer
+        totalTiresTrailer = sp.trailerNumAxles * sp.numTiresPerAxleTrailer;
+    else
+        totalTiresTrailer = 0;
+    end
+    totalNumberOfTires = totalTiresTractor + totalTiresTrailer;
+
+    key = sprintf('Tires%d', totalNumberOfTires);
+    if isfield(sp.pressureMatrices, key)
+        selectedPressures = sp.pressureMatrices.(key);
+    else
+        selectedPressures = zeros(1, totalNumberOfTires);
+    end
+
+    tractorPress = selectedPressures(1:totalTiresTractor);
+    if sp.includeTrailer
+        trailerPress = selectedPressures(totalTiresTractor+1:end);
+    else
+        trailerPress = [];
+    end
+
+    [tractorPress, trailerPress, tractorCA, trailerCA, flatIdx, mu, logMsgs] = ...
+        vehicleSim.handleTireSystem(tractorPress, trailerPress, sp, sp.tractorMass, sp.trailerMass, {});
+
+    tireData = struct('tractorTirePressures', tractorPress, ...
+        'trailerTirePressures', trailerPress, ...
+        'tractorContactAreas', tractorCA, ...
+        'trailerContactAreas', trailerCA, ...
+        'flatTireIndices', flatIdx, ...
+        'mu', mu, ...
+        'logMessages', {logMsgs});
+end
+
+function brakeSystem = computeBrakeData(vehicleSim)
+    sp = vehicleSim.simParams;
+    [brakeSystem, ~] = vehicleSim.handleBrakeSystem(sp, {});
 end

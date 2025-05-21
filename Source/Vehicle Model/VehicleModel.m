@@ -51,6 +51,104 @@ classdef VehicleModel < handle
                 obj.initializeDefaultParameters();
             end
         end
+
+        %% Handle Tire System
+        function [tractorTirePressures, trailerTirePressures, tractorContactAreas, ...
+                trailerContactAreas, flatTireIndices, mu, logMessages] = ...
+                handleTireSystem(obj, tractorTirePressures, trailerTirePressures, ...
+                simParams, tractorMass, trailerMass, logMessages)
+
+            flatTireIndicesTractor = [];
+            flatTireIndicesTrailer = [];
+
+            pressureThresholdPa = 14 * 6895; % 14 psi in Pa
+            logMessages{end+1} = sprintf('Pressure Threshold set to %.2f Pa (14 psi).', pressureThresholdPa);
+
+            for i = 1:length(tractorTirePressures)
+                if tractorTirePressures(i) < pressureThresholdPa
+                    flatTireIndicesTractor(end+1) = i;
+                    logMessages{end+1} = sprintf('Warning: Tractor Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', ...
+                        i, tractorTirePressures(i), pressureThresholdPa);
+                    tractorTirePressures(i) = 0;
+                end
+            end
+
+            if simParams.includeTrailer
+                for i = 1:length(trailerTirePressures)
+                    if trailerTirePressures(i) < pressureThresholdPa
+                        adjustedIndex = i + length(tractorTirePressures);
+                        flatTireIndicesTrailer(end+1) = adjustedIndex;
+                        logMessages{end+1} = sprintf('Warning: Trailer Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', ...
+                            i, trailerTirePressures(i), pressureThresholdPa);
+                        trailerTirePressures(i) = 0;
+                    end
+                end
+            end
+
+            flatTireIndices = [flatTireIndicesTractor, flatTireIndicesTrailer];
+
+            perTireLoadTractor = (tractorMass * 9.81) / length(tractorTirePressures);
+            tractorContactAreas = zeros(size(tractorTirePressures));
+            for i = 1:length(tractorTirePressures)
+                if tractorTirePressures(i) > 0
+                    tractorContactAreas(i) = perTireLoadTractor / tractorTirePressures(i);
+                else
+                    tractorContactAreas(i) = 0;
+                end
+            end
+
+            if simParams.includeTrailer
+                perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures);
+                trailerContactAreas = zeros(size(trailerTirePressures));
+                for i = 1:length(trailerTirePressures)
+                    if trailerTirePressures(i) > 0
+                        trailerContactAreas(i) = perTireLoadTrailer / trailerTirePressures(i);
+                    else
+                        trailerContactAreas(i) = 0;
+                    end
+                end
+            else
+                trailerContactAreas = [];
+            end
+
+            switch simParams.roadSurfaceType
+                case 'Dry Asphalt'
+                    mu = 0.85;
+                case 'Wet Asphalt'
+                    mu = 0.6;
+                case 'Gravel'
+                    mu = 0.5;
+                case 'Snow'
+                    mu = 0.2;
+                case 'Ice'
+                    mu = 0.1;
+                otherwise
+                    mu = simParams.roadFrictionCoefficient;
+            end
+
+            logMessages{end+1} = sprintf('Adjusted friction coefficient (mu) based on road surface type (%s): %.2f', ...
+                simParams.roadSurfaceType, mu);
+        end
+
+        %% Handle Brake System
+        function [brakeSystem, logMessages] = handleBrakeSystem(obj, simParams, logMessages)
+            maxBrakingForce = simParams.maxBrakingForce;
+            brakeEfficiency = simParams.brakeEfficiency;
+            brakeType = simParams.brakeType;
+            brakeResponseRate = 1;
+            brakeBias = simParams.brakeBias;
+
+            brakeSystem = BrakeSystem( ...
+                maxBrakingForce, ...
+                brakeEfficiency, ...
+                brakeType, ...
+                brakeResponseRate, ...
+                brakeBias ...
+                );
+            if nargin >= 3
+                logMessages{end+1} = 'BrakeSystem initialized successfully.';
+            end
+        end
         
         %% Initialize Default Parameters
         function obj = initializeDefaultParameters(obj)
@@ -1176,9 +1274,16 @@ classdef VehicleModel < handle
             end
         end
                                 
-        function [tractorX, tractorY, tractorTheta, trailerX, trailerY, trailerTheta, globalVehicleFlags, steeringAnglesSim, speedData] = runSimulation(obj)
+        function [tractorX, tractorY, tractorTheta, trailerX, trailerY, trailerTheta, globalVehicleFlags, steeringAnglesSim, speedData] = runSimulation(obj, tireData, brakeSystem)
             % runSimulation Executes the vehicle simulation and computes the dynamics
-        
+
+            if nargin < 2
+                tireData = [];
+            end
+            if nargin < 3
+                brakeSystem = [];
+            end
+
             % Initialize output variables
             tractorX = [];
             tractorY = [];
@@ -1384,95 +1489,23 @@ classdef VehicleModel < handle
                 end
                 % --- End of Split Pressures ---
         
-                % --- Begin Flat Tire Logic ---
-                % Define Pressure Threshold
-                % Convert 14 psi to Pascals (1 psi ≈ 6895 Pa)
-                pressureThresholdPa = 14 * 6895; % 14 psi in Pa
-        
-                % Log the pressure threshold
-                logMessages{end+1} = sprintf('Pressure Threshold set to %.2f Pa (14 psi).', pressureThresholdPa);
-        
-                % --- Check and Set Flat Tires for Tractor ---
-                for i = 1:length(tractorTirePressures)
-                    if tractorTirePressures(i) < pressureThresholdPa
-                        % Collect the index of the flat tire
-                        flatTireIndicesTractor(end+1) = i;
-                        % Log the flat tire event
-                        logMessages{end+1} = sprintf('Warning: Tractor Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', i, tractorTirePressures(i), pressureThresholdPa);
-                        % Mark the tire as flat by setting its contact area to zero
-                        tractorTirePressures(i) = 0; 
-                    end
-                end
-        
-                % --- Check and Set Flat Tires for Trailer ---
-                if simParams.includeTrailer
-                    for i = 1:length(trailerTirePressures)
-                        if trailerTirePressures(i) < pressureThresholdPa
-                            % Adjust the index to account for the total number of tractor tires
-                            adjustedIndex = i + length(tractorTirePressures);
-                            % Collect the index of the flat tire
-                            flatTireIndicesTrailer(end+1) = adjustedIndex;
-                            % Log the flat tire event
-                            logMessages{end+1} = sprintf('Warning: Trailer Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', i, trailerTirePressures(i), pressureThresholdPa);
-                            % Mark the tire as flat by setting its contact area to zero
-                            trailerTirePressures(i) = 0; 
-                        end
-                    end
-                end
-                % Combine flat tire indices
-                flatTireIndices = [flatTireIndicesTractor, flatTireIndicesTrailer];
-                % --- End Flat Tire Logic ---
-        
-                % --- Compute Contact Areas ---
-                % Compute per-tire loads (assuming equal distribution for simplicity)
-                perTireLoadTractor = (tractorMass * 9.81) / totalTiresTractor; % N
-                if simParams.includeTrailer
-                    perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer; % N
-                end
-        
-                % Compute per-tire contact areas
-                % Avoid division by zero by setting contact area to zero if pressure is zero (flat tire)
-                tractorContactAreas = zeros(size(tractorTirePressures));
-                for i = 1:length(tractorTirePressures)
-                    if tractorTirePressures(i) > 0
-                        tractorContactAreas(i) = perTireLoadTractor / tractorTirePressures(i); % m^2
-                    else
-                        tractorContactAreas(i) = 0; % Flat tire
-                    end
-                end
-        
-                if simParams.includeTrailer
-                    trailerContactAreas = zeros(size(trailerTirePressures));
-                    for i = 1:length(trailerTirePressures)
-                        if trailerTirePressures(i) > 0
-                            trailerContactAreas(i) = perTireLoadTrailer / trailerTirePressures(i); % m^2
-                        else
-                            trailerContactAreas(i) = 0; % Flat tire
-                        end
-                    end
+                % --- Handle Tire System ---
+                if isempty(tireData)
+                    [tractorTirePressures, trailerTirePressures, tractorContactAreas, ...
+                        trailerContactAreas, flatTireIndices, mu, logMessages] = ...
+                        obj.handleTireSystem(tractorTirePressures, trailerTirePressures, ...
+                        simParams, tractorMass, trailerMass, logMessages);
                 else
-                    trailerContactAreas = [];
+                    tractorTirePressures = tireData.tractorTirePressures;
+                    trailerTirePressures = tireData.trailerTirePressures;
+                    tractorContactAreas = tireData.tractorContactAreas;
+                    trailerContactAreas = tireData.trailerContactAreas;
+                    flatTireIndices = tireData.flatTireIndices;
+                    mu = tireData.mu;
+                    if isfield(tireData,'logMessages')
+                        logMessages = [logMessages, tireData.logMessages];
+                    end
                 end
-                % --- End of Compute Contact Areas ---
-        
-                % --- Adjust Friction Coefficient Based on Road Surface Type ---
-                % Use predefined friction coefficients for different surfaces
-                switch simParams.roadSurfaceType
-                    case 'Dry Asphalt'
-                        mu = 0.85;
-                    case 'Wet Asphalt'
-                        mu = 0.6;
-                    case 'Gravel'
-                        mu = 0.5;
-                    case 'Snow'
-                        mu = 0.2;
-                    case 'Ice'
-                        mu = 0.1;
-                    otherwise
-                        mu = simParams.roadFrictionCoefficient; % Use the provided value
-                end
-                % Log the adjusted friction coefficient
-                logMessages{end+1} = sprintf('Adjusted friction coefficient (mu) based on road surface type (%s): %.2f', simParams.roadSurfaceType, mu);
                 % --- End of Friction Coefficient Adjustment ---
         
                 % Log simulation parameters
@@ -1523,21 +1556,11 @@ classdef VehicleModel < handle
                 % end
         
                 % --- Retrieve Brake System Parameters ---
-                maxBrakingForce = simParams.maxBrakingForce;
-                brakeEfficiency = simParams.brakeEfficiency;
-                brakeType = simParams.brakeType;
-                brakeResponseRate = 1;
-                brakeBias = simParams.brakeBias;
-        
-                % Initialize BrakeSystem with parameters from simParams
-                brakeSystem = BrakeSystem( ...
-                    maxBrakingForce, ...
-                    brakeEfficiency, ...
-                    brakeType, ...
-                    brakeResponseRate, ...
-                    brakeBias ...
-                    );
-                logMessages{end+1} = 'BrakeSystem initialized successfully.';
+                if isempty(brakeSystem)
+                    [brakeSystem, logMessages] = obj.handleBrakeSystem(simParams, logMessages);
+                else
+                    logMessages{end+1} = 'BrakeSystem provided externally.';
+                end
                 % --- End of Brake System Parameters ---
         
                 % --- Retrieve Transmission Parameters ---
