@@ -380,27 +380,15 @@ classdef SimManager < handle
                                       obj.vehicleSim2.simParams.includeTrailer;
 
                 for iStep = 1:totalSteps
-
-                    % Clear axes so each frame is fresh
-                    obj.plotManager.clearPlots();
-
-                    % Plot the lane map again
-                    mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
-                                                   mapObj.LaneCommands, ...
-                                                   mapObj.LaneColor);
-                    hold(obj.plotManager.sharedAx, 'on');
-
-                    % Plot the partial trajectory up to iStep
-
-                    obj.plotManager.plotTrajectories(obj.dataManager, iStep, ...
+                    % Update trajectory lines and vehicle outlines incrementally
+                    obj.plotManager.updateTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
-                    obj.plotManager.plotVehicles(obj.dataManager, iStep, ...
+                    obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, ...
                         vehicleParams2, trailerParams2);
 
-                    drawnow;
-                    pause(0.05);
-
+                    % Draw only at a limited rate so the UI (zoom/pan) remains responsive
+                    drawnow limitrate nocallbacks;
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
