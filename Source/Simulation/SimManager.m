@@ -186,12 +186,35 @@ classdef SimManager < handle
                 totalSteps = length(obj.vehicleSim1.simParams.steeringCommands);
                 fprintf('Total Simulation Steps set to: %d\n', totalSteps);
                 
-                %% 9. Run Vehicle Simulations (synchronous full-run mode)
-                disp('Running simulations synchronously...');
-                obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
-                disp('VehicleSim1 simulation completed.');
-                obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
-                disp('VehicleSim2 simulation completed.');
+                %% 9. Run Vehicle Simulations
+                Debug = 1;
+                if Debug == 0
+                    disp('Running simulations asynchronously...');
+                    futures = cell(1, 2);
+
+                    futures{1} = parfeval(@SimManager.runVehicleSim1, 1, obj.vehicleSim1);
+                    futures{2} = parfeval(@SimManager.runVehicleSim2, 1, obj.vehicleSim2);
+
+                    simResultsArray = cell(1, 2);
+                    for idx = 1:2
+                        future = futures{idx};
+                        disp(['Fetching outputs for simulation ', num2str(idx), '...']);
+                        result = fetchOutputs(future);
+                        simResultsArray{idx} = result;
+
+                        progress = 0.15 + (0.85 / 2) * (idx / 2);
+                        waitbar(progress, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress * 100));
+                    end
+
+                    obj.sim1Results = simResultsArray{1};
+                    obj.sim2Results = simResultsArray{2};
+                else
+                    disp('Running simulations synchronously...');
+                    obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
+                    disp('VehicleSim1 simulation completed.');
+                    obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
+                    disp('VehicleSim2 simulation completed.');
+                end
 
                 %% 9. Transfer Simulation Results
                 disp('Transferring simulation results to DataManager...');
