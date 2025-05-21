@@ -372,6 +372,8 @@ classdef SimManager < handle
                                                mapObj.LaneCommands, ...
                                                mapObj.LaneColor);
 
+                hold(obj.plotManager.sharedAx, 'on');
+
                 obj.plotManager.highlightInitialPositions(obj.dataManager);
 
                 includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
@@ -382,21 +384,23 @@ classdef SimManager < handle
                     % Clear axes so each frame is fresh
                     obj.plotManager.clearPlots();
 
-                    % Plot the lane map and initial markers
+                    % Plot the lane map again
                     mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
                                                    mapObj.LaneCommands, ...
                                                    mapObj.LaneColor);
-                    obj.plotManager.highlightInitialPositions(obj.dataManager);
+                    hold(obj.plotManager.sharedAx, 'on');
 
-                    % Plot partial trajectory and vehicles at this step
+                    % Plot the partial trajectory up to iStep
+
                     obj.plotManager.plotTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
                     obj.plotManager.plotVehicles(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, ...
                         vehicleParams2, trailerParams2);
 
-                    drawnow limitrate;
-                    pause(0.01);
+                    drawnow;
+                    pause(0.05);
+
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
