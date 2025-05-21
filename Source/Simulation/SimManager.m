@@ -350,15 +350,13 @@ classdef SimManager < handle
                                                mapObj.LaneColor);
                 obj.plotManager.highlightInitialPositions(obj.dataManager);
 
-                includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
-                                      obj.vehicleSim2.simParams.includeTrailer;
-
                 for iStep = 1:totalSteps
-                    % Update trajectories and vehicle outlines
+                    % Update trajectory lines up to the current step
                     obj.plotManager.updateTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
 
-                    obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
+                    % Plot vehicle polygons at this step
+                    obj.plotManager.plotVehicles(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, ...
                         vehicleParams2, trailerParams2);
 
