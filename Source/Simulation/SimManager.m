@@ -368,23 +368,30 @@ classdef SimManager < handle
                 mapObj.LaneColor    = [0.8275, 0.8275, 0.8275];
                 mapObj.LaneWidth    = 5;
 
-                % Plot the lane map without removing existing line objects
-                hold(obj.plotManager.sharedAx, 'on');
                 mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
                                                mapObj.LaneCommands, ...
                                                mapObj.LaneColor);
-                hold(obj.plotManager.sharedAx, 'on');
+
                 obj.plotManager.highlightInitialPositions(obj.dataManager);
 
                 includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
                                       obj.vehicleSim2.simParams.includeTrailer;
 
                 for iStep = 1:totalSteps
-                    % Update trajectories and vehicle outlines
-                    obj.plotManager.updateTrajectories(obj.dataManager, iStep, ...
-                        obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
 
-                    obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
+                    % Clear axes so each frame is fresh
+                    obj.plotManager.clearPlots();
+
+                    % Plot the lane map and initial markers
+                    mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
+                                                   mapObj.LaneCommands, ...
+                                                   mapObj.LaneColor);
+                    obj.plotManager.highlightInitialPositions(obj.dataManager);
+
+                    % Plot partial trajectory and vehicles at this step
+                    obj.plotManager.plotTrajectories(obj.dataManager, iStep, ...
+                        obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
+                    obj.plotManager.plotVehicles(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, ...
                         vehicleParams2, trailerParams2);
 
