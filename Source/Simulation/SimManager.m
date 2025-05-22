@@ -392,8 +392,9 @@ classdef SimManager < handle
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
-                collisionOutput = fetchOutputs(collisionFuture);
-                collisionData   = collisionOutput{1};
+                % fetchOutputs returns the single output directly, not in a cell
+                % array, so we assign it directly to collisionData
+                collisionData   = fetchOutputs(collisionFuture);
 
                 % You can handle collisionData as you wish (e.g., store it, re-plot).
                 if collisionData.collisionDetected
