@@ -33,7 +33,6 @@ classdef PlotManager < handle
         veh2Graphics
         trl2Graphics
 
-
         % Handles to initial-position markers
         veh1StartMarker
         trl1StartMarker
@@ -141,6 +140,11 @@ classdef PlotManager < handle
             obj.veh2Outline = plot(obj.sharedAx, NaN, NaN, 'm-', 'LineWidth', 2);
             obj.trl2Outline = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
 
+            % Reset stored vehicle graphics
+            obj.veh1Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.trl1Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.veh2Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.trl2Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
 
             % Keep existing axes settings
             xlabel(obj.sharedAx, 'Longitudinal Distance (m)');
@@ -279,7 +283,6 @@ classdef PlotManager < handle
                 obj.trl2Graphics = gobjects(0);
             end
         end
-
 
         %% Set Axis Limits (Optional to call once if you want)
         function setAxisLimits(obj, dataManager, stepsToPlot, collisionDetected)
