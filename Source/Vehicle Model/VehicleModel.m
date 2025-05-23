@@ -2667,24 +2667,23 @@ classdef VehicleModel < handle
                     % --- End of Transmission Gear Update ---
                     ClutchPedal(i) = clutch.engagementPercentage;
         
-                    % --- Determine Brake Command Based on Desired Acceleration ---
+                    % --- Determine Desired Braking Force Based on Desired Acceleration ---
                     if limited_acceleration < 0
                         % Negative acceleration: Deceleration command
                         desired_decel = abs(limited_acceleration);
-                        max_decel = abs(obj.accelerationLimiter.minDecelAtMaxSpeed); % e.g., 5 m/s^2
-                        brakeCommand = min(desired_decel / max_decel, 1);
-                        brakeSystem = brakeSystem.setBrakeCommand(brakeCommand);
-                        logMessages{end+1} = sprintf('Step %d: Brake Command set to %.2f%%.', i, brakeCommand * 100);
+                        brakeForceInput = desired_decel * totalMassToUse; % F = m * a
+                        brakeSystem = brakeSystem.setDesiredBrakingForce(brakeForceInput);
+                        logMessages{end+1} = sprintf('Step %d: Desired braking force set to %.2f N.', i, brakeForceInput);
                     else
                         % Positive acceleration: No braking
-                        brakeSystem = brakeSystem.setBrakeCommand(0);
-                        brakeCommand = 0;
-                        logMessages{end+1} = sprintf('Step %d: Brake Command set to 0%%.', i);
+                        brakeSystem = brakeSystem.setDesiredBrakingForce(0);
+                        brakeForceInput = 0;
+                        logMessages{end+1} = sprintf('Step %d: Desired braking force set to 0 N.', i);
                     end
-                    % --- End of Brake Command Determination ---
+                    % --- End of Desired Braking Force Determination ---
         
                     % --- Apply Brakes ---
-                    brakeCommandsig(i) = brakeCommand;
+                    brakeForceInputSig(i) = brakeForceInput;
                     brakeSystem = brakeSystem.applyBrakes(dt);
                     F_brake = brakeSystem.computeTotalBrakingForce();
                     F_brake = movmean(F_brake, floor(windowSize/dt));
