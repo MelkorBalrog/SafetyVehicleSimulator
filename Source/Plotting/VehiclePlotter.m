@@ -256,6 +256,8 @@ classdef VehiclePlotter
             % Position the axle
             axlePosX = x + axlePos * cos(theta);
             axlePosY = y + axlePos * sin(theta);
+            % Center point of the axle in global coordinates
+            axleCenter = [axlePosX; axlePosY];
 
             % Compute the vector perpendicular to the heading
             perpVec = [cos(theta + pi/2); sin(theta + pi/2)];
