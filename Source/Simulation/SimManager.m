@@ -388,7 +388,7 @@ classdef SimManager < handle
                         vehicleParams2, trailerParams2);
 
                     % Draw only at a limited rate so the UI (zoom/pan) remains responsive
-                    drawnow limitrate nocallbacks;
+                    drawnow limitrate;
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
