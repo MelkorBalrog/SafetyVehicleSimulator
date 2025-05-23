@@ -134,35 +134,18 @@ classdef VehiclePlotter
             wheelHeight = vehicleParams.wheelWidth;
             wheelbase = vehicleParams.wheelbase;
 
-
-            % Initialize localCorners based on vehicle type
             if (~isTractor && ~isPassengerVehicle)
-                % === Trailer Plotting Logic ===
-                % === Hardcode trailerHitchDistance to 1.310 meters ===
                 trailerHitchDistance = vehicleParams.HitchDistance;
-                % Calculate the remaining length of the trailer
                 remainingLength = length - trailerHitchDistance;
-
-                % Validate remainingLength
-                if remainingLength <= 0
-                    error('For trailers, "trailerHitchDistance" must be less than "length".');
-                end
-
-                % Define the rectangle corners in local trailer coordinates
-                % Starting from hitch position (0,0), extend backward along X-axis by remainingLength
-                % Order: front-left (hitch), front-right, back-right, back-left, front-left (closure)
                 localCorners = [trailerHitchDistance, -remainingLength, -remainingLength, trailerHitchDistance, trailerHitchDistance;
                                 -width/2, -width/2, width/2, width/2, -width/2];
+                baseOffset = -remainingLength/2;
             else
-                % === Tractor or Passenger Vehicle Plotting Logic ===
-                % Front of the vehicle is at (x, y), extend back by 'vehLength' along X-axis
-                % Define the rectangle corners in local vehicle coordinates
-                % Order: front-left, front-right, back-right, back-left, front-left (closure)
                 localCorners = [0, -length, -length, 0, 0;
                                 -width/2, -width/2, width/2, width/2, -width/2];
+                baseOffset = -length/2;
             end
 
-            % Rotate the corners
             R = [cos(theta), -sin(theta); sin(theta), cos(theta)];
             rotatedCorners = R * localCorners;
 
@@ -241,6 +224,9 @@ classdef VehiclePlotter
                     h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 5*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
                 end
             end
+
+            geom.axles = geom.axles(1:axleIdx-1);
+            geom.wheels = geom.wheels(1:axleIdx-1);
         end
 
         %/**
