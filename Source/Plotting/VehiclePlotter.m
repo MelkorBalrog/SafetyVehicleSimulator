@@ -126,121 +126,138 @@ classdef VehiclePlotter
         % *
         % * @return None
         % */
-        function h = plotVehicle(ax, x, y, theta, vehicleParams, color, isTractor, isPassengerVehicle, steeringWheelAngle, numTiresPerAxle, numAxles)
-            % Extract parameters from vehicleParams
+        function graphics = plotVehicle(ax, x, y, theta, vehicleParams, color, isTractor, isPassengerVehicle, steeringWheelAngle, numTiresPerAxle, numAxles)
+            % Compute geometry for all components
+            geom = VehiclePlotter.computeVehicleGeometry(x, y, theta, vehicleParams, isTractor, isPassengerVehicle, steeringWheelAngle, numTiresPerAxle, numAxles);
+
+            % Plot body
+            graphics.body = plot(ax, geom.body(1, :), geom.body(2, :), color, 'LineWidth', 2);
+
+            % Plot axles and wheels
+            nAxles = numel(geom.axles);
+            graphics.axles = gobjects(1, nAxles);
+            graphics.wheels = gobjects(1, numel(geom.wheels));
+
+            wheelIdx = 1;
+            for a = 1:nAxles
+                graphics.axles(a) = plot(ax, geom.axles{a}(1, :), geom.axles{a}(2, :), 'k', 'LineWidth', 2);
+                wheelPolys = geom.wheels{a};
+                for w = 1:numel(wheelPolys)
+                    graphics.wheels(wheelIdx) = fill(ax, wheelPolys{w}(1, :), wheelPolys{w}(2, :), 'k');
+                    wheelIdx = wheelIdx + 1;
+                end
+            end
+        end
+
+        %% Update an existing vehicle graphic with new pose
+        function updateVehicle(graphics, x, y, theta, vehicleParams, isTractor, isPassengerVehicle, steeringWheelAngle, numTiresPerAxle, numAxles)
+            if isempty(graphics) || ~isgraphics(graphics.body)
+                return;
+            end
+
+            geom = VehiclePlotter.computeVehicleGeometry(x, y, theta, vehicleParams, isTractor, isPassengerVehicle, steeringWheelAngle, numTiresPerAxle, numAxles);
+            set(graphics.body, 'XData', geom.body(1, :), 'YData', geom.body(2, :));
+
+            wheelIdx = 1;
+            for a = 1:numel(geom.axles)
+                if isgraphics(graphics.axles(a))
+                    set(graphics.axles(a), 'XData', geom.axles{a}(1, :), 'YData', geom.axles{a}(2, :));
+                end
+                wheelPolys = geom.wheels{a};
+                for w = 1:numel(wheelPolys)
+                    if isgraphics(graphics.wheels(wheelIdx))
+                        set(graphics.wheels(wheelIdx), 'XData', wheelPolys{w}(1, :), 'YData', wheelPolys{w}(2, :));
+                    end
+                    wheelIdx = wheelIdx + 1;
+                end
+            end
+        end
+
+        %% Compute geometry for body, axles, and wheels without plotting
+        function geom = computeVehicleGeometry(x, y, theta, vehicleParams, isTractor, isPassengerVehicle, steeringWheelAngle, numTiresPerAxle, numAxles)
             length = vehicleParams.length;
             width = vehicleParams.width;
             wheelWidth = vehicleParams.wheelHeight;
             wheelHeight = vehicleParams.wheelWidth;
             wheelbase = vehicleParams.wheelbase;
 
-
-            % Initialize localCorners based on vehicle type
             if (~isTractor && ~isPassengerVehicle)
-                % === Trailer Plotting Logic ===
-                % === Hardcode trailerHitchDistance to 1.310 meters ===
                 trailerHitchDistance = vehicleParams.HitchDistance;
-                % Calculate the remaining length of the trailer
                 remainingLength = length - trailerHitchDistance;
-
-                % Validate remainingLength
-                if remainingLength <= 0
-                    error('For trailers, "trailerHitchDistance" must be less than "length".');
-                end
-
-                % Define the rectangle corners in local trailer coordinates
-                % Starting from hitch position (0,0), extend backward along X-axis by remainingLength
-                % Order: front-left (hitch), front-right, back-right, back-left, front-left (closure)
                 localCorners = [trailerHitchDistance, -remainingLength, -remainingLength, trailerHitchDistance, trailerHitchDistance;
                                 -width/2, -width/2, width/2, width/2, -width/2];
+                baseOffset = -remainingLength/2;
             else
-                % === Tractor or Passenger Vehicle Plotting Logic ===
-                % Front of the vehicle is at (x, y), extend back by 'vehLength' along X-axis
-                % Define the rectangle corners in local vehicle coordinates
-                % Order: front-left, front-right, back-right, back-left, front-left (closure)
                 localCorners = [0, -length, -length, 0, 0;
                                 -width/2, -width/2, width/2, width/2, -width/2];
+                baseOffset = -length/2;
             end
 
-            % Rotate the corners
             R = [cos(theta), -sin(theta); sin(theta), cos(theta)];
-            rotatedCorners = R * localCorners;
+            rotated = R * localCorners;
+            geom.body = [rotated(1, :) + x; rotated(2, :) + y];
 
-            % Translate the corners to the vehicle position
-            translatedCornersX = rotatedCorners(1, :) + x;
-            translatedCornersY = rotatedCorners(2, :) + y;
+            geom.axles = cell(1, numAxles + (isTractor || isPassengerVehicle));
+            geom.wheels = cell(1, numAxles + (isTractor || isPassengerVehicle));
 
-            % Plot the vehicle body
-            hBody = plot(ax, translatedCornersX, translatedCornersY, color, 'LineWidth', 2);
-            h = hBody;
+            axleIdx = 1;
+            function [axleXY, wheelPolys] = axleGeom(axlePos, steer)
+                axleX = [-width/2, width/2];
+                axleY = [0, 0];
+                axlePosX = x + axlePos * cos(theta);
+                axlePosY = y + axlePos * sin(theta);
+                Rot = [cos(theta), -sin(theta); sin(theta), cos(theta)];
+                axleEnds = Rot * [axleX; axleY] + [axlePosX; axlePosY];
+                cX = mean(axleEnds(1, :));
+                cY = mean(axleEnds(2, :));
+                rot90 = [0 -1; 1 0];
+                axleXY = rot90 * ([axleEnds(1, :) - cX; axleEnds(2, :) - cY]) + [cX; cY];
 
-            % Compute axle positions along the length of the vehicle
-            axlePositions = linspace(-length/2 + wheelHeight/2, length/2 - wheelHeight/2, numAxles);
+                M = 0.5;
+                phi = deg2rad(steer);
+                offsetAngle = theta + phi + pi/2;
+                d = ((width - vehicleParams.trackWidth) / 2);
+                leftBase = axleXY(:,1) + d * [cos(offsetAngle); sin(offsetAngle)];
+                rightBase = axleXY(:,2) - d * [cos(offsetAngle); sin(offsetAngle)];
 
-            % Plot axles and wheels
-            for axleIndex = 1:numAxles
-                axlePos = axlePositions(axleIndex);
-                if isTractor && axleIndex == numAxles % Front axle for tractor
-                    steeringAngle = steeringWheelAngle / 20;
-                else
-                    steeringAngle = 0;
+                rect = [-wheelWidth/2, wheelWidth/2, wheelWidth/2, -wheelWidth/2, -wheelWidth/2;
+                        -wheelHeight/2, -wheelHeight/2, wheelHeight/2, wheelHeight/2, -wheelHeight/2];
+                Rw = [cos(theta + phi), -sin(theta + phi); sin(theta + phi), cos(theta + phi)];
+
+                wheelPolys = {};
+                wheelPolys{end+1} = Rw * rect + leftBase;
+                wheelPolys{end+1} = Rw * rect + rightBase;
+                if numTiresPerAxle > 2
+                    wheelPolys{end+1} = Rw * rect + leftBase + M * [cos(offsetAngle); sin(offsetAngle)];
+                    wheelPolys{end+1} = Rw * rect + rightBase - M * [cos(offsetAngle); sin(offsetAngle)];
                 end
             end
 
             if isTractor
-                if numAxles == 1
-                    % Tractor rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - length/2 * cos(theta), y - length/2 * sin(theta), theta, -length/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                elseif numAxles == 2
-                    % Tractor rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - length/2 * cos(theta), y - length/2 * sin(theta), theta, -length/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Tractor middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - length/2 * cos(theta), y - length/2 * sin(theta), theta, -length/2 + 2*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
+                if numAxles >= 1
+                    [geom.axles{axleIdx}, geom.wheels{axleIdx}] = axleGeom(baseOffset + vehicleParams.axleSpacing, 0);
+                    axleIdx = axleIdx + 1;
                 end
-                % Tractor front axle
-                h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - length/2 * cos(theta), y - length/2 * sin(theta), theta, -length/2 + vehicleParams.axleSpacing + wheelbase, width, wheelWidth, wheelHeight, steeringWheelAngle, 2, vehicleParams.trackWidth)];
+                if numAxles >= 2
+                    [geom.axles{axleIdx}, geom.wheels{axleIdx}] = axleGeom(baseOffset + 2*vehicleParams.axleSpacing, 0);
+                    axleIdx = axleIdx + 1;
+                end
+                [geom.axles{axleIdx}, geom.wheels{axleIdx}] = axleGeom(baseOffset + vehicleParams.axleSpacing + wheelbase, steeringWheelAngle);
+                axleIdx = axleIdx + 1;
             elseif isPassengerVehicle
-                h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - length/2 * cos(theta), y - length/2 * sin(theta), theta, -length/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                % Passenger Vehicle front axle
-                h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - length/2 * cos(theta), y - length/2 * sin(theta), theta, -length/2 + vehicleParams.axleSpacing + wheelbase, width, wheelWidth, wheelHeight, steeringWheelAngle, 2, vehicleParams.trackWidth)];
+                [geom.axles{axleIdx}, geom.wheels{axleIdx}] = axleGeom(baseOffset + vehicleParams.axleSpacing, 0);
+                axleIdx = axleIdx + 1;
+                [geom.axles{axleIdx}, geom.wheels{axleIdx}] = axleGeom(baseOffset + vehicleParams.axleSpacing + wheelbase, steeringWheelAngle);
+                axleIdx = axleIdx + 1;
             else
-                if numAxles == 1
-                    % Trailer rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                elseif numAxles == 2
-                    % Trailer rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 2*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                elseif numAxles == 3
-                    % Trailer rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 2*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 3*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                elseif numAxles == 4
-                    % Trailer rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 2*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 3*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 4*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                elseif numAxles == 5
-                    % Trailer rear axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 2*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 3*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 4*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
-                    % Trailer middle axle
-                    h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 5*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
+                for ax = 1:numAxles
+                    [geom.axles{axleIdx}, geom.wheels{axleIdx}] = axleGeom(baseOffset + ax*vehicleParams.axleSpacing, 0);
+                    axleIdx = axleIdx + 1;
                 end
             end
+
+            geom.axles = geom.axles(1:axleIdx-1);
+            geom.wheels = geom.wheels(1:axleIdx-1);
         end
 
         %/**
