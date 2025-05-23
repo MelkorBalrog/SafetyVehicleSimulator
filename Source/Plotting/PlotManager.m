@@ -27,6 +27,12 @@ classdef PlotManager < handle
         veh2Outline
         trl2Outline
 
+        % Handles to full vehicle graphics (body and wheels)
+        veh1Graphics
+        trl1Graphics
+        veh2Graphics
+        trl2Graphics
+
 
         % Handles to initial-position markers
         veh1StartMarker
@@ -93,6 +99,18 @@ classdef PlotManager < handle
             obj.trl1Outline = plot(obj.sharedAx, NaN, NaN, 'b-', 'LineWidth', 2);
             obj.veh2Outline = plot(obj.sharedAx, NaN, NaN, 'm-', 'LineWidth', 2);
             obj.trl2Outline = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
+
+            % Reset full vehicle graphic handles
+            obj.veh1Graphics = gobjects(0);
+            obj.trl1Graphics = gobjects(0);
+            obj.veh2Graphics = gobjects(0);
+            obj.trl2Graphics = gobjects(0);
+
+            % Initialize full vehicle graphic handles
+            obj.veh1Graphics = gobjects(0);
+            obj.trl1Graphics = gobjects(0);
+            obj.veh2Graphics = gobjects(0);
+            obj.trl2Graphics = gobjects(0);
         end
 
         %% Clear Plots
@@ -202,48 +220,63 @@ classdef PlotManager < handle
 
         %% Update Vehicle Outlines
         function updateVehicleOutlines(obj, dataManager, iStep, vehicleParams1, trailerParams1, vehicleParams2, trailerParams2)
-            % Update polygon outlines for each vehicle and trailer
+            % Delete previous vehicle graphics
+            if ~isempty(obj.veh1Graphics) && any(ishandle(obj.veh1Graphics))
+                delete(obj.veh1Graphics(ishandle(obj.veh1Graphics)));
+            end
+            if ~isempty(obj.trl1Graphics) && any(ishandle(obj.trl1Graphics))
+                delete(obj.trl1Graphics(ishandle(obj.trl1Graphics)));
+            end
+            if ~isempty(obj.veh2Graphics) && any(ishandle(obj.veh2Graphics))
+                delete(obj.veh2Graphics(ishandle(obj.veh2Graphics)));
+            end
+            if ~isempty(obj.trl2Graphics) && any(ishandle(obj.trl2Graphics))
+                delete(obj.trl2Graphics(ishandle(obj.trl2Graphics)));
+            end
 
+            % Reset graphics handle arrays
+            obj.veh1Graphics = gobjects(0);
+            obj.trl1Graphics = gobjects(0);
+            obj.veh2Graphics = gobjects(0);
+            obj.trl2Graphics = gobjects(0);
+
+            % Plot updated vehicles with wheels
             sa1 = rad2deg(dataManager.globalVehicle1Data.SteeringAngle(iStep));
-            corners1 = VehiclePlotter.getVehicleCorners(
+            obj.veh1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                 dataManager.globalVehicle1Data.X(iStep), ...
                 dataManager.globalVehicle1Data.Y(iStep), ...
                 dataManager.globalVehicle1Data.Theta(iStep), ...
-                vehicleParams1, true, sa1, vehicleParams1.numTiresPerAxle);
-            set(obj.veh1Outline, 'XData', [corners1(:,1); corners1(1,1)], ...
-                                     'YData', [corners1(:,2); corners1(1,2)]);
+                vehicleParams1, 'r', true, false, sa1, ...
+                vehicleParams1.numTiresPerAxle, vehicleParams1.numAxles);
 
             if ~isempty(trailerParams1)
-                cornersT1 = VehiclePlotter.getVehicleCorners(
+                obj.trl1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                     dataManager.globalTrailer1Data.X(iStep), ...
                     dataManager.globalTrailer1Data.Y(iStep), ...
                     dataManager.globalTrailer1Data.Theta(iStep), ...
-                    trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
-                set(obj.trl1Outline, 'XData', [cornersT1(:,1); cornersT1(1,1)], ...
-                                         'YData', [cornersT1(:,2); cornersT1(1,2)]);
+                    trailerParams1, 'b', false, false, 0, ...
+                    trailerParams1.numTiresPerAxle, trailerParams1.numAxles);
             else
-                set(obj.trl1Outline, 'XData', NaN, 'YData', NaN);
+                obj.trl1Graphics = gobjects(0);
             end
 
             sa2 = rad2deg(dataManager.globalVehicle2Data.SteeringAngle(iStep));
-            corners2 = VehiclePlotter.getVehicleCorners(
+            obj.veh2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                 dataManager.globalVehicle2Data.X(iStep), ...
                 dataManager.globalVehicle2Data.Y(iStep), ...
                 dataManager.globalVehicle2Data.Theta(iStep), ...
-                vehicleParams2, true, sa2, vehicleParams2.numTiresPerAxle);
-            set(obj.veh2Outline, 'XData', [corners2(:,1); corners2(1,1)], ...
-                                     'YData', [corners2(:,2); corners2(1,2)]);
+                vehicleParams2, 'm', true, false, sa2, ...
+                vehicleParams2.numTiresPerAxle, vehicleParams2.numAxles);
 
             if ~isempty(trailerParams2)
-                cornersT2 = VehiclePlotter.getVehicleCorners(
+                obj.trl2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                     dataManager.globalTrailer2Data.X(iStep), ...
                     dataManager.globalTrailer2Data.Y(iStep), ...
                     dataManager.globalTrailer2Data.Theta(iStep), ...
-                    trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
-                set(obj.trl2Outline, 'XData', [cornersT2(:,1); cornersT2(1,1)], ...
-                                         'YData', [cornersT2(:,2); cornersT2(1,2)]);
+                    trailerParams2, 'c', false, false, 0, ...
+                    trailerParams2.numTiresPerAxle, trailerParams2.numAxles);
             else
-                set(obj.trl2Outline, 'XData', NaN, 'YData', NaN);
+                obj.trl2Graphics = gobjects(0);
             end
         end
 
