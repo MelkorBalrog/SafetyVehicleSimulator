@@ -380,15 +380,19 @@ classdef SimManager < handle
                                       obj.vehicleSim2.simParams.includeTrailer;
 
                 for iStep = 1:totalSteps
-                    % Update trajectory lines and vehicle outlines incrementally
+                    % Update trajectory lines and redraw vehicles with details
+
                     obj.plotManager.updateTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
                     obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, ...
-                        vehicleParams2, trailerParams2);
+
+                        vehicleParams2, trailerParams2, ...
+                        obj.dataManager.globalVehicle1Data.SteeringAngle, ...
+                        obj.dataManager.globalVehicle2Data.SteeringAngle);
 
                     % Draw only at a limited rate so the UI (zoom/pan) remains responsive
-                    drawnow limitrate nocallbacks;
+                    drawnow limitrate;
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');

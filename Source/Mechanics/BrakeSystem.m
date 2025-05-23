@@ -23,6 +23,7 @@ classdef BrakeSystem
         brakeType              % Type of brakes ('Disk', 'Drum', 'Air Disk', 'Air Drum')
         brakeCommand           % Brake command input (0 to 1)
         brakeResponseRate      % Maximum rate of change of braking force (N/s)
+        desiredBrakingForce    % Desired total braking force input (N)
         
         % ** New Properties for Brake Bias Distribution **
         currentBrakeForceFront % Current front braking force (N)
@@ -68,6 +69,7 @@ classdef BrakeSystem
             obj.brakeBias = obj.validateBrakeBias(brakeBias); % Validate brake bias
             obj.currentBrakeForce = 0;
             obj.brakeCommand = 0;
+            obj.desiredBrakingForce = 0;
             obj.currentBrakeForceFront = 0;
             obj.currentBrakeForceRear = 0;
             
@@ -84,6 +86,26 @@ classdef BrakeSystem
             %       command - Brake command (0 to 1)
             
             obj.brakeCommand = max(0, min(1, command)); % Clamp between 0 and 1
+            maxForce = obj.maxBrakingForce * obj.brakeEfficiency;
+            obj.desiredBrakingForce = obj.brakeCommand * maxForce;
+        end
+
+        function obj = setDesiredBrakingForce(obj, force)
+            % Set the desired total braking force input
+            %
+            %   obj = setDesiredBrakingForce(obj, force)
+            %
+            %   Inputs:
+            %       force - Desired braking force in Newtons
+
+            maxForce = obj.maxBrakingForce * obj.brakeEfficiency;
+            force = max(0, min(force, maxForce));
+            obj.desiredBrakingForce = force;
+            if maxForce > 0
+                obj.brakeCommand = force / maxForce;
+            else
+                obj.brakeCommand = 0;
+            end
         end
         
         function obj = setBrakeBias(obj, bias)
@@ -126,15 +148,15 @@ classdef BrakeSystem
         end
         
         function obj = applyBrakes(obj, dt)
-            % Apply brakes smoothly based on the current brake command and response rate
+            % Apply brakes smoothly based on the desired braking force and response rate
             %
             %   obj = applyBrakes(obj, dt)
             %
             %   Inputs:
             %       dt - Time step over which to apply braking (s)
             
-            % Compute desired total braking force
-            desiredTotalBrakingForce = obj.brakeCommand * obj.maxBrakingForce * obj.brakeEfficiency;
+            % Compute desired total braking force based on input braking force
+            desiredTotalBrakingForce = obj.desiredBrakingForce;
             
             % Compute desired front and rear braking forces based on brake bias
             desiredBrakeForceFront = (obj.brakeBias / 100) * desiredTotalBrakingForce;

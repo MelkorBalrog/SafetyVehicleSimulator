@@ -33,12 +33,23 @@ classdef PlotManager < handle
         veh2Graphics
         trl2Graphics
 
+        % Handles to full vehicle graphics (body and wheels)
+        veh1Graphics
+        trl1Graphics
+        veh2Graphics
+        trl2Graphics
 
         % Handles to initial-position markers
         veh1StartMarker
         trl1StartMarker
         veh2StartMarker
         trl2StartMarker
+
+        % Handles to full vehicle graphics for deleting between frames
+        veh1Graphics
+        trl1Graphics
+        veh2Graphics
+        trl2Graphics
     end
 
     methods
@@ -120,6 +131,8 @@ classdef PlotManager < handle
             hold(obj.sharedAx, 'on');
             grid(obj.sharedAx, 'on');
 
+            obj.clearVehicleGraphics();
+
             % Re-init lines so we don't create duplicates
             obj.veh1Line = plot(obj.sharedAx, NaN, NaN, 'r-', 'LineWidth', 1.5);
             obj.trl1Line = plot(obj.sharedAx, NaN, NaN, 'b-', 'LineWidth', 1.5);
@@ -141,12 +154,25 @@ classdef PlotManager < handle
             obj.veh2Outline = plot(obj.sharedAx, NaN, NaN, 'm-', 'LineWidth', 2);
             obj.trl2Outline = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
 
+            % Reset stored vehicle graphics
+            obj.veh1Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.trl1Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.veh2Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.trl2Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
 
             % Keep existing axes settings
             xlabel(obj.sharedAx, 'Longitudinal Distance (m)');
             ylabel(obj.sharedAx, 'Lateral Distance (m)');
             title(obj.sharedAx, 'Vehicle Simulation Trajectories');
             axis(obj.sharedAx, 'equal');
+        end
+
+        %% Clear only vehicle graphics
+        function clearVehicleGraphics(obj)
+            delete(obj.veh1Graphics); obj.veh1Graphics = gobjects(0);
+            delete(obj.trl1Graphics); obj.trl1Graphics = gobjects(0);
+            delete(obj.veh2Graphics); obj.veh2Graphics = gobjects(0);
+            delete(obj.trl2Graphics); obj.trl2Graphics = gobjects(0);
         end
 
         %% Update Trajectories (Fast Approach)
@@ -266,7 +292,6 @@ classdef PlotManager < handle
             end
         end
 
-
         %% Set Axis Limits (Optional to call once if you want)
         function setAxisLimits(obj, dataManager, stepsToPlot, collisionDetected)
             % You can still set axis limits once based on data
@@ -321,7 +346,10 @@ classdef PlotManager < handle
         %% Plot Vehicles at a Single Step (Unchanged, but removed repeated axis calls)
         function plotVehicles(obj, dataManager, plotStep, vehicleParams1, trailerParams1, ...
                               vehicleParams2, trailerParams2, steeringAnglesSim1, steeringAnglesSim2)
-            % Optionally plot the tractor/trailer polygons at this step
+            % Plot tractors and trailers at the current step. Previous vehicle
+            % graphics are removed for a smooth animation.
+
+            obj.clearVehicleGraphics();
 
             % Convert steering angles from radians to degrees
             steeringAngleTractor1 = rad2deg(steeringAnglesSim1(plotStep));
@@ -329,7 +357,7 @@ classdef PlotManager < handle
 
             % Plot Trailers First
             if ~isempty(dataManager.globalTrailer1Data.X)
-                VehiclePlotter.plotVehicle(obj.sharedAx, ...
+                obj.trl1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                     dataManager.globalTrailer1Data.X(plotStep), ...
                     dataManager.globalTrailer1Data.Y(plotStep), ...
                     dataManager.globalTrailer1Data.Theta(plotStep), ...
@@ -342,7 +370,7 @@ classdef PlotManager < handle
                     trailerParams1.numAxles);
             end
             if ~isempty(dataManager.globalTrailer2Data.X)
-                VehiclePlotter.plotVehicle(obj.sharedAx, ...
+                obj.trl2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                     dataManager.globalTrailer2Data.X(plotStep), ...
                     dataManager.globalTrailer2Data.Y(plotStep), ...
                     dataManager.globalTrailer2Data.Theta(plotStep), ...
@@ -356,7 +384,7 @@ classdef PlotManager < handle
             end
 
             % Then plot the tractors
-            VehiclePlotter.plotVehicle(obj.sharedAx, ...
+            obj.veh1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                 dataManager.globalVehicle1Data.X(plotStep), ...
                 dataManager.globalVehicle1Data.Y(plotStep), ...
                 dataManager.globalVehicle1Data.Theta(plotStep), ...
@@ -368,7 +396,7 @@ classdef PlotManager < handle
                 vehicleParams1.numTiresPerAxle, ...
                 vehicleParams1.numAxles);
 
-            VehiclePlotter.plotVehicle(obj.sharedAx, ...
+            obj.veh2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                 dataManager.globalVehicle2Data.X(plotStep), ...
                 dataManager.globalVehicle2Data.Y(plotStep), ...
                 dataManager.globalVehicle2Data.Theta(plotStep), ...

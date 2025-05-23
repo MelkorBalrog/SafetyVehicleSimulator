@@ -134,35 +134,18 @@ classdef VehiclePlotter
             wheelHeight = vehicleParams.wheelWidth;
             wheelbase = vehicleParams.wheelbase;
 
-
-            % Initialize localCorners based on vehicle type
             if (~isTractor && ~isPassengerVehicle)
-                % === Trailer Plotting Logic ===
-                % === Hardcode trailerHitchDistance to 1.310 meters ===
                 trailerHitchDistance = vehicleParams.HitchDistance;
-                % Calculate the remaining length of the trailer
                 remainingLength = length - trailerHitchDistance;
-
-                % Validate remainingLength
-                if remainingLength <= 0
-                    error('For trailers, "trailerHitchDistance" must be less than "length".');
-                end
-
-                % Define the rectangle corners in local trailer coordinates
-                % Starting from hitch position (0,0), extend backward along X-axis by remainingLength
-                % Order: front-left (hitch), front-right, back-right, back-left, front-left (closure)
                 localCorners = [trailerHitchDistance, -remainingLength, -remainingLength, trailerHitchDistance, trailerHitchDistance;
                                 -width/2, -width/2, width/2, width/2, -width/2];
+                baseOffset = -remainingLength/2;
             else
-                % === Tractor or Passenger Vehicle Plotting Logic ===
-                % Front of the vehicle is at (x, y), extend back by 'vehLength' along X-axis
-                % Define the rectangle corners in local vehicle coordinates
-                % Order: front-left, front-right, back-right, back-left, front-left (closure)
                 localCorners = [0, -length, -length, 0, 0;
                                 -width/2, -width/2, width/2, width/2, -width/2];
+                baseOffset = -length/2;
             end
 
-            % Rotate the corners
             R = [cos(theta), -sin(theta); sin(theta), cos(theta)];
             rotatedCorners = R * localCorners;
 
@@ -241,6 +224,9 @@ classdef VehiclePlotter
                     h = [h, VehiclePlotter.plotAxleAndWheels(ax, x - remainingLength/2 * cos(theta), y - remainingLength/2 * sin(theta), theta, -remainingLength/2 + 5*vehicleParams.axleSpacing, width, wheelWidth, wheelHeight, 0, numTiresPerAxle, vehicleParams.trackWidth)];
                 end
             end
+
+            geom.axles = geom.axles(1:axleIdx-1);
+            geom.wheels = geom.wheels(1:axleIdx-1);
         end
 
         %/**
@@ -270,8 +256,6 @@ classdef VehiclePlotter
             % Position the axle
             axlePosX = x + axlePos * cos(theta);
             axlePosY = y + axlePos * sin(theta);
-            R = [cos(theta), -sin(theta); sin(theta), cos(theta)];
-            axleEnds = R * [axleX; axleY] + [axlePosX; axlePosY];
 
             % Compute the vector perpendicular to the heading
             perpVec = [cos(theta + pi/2); sin(theta + pi/2)];
@@ -285,21 +269,28 @@ classdef VehiclePlotter
             hAxle = plot(ax, rotatedAxleEnds(1, :), rotatedAxleEnds(2, :), 'k', 'LineWidth', 2);
             wheelHandles = [];
 
-            % Define the offset distance M
-            M = 0.5; % Example offset distance, adjust as needed
+            % Plot the axle and store the handle
+            hAxle = plot(ax, rotatedAxleEnds(1, :), rotatedAxleEnds(2, :), 'k', 'LineWidth', 2);
+            h = [h, hAxle];
+
+            % Plot the axle and store the handle
+            hAxle = plot(ax, [leftEnd(1) rightEnd(1)], [leftEnd(2) rightEnd(2)], 'k', 'LineWidth', 2);
+            wheelHandles = [];
 
             % Convert steering angle from degrees to radians
             phi = deg2rad(steeringWheelAngle);
 
-            % Calculate the combined angle for offset
-            offsetAngle = theta + phi + pi/2; % Adding 90 degrees in radians
+            % Base wheel orientation
+            wheelTheta = theta + phi;
 
-            % Calculate the offset components for both sides
-            offsetX_positive = M * cos(offsetAngle);
-            offsetY_positive = M * sin(offsetAngle);
+            % Wheel centers for a single wheel on each side
+            leftWheelCenter  = axleCenter + (trackWidth/2) * perpVec;
+            rightWheelCenter = axleCenter - (trackWidth/2) * perpVec;
 
-            offsetX_negative = -M * cos(offsetAngle);
-            offsetY_negative = -M * sin(offsetAngle);
+            % Offset distance for dual wheels (perpendicular to wheel orientation)
+            dualOffset = 0.5;  % metres
+
+            offsetVec = dualOffset * [cos(wheelTheta + pi/2); sin(wheelTheta + pi/2)];
 
             if numTiresPerAxle == 2
                 % Plot left tire with positive offset
@@ -385,7 +376,7 @@ classdef VehiclePlotter
             % Translate the wheel
             translatedWheelX = rotatedWheel(1, :) + x;
             translatedWheelY = rotatedWheel(2, :) + y;
-
+            
             % Plot the wheel and return the handle for easier updates
             h = fill(ax, translatedWheelX, translatedWheelY, color);
         end
