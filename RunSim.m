@@ -25,6 +25,8 @@ function RunSim
         'LoadVehicle1Excel', @loadVehicle1Excel, ...
         'LoadVehicle2Excel', @loadVehicle2Excel, ...
         'StartSimulation', @startSimulation, ...
+        'LoadSimulationData', @loadSimulationData, ...
+        'SaveSimulationData', @saveSimulationData, ...
         'SaveConfiguration', @saveConfiguration, ...
         'LoadConfiguration', @loadConfiguration, ...
         'SaveSimulationResults', @saveSimulationResults, ...
@@ -484,6 +486,49 @@ function RunSim
     % */
     function startSimulation()
         simulationManager.runSimulations();
+    end
+    
+    %/**
+    % * @brief Loads saved simulation data from a .mat file and animates without rerunning.
+    % */
+    function loadSimulationData()
+        [file, path] = uigetfile('*.mat', 'Load Simulation Data');
+        if isequal(file,0) || isequal(path,0)
+            disp('User canceled loading simulation data.');
+            return;
+        end
+        S = load(fullfile(path, file));
+        if isfield(S, 'simData')
+            simData = S.simData;
+            dataManager.globalVehicle1Data = simData.globalVehicle1Data;
+            dataManager.globalTrailer1Data = simData.globalTrailer1Data;
+            dataManager.globalVehicle2Data = simData.globalVehicle2Data;
+            dataManager.globalTrailer2Data = simData.globalTrailer2Data;
+            dataManager.collisionData = simData.collisionData;
+            simulationManager.useSavedData = true;
+            simulationManager.runSimulations();
+            simulationManager.useSavedData = false; % reset for future runs
+        else
+            uialert(uiManager.fig, 'Selected file does not contain valid simulation data.', 'Load Error');
+        end
+    end
+    
+    %/**
+    % * @brief Saves current simulation data to a .mat file.
+    % */
+    function saveSimulationData()
+        simData.globalVehicle1Data = dataManager.globalVehicle1Data;
+        simData.globalTrailer1Data = dataManager.globalTrailer1Data;
+        simData.globalVehicle2Data = dataManager.globalVehicle2Data;
+        simData.globalTrailer2Data = dataManager.globalTrailer2Data;
+        simData.collisionData = dataManager.collisionData;
+        [file, path] = uiputfile('*.mat', 'Save Simulation Data');
+        if isequal(file,0) || isequal(path,0)
+            disp('User canceled saving simulation data.');
+            return;
+        end
+        save(fullfile(path,file), 'simData');
+        uialert(uiManager.fig, 'Simulation data saved successfully.', 'Save Complete');
     end
     
 end
