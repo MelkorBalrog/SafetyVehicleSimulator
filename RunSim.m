@@ -500,14 +500,27 @@ function RunSim
         S = load(fullfile(path, file));
         if isfield(S, 'simData')
             simData = S.simData;
+            % Restore simulation data for playback
             dataManager.globalVehicle1Data = simData.globalVehicle1Data;
             dataManager.globalTrailer1Data = simData.globalTrailer1Data;
             dataManager.globalVehicle2Data = simData.globalVehicle2Data;
             dataManager.globalTrailer2Data = simData.globalTrailer2Data;
             dataManager.collisionData = simData.collisionData;
+            % Restore simulation parameters and time step
+            try
+                vehicleSim1.simParams = simData.simParams1;
+                vehicleSim2.simParams = simData.simParams2;
+            catch
+            end
+            try
+                simulationManager.dt = simData.dt;
+                dataManager.dt = simData.dt;
+            catch
+            end
+            % Animate using existing simulation manager (preserves correct placement)
             simulationManager.useSavedData = true;
             simulationManager.runSimulations();
-            simulationManager.useSavedData = false; % reset for future runs
+            simulationManager.useSavedData = false;
         else
             uialert(uiManager.fig, 'Selected file does not contain valid simulation data.', 'Load Error');
         end
@@ -517,11 +530,32 @@ function RunSim
     % * @brief Saves current simulation data to a .mat file.
     % */
     function saveSimulationData()
+        % Collect simulation data for saving and playback
         simData.globalVehicle1Data = dataManager.globalVehicle1Data;
         simData.globalTrailer1Data = dataManager.globalTrailer1Data;
         simData.globalVehicle2Data = dataManager.globalVehicle2Data;
         simData.globalTrailer2Data = dataManager.globalTrailer2Data;
         simData.collisionData = dataManager.collisionData;
+        % Save simulation parameters and time step
+        try
+            simData.simParams1 = vehicleSim1.simParams;
+            simData.simParams2 = vehicleSim2.simParams;
+        catch
+        end
+        simData.dt = simulationManager.dt;
+        % Save initial offsets and rotations for playback alignment
+        try
+            simData.offset1.x = uiManager.getvehicle1OffsetX();
+            simData.offset1.y = uiManager.getvehicle1OffsetY();
+            simData.offset1.rotate = uiManager.getRotateVehicle1();
+            simData.offset1.theta = uiManager.getRotationAngleVehicle1();
+            simData.offset2.x = uiManager.getOffsetX();
+            simData.offset2.y = uiManager.getOffsetY();
+            simData.offset2.rotate = uiManager.getRotateVehicle2();
+            simData.offset2.theta = uiManager.getRotationAngleVehicle2();
+        catch
+            % UI offsets unavailable
+        end
         [file, path] = uiputfile('*.mat', 'Save Simulation Data');
         if isequal(file,0) || isequal(path,0)
             disp('User canceled saving simulation data.');

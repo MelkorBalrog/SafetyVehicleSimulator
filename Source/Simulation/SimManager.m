@@ -255,6 +255,43 @@ classdef SimManager < handle
                     obj.dataManager.globalTrailer2Data.SteeringAngle = extendData(obj.dataManager.globalTrailer2Data.SteeringAngle, maxLength);
                 end
 
+                % Apply initial offsets and rotations to trajectory coordinates
+                if ~obj.useSavedData
+                % Vehicle 1 transform
+                try
+                    ox1 = obj.uiManager.getvehicle1OffsetX();
+                    oy1 = obj.uiManager.getvehicle1OffsetY();
+                    ang1 = deg2rad(obj.uiManager.getRotationAngleVehicle1());
+                    if ~obj.uiManager.getRotateVehicle1(), ang1 = 0; end
+                    R1 = [cos(ang1), -sin(ang1); sin(ang1), cos(ang1)];
+                    pts1 = R1 * [obj.dataManager.globalVehicle1Data.X(:)'; obj.dataManager.globalVehicle1Data.Y(:)'];
+                    obj.dataManager.globalVehicle1Data.X = pts1(1, :)' + ox1;
+                    obj.dataManager.globalVehicle1Data.Y = pts1(2, :)' + oy1;
+                    if obj.vehicleSim1.simParams.includeTrailer
+                        t1 = R1 * [obj.dataManager.globalTrailer1Data.X(:)'; obj.dataManager.globalTrailer1Data.Y(:)'];
+                        obj.dataManager.globalTrailer1Data.X = t1(1, :)' + ox1;
+                        obj.dataManager.globalTrailer1Data.Y = t1(2, :)' + oy1;
+                    end
+                catch
+                end
+                % Vehicle 2 transform
+                try
+                    ox2 = obj.uiManager.getOffsetX();
+                    oy2 = obj.uiManager.getOffsetY();
+                    ang2 = deg2rad(obj.uiManager.getRotationAngleVehicle2());
+                    if ~obj.uiManager.getRotateVehicle2(), ang2 = 0; end
+                    R2 = [cos(ang2), -sin(ang2); sin(ang2), cos(ang2)];
+                    pts2 = R2 * [obj.dataManager.globalVehicle2Data.X(:)'; obj.dataManager.globalVehicle2Data.Y(:)'];
+                    obj.dataManager.globalVehicle2Data.X = pts2(1, :)' + ox2;
+                    obj.dataManager.globalVehicle2Data.Y = pts2(2, :)' + oy2;
+                    if obj.vehicleSim2.simParams.includeTrailer
+                        t2 = R2 * [obj.dataManager.globalTrailer2Data.X(:)'; obj.dataManager.globalTrailer2Data.Y(:)'];
+                        obj.dataManager.globalTrailer2Data.X = t2(1, :)' + ox2;
+                        obj.dataManager.globalTrailer2Data.Y = t2(2, :)' + oy2;
+                    end
+                catch
+                end
+                end  % end fresh-run transform guard
                 waitbar(0.25, hWaitbar, 'Simulation Data Equalized.');
 
                 %% 11. Determine Total Steps
@@ -275,6 +312,8 @@ classdef SimManager < handle
                     return;
                 end
 
+                %% 14. Apply Offsets and Rotations (only for fresh runs)
+                if ~obj.useSavedData
                 %% 14. Apply Offsets (Vehicle 2)
                 disp('Applying offsets to Tractor Vehicle positions...');
                 obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X;
@@ -349,6 +388,7 @@ classdef SimManager < handle
                         obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y + offsetY;
                     end
                 end
+                end  % end fresh-run transform guard
 
 
                 %% 19. Launch Collision Detection in Parallel
@@ -375,6 +415,19 @@ classdef SimManager < handle
                                                mapObj.LaneCommands, ...
                                                mapObj.LaneColor);
 
+                % Ensure trajectories and markers are on top of the track
+                try
+                    pm = obj.plotManager;
+                    trajHandles = [pm.veh1Line, pm.trl1Line, pm.trl1RearLine, ...
+                                    pm.veh2Line, pm.trl2Line, pm.trl2RearLine, ...
+                                    pm.veh1StartMarker, pm.trl1StartMarker, ...
+                                    pm.veh2StartMarker, pm.trl2StartMarker];
+                    for h = trajHandles
+                        uistack(h, 'top');
+                    end
+                catch
+                end
+
                 hold(obj.plotManager.sharedAx, 'on');
 
                 obj.plotManager.highlightInitialPositions(obj.dataManager);
@@ -382,17 +435,23 @@ classdef SimManager < handle
                 includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
                                       obj.vehicleSim2.simParams.includeTrailer;
 
-                for iStep = 1:totalSteps
-                    % Update trajectory lines and redraw vehicles with details
-
+                % Retrieve playback speed multiplier (default 1)
+                playbackSpeed = 1;
+                try
+                    playbackSpeed = obj.uiManager.getPlaybackSpeed();
+                catch
+                    % UI playback speed control not available, use default
+                end
+                % Animate frames; skip frames for faster playback
+                skipSteps = max(1, floor(playbackSpeed));
+                frameDelay = obj.dt;
+                for iStep = 1:skipSteps:totalSteps
                     obj.plotManager.updateTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
                     obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
-                        vehicleParams1, trailerParams1, ...
-                        vehicleParams2, trailerParams2);
-
-                    % Draw only at a limited rate so the UI (zoom/pan) remains responsive
-                    drawnow limitrate;
+                        vehicleParams1, trailerParams1, vehicleParams2, trailerParams2);
+                    drawnow;
+                    pause(frameDelay);
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');

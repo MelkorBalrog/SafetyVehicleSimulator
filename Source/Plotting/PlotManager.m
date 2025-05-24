@@ -82,6 +82,8 @@ classdef PlotManager < handle
                 'DisplayName', 'Trailer 2 Trajectory');
             obj.trl2RearLine = plot(obj.sharedAx, NaN, NaN, 'c--', 'LineWidth', 1.5, ...
                 'DisplayName', 'Trailer 2 Rear');
+            % Display legend for both vehicle trajectories
+            legend(obj.sharedAx, 'show', 'Location', 'best');
 
             % Pre-create initial position markers
             obj.veh1StartMarker = scatter(obj.sharedAx, NaN, NaN, 100, 'r', 'filled', ...
@@ -143,10 +145,10 @@ classdef PlotManager < handle
             obj.trl2Outline = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
 
             % Reset stored vehicle graphics
-            obj.veh1Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
-            obj.trl1Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
-            obj.veh2Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
-            obj.trl2Graphics = struct('body', gobjects(0), 'axles', gobjects(0), 'wheels', gobjects(0));
+            obj.veh1Graphics = gobjects(0);
+            obj.trl1Graphics = gobjects(0);
+            obj.veh2Graphics = gobjects(0);
+            obj.trl2Graphics = gobjects(0);
 
             % Keep existing axes settings
             xlabel(obj.sharedAx, 'Longitudinal Distance (m)');
@@ -235,10 +237,10 @@ classdef PlotManager < handle
         %% Update Vehicle Outlines (with wheels)
         function updateVehicleOutlines(obj, dataManager, iStep, vehicleParams1, trailerParams1, vehicleParams2, trailerParams2)
             % Remove previous vehicle graphics
-            if ~isempty(obj.veh1Graphics), delete(obj.veh1Graphics(ishandle(obj.veh1Graphics))); end
-            if ~isempty(obj.trl1Graphics), delete(obj.trl1Graphics(ishandle(obj.trl1Graphics))); end
-            if ~isempty(obj.veh2Graphics), delete(obj.veh2Graphics(ishandle(obj.veh2Graphics))); end
-            if ~isempty(obj.trl2Graphics), delete(obj.trl2Graphics(ishandle(obj.trl2Graphics))); end
+            if ~isempty(obj.veh1Graphics), delete(obj.veh1Graphics); obj.veh1Graphics = gobjects(0); end
+            if ~isempty(obj.trl1Graphics), delete(obj.trl1Graphics); obj.trl1Graphics = gobjects(0); end
+            if ~isempty(obj.veh2Graphics), delete(obj.veh2Graphics); obj.veh2Graphics = gobjects(0); end
+            if ~isempty(obj.trl2Graphics), delete(obj.trl2Graphics); obj.trl2Graphics = gobjects(0); end
 
             % Vehicle 1 (tractor)
             sa1 = rad2deg(dataManager.globalVehicle1Data.SteeringAngle(iStep));
