@@ -60,6 +60,8 @@ classdef UIManager < handle
         saveResultsMenu
         savePlotMenu
         saveManualControlMenu
+        loadSimDataMenu
+        saveSimDataMenu
 
         Callbacks
 
@@ -395,6 +397,14 @@ classdef UIManager < handle
             obj.saveManualControlMenu = uimenu(mainMenu, 'Text', 'Save Manual Control Data', ...
                 'Accelerator', 'M', ...
                 'MenuSelectedFcn', @(src, event) obj.Callbacks.SaveManualControlData());
+            % Load Saved Simulation Data (MAT file)
+            obj.loadSimDataMenu = uimenu(mainMenu, 'Text', 'Load Simulation Data', ...
+                'Accelerator', 'D', ...
+                'MenuSelectedFcn', @(src, event) obj.Callbacks.LoadSimulationData());
+            % Save Simulation Data to MAT file
+            obj.saveSimDataMenu = uimenu(mainMenu, 'Text', 'Save Simulation Data', ...
+                'Accelerator', 'G', ...
+                'MenuSelectedFcn', @(src, event) obj.Callbacks.SaveSimulationData());
         end
 
         %/**
