@@ -82,8 +82,6 @@ classdef PlotManager < handle
                 'DisplayName', 'Trailer 2 Trajectory');
             obj.trl2RearLine = plot(obj.sharedAx, NaN, NaN, 'c--', 'LineWidth', 1.5, ...
                 'DisplayName', 'Trailer 2 Rear');
-            % Display legend for both vehicle trajectories
-            legend(obj.sharedAx, 'show', 'Location', 'best');
 
             % Pre-create initial position markers
             obj.veh1StartMarker = scatter(obj.sharedAx, NaN, NaN, 100, 'r', 'filled', ...

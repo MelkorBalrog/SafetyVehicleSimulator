@@ -517,7 +517,9 @@ function RunSim
                 dataManager.dt = simData.dt;
             catch
             end
-            % Animate using existing simulation manager (preserves correct placement)
+            % Animate using existing simulation manager (preserves placement), start paused
+            uiManager.pauseFlag = true;
+            uiManager.stopFlag  = false;
             simulationManager.useSavedData = true;
             simulationManager.runSimulations();
             simulationManager.useSavedData = false;

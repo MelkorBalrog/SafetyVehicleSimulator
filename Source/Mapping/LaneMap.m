@@ -217,7 +217,7 @@ classdef LaneMap
         % @param laneColor    1x3 RGB vector specifying the lane color.
         %
         % @retval obj Updated LaneMap instance.
-        function plotLaneMapWithCommands(obj, ax, laneCommands, laneColor)
+        function h = plotLaneMapWithCommands(obj, ax, laneCommands, laneColor)
             % plotLaneMapWithCommands Plots a continuous lane map into the specified axes based on command strings.
             %
             % Parameters:
@@ -246,8 +246,8 @@ classdef LaneMap
             % Process Lane Commands
             obj = obj.processLaneCommands(laneCommands);
 
-            % Plot the Map
-            obj.displayMap(ax, laneColor);
+            % Plot the Map and capture handle
+            h = obj.displayMap(ax, laneColor);
         end
 
         %% displayMap
@@ -255,7 +255,7 @@ classdef LaneMap
         %
         % @param ax        Axes handle used for plotting.
         % @param laneColor RGB triplet for the lane color.
-        function displayMap(obj, ax, laneColor)
+        function h = displayMap(obj, ax, laneColor)
             % Display the map with lanes in the specified color and overlay grid lines
             % ax: Axes handle where the map will be plotted
             % laneColor: RGB triplet, e.g., [1 0 0] for red
@@ -301,7 +301,9 @@ classdef LaneMap
 
             % Plot the image on the provided axes
             axes(ax); % Set the current axes to the provided handle
-            imagesc(ax, rgbImage);
+            % Plot the image on the provided axes and return handle
+            h = imagesc(ax, rgbImage);
+            h.Tag = 'LaneMap';
             % axis(ax, 'equal');
             % axis(ax, [1 obj.NumCellsX 1 obj.NumCellsY]);
             % title(ax, 'Continuous Lane Map');

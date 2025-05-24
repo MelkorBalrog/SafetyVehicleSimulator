@@ -92,6 +92,15 @@ classdef UIManager < handle
         generateWaypointsButton
         waypointsPanel
         waypointsTable
+        % Simulation Controls UI
+        simControlFig            % Figure for global simulation controls
+        mapTrajectoryCheckbox    % Checkbox to toggle map trajectory display
+        playButton               % Button to resume simulation
+        pauseButton              % Button to pause simulation
+        stopButton               % Button to stop simulation
+        % Simulation control flags
+        pauseFlag                % Logical flag for pause state
+        stopFlag                 % Logical flag for stop state
     end
 
     methods
@@ -136,6 +145,8 @@ classdef UIManager < handle
 
             % Create Button Panel in the main figure
             obj.createButtonPanel(mainLayout);
+            % Create Simulation Controls window for global settings (play/pause/stop, map toggle)
+            obj.createSimControlGUI();
         end
 
         function createVehicleConfigGUI(obj)
@@ -626,6 +637,59 @@ classdef UIManager < handle
         % * @return speed Playback speed multiplier.
         function speed = getPlaybackSpeed(obj)
             speed = obj.playbackSpeedField.Value;
+        end
+        %*************************************************************************
+        % Simulation Control Methods
+        function createSimControlGUI(obj)
+            % Create a separate window with global simulation controls
+            obj.pauseFlag = false;
+            obj.stopFlag = false;
+            obj.simControlFig = uifigure('Name', 'Simulation Controls', ...
+                'Position', [1800, 100, 300, 180], ...
+                'Color', [0.95, 0.95, 0.95]);
+            grid = uigridlayout(obj.simControlFig, [3, 1], ...
+                'RowHeight', {30, 60, 30}, 'Padding', [10, 10, 10, 10], ...
+                'RowSpacing', 10);
+            % Map Trajectory Checkbox
+            obj.mapTrajectoryCheckbox = uicheckbox(grid, ...
+                'Text', 'Show Map Trajectory', ...
+                'Value', true);
+            % Playback Buttons Panel
+            btnPanel = uipanel(grid, 'Title', 'Playback', 'BackgroundColor', [1,1,1]);
+            btnPanel.Layout.Row = 2; btnPanel.Layout.Column = 1;
+            btnGrid = uigridlayout(btnPanel, [1,3], ...
+                'ColumnWidth', {'1x','1x','1x'}, 'RowHeight', {30}, 'ColumnSpacing', 5);
+            obj.playButton = uibutton(btnGrid, 'push', 'Text', 'Play', ...
+                'ButtonPushedFcn', @(~,~) obj.onPlay());
+            obj.pauseButton = uibutton(btnGrid, 'push', 'Text', 'Pause', ...
+                'ButtonPushedFcn', @(~,~) obj.onPause());
+            obj.stopButton = uibutton(grid, 'push', 'Text', 'Stop Simulation', ...
+                'ButtonPushedFcn', @(~,~) obj.onStop());
+        end
+
+        function onPlay(obj)
+            obj.pauseFlag = false;
+        end
+
+        function onPause(obj)
+            obj.pauseFlag = true;
+        end
+
+        function onStop(obj)
+            obj.stopFlag = true;
+            obj.pauseFlag = false;
+        end
+
+        function paused = getPauseFlag(obj)
+            paused = obj.pauseFlag;
+        end
+
+        function stopped = getStopFlag(obj)
+            stopped = obj.stopFlag;
+        end
+
+        function showMap = getMapTrajectoryFlag(obj)
+            showMap = obj.mapTrajectoryCheckbox.Value;
         end
     end
 end

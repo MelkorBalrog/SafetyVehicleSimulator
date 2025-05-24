@@ -2412,6 +2412,9 @@ classdef VehicleModel < handle
                 rollRateArray = zeros(n, 1);      % New array to store roll rates
                 accelerationLongitudinal = zeros(n, 1);
                 accelerationLateral = zeros(n, 1);
+                % Initialize jerk arrays (time derivative of acceleration)
+                jerkLongitudinal = zeros(n, 1);
+                jerkLateral = zeros(n, 1);
                 steeringAnglesSim = zeros(n, 1);
         
                 %% Simulation Loop
@@ -2984,7 +2987,15 @@ classdef VehicleModel < handle
                     yawRateR(i) = r;
                     accelerationLongitudinal(i) = dynamicsUpdater.a_long;
                     accelerationLateral(i) = dynamicsUpdater.a_lat;
-                    accelerationsim(i) = norm([dynamicsUpdater.a_long,dynamicsUpdater.a_lat]);
+                    accelerationsim(i) = norm([dynamicsUpdater.a_long, dynamicsUpdater.a_lat]);
+                    % Compute jerk (derivative of acceleration)
+                    if i > 1
+                        jerkLongitudinal(i) = (accelerationLongitudinal(i) - accelerationLongitudinal(i-1)) / dt;
+                        jerkLateral(i) = (accelerationLateral(i) - accelerationLateral(i-1)) / dt;
+                    else
+                        jerkLongitudinal(i) = 0;
+                        jerkLateral(i) = 0;
+                    end
                     % steeringAnglesSim already stored earlier
                 end
         
@@ -3045,6 +3056,8 @@ classdef VehicleModel < handle
                     'RollRate', rollRateArray, ...            % Include roll rate in output
                     'AccelerationLongitudinal', accelerationLongitudinal, ...
                     'AccelerationLateral', accelerationLateral, ...
+                    'JerkLongitudinal', jerkLongitudinal, ...
+                    'JerkLateral', jerkLateral, ...
                     'SteeringAngle', -steeringAnglesSim, ...
                     'GlobalVehicleFlags', globalVehicleFlags, ...
                     'Horsepower', horsepowerSim, ... % Include horsepower data

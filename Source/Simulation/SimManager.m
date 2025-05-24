@@ -348,11 +348,15 @@ classdef SimManager < handle
                             mod(obj.dataManager.globalTrailer1Data.Theta + vehicle1rotationAngleRad + pi, 2*pi) - pi;
                     end
                 else
-                    obj.dataManager.globalVehicle1Data.X = obj.dataManager.globalVehicle1Data.X + vehicle1OffsetX;
-                    obj.dataManager.globalVehicle1Data.Y = obj.dataManager.globalVehicle1Data.Y + vehicle1OffsetY;
+                    % Compute shift based on Vehicle 1 initial position
+                    initialPos1 = [obj.dataManager.globalVehicle1Data.X(1), obj.dataManager.globalVehicle1Data.Y(1)];
+                    shift1 = [vehicle1OffsetX, vehicle1OffsetY] - initialPos1;
+                    % Apply same shift to both tractor and trailer
+                    obj.dataManager.globalVehicle1Data.X = obj.dataManager.globalVehicle1Data.X + shift1(1);
+                    obj.dataManager.globalVehicle1Data.Y = obj.dataManager.globalVehicle1Data.Y + shift1(2);
                     if obj.vehicleSim1.simParams.includeTrailer
-                        obj.dataManager.globalTrailer1Data.X = obj.dataManager.globalTrailer1Data.X + vehicle1OffsetX;
-                        obj.dataManager.globalTrailer1Data.Y = obj.dataManager.globalTrailer1Data.Y + vehicle1OffsetY;
+                        obj.dataManager.globalTrailer1Data.X = obj.dataManager.globalTrailer1Data.X + shift1(1);
+                        obj.dataManager.globalTrailer1Data.Y = obj.dataManager.globalTrailer1Data.Y + shift1(2);
                     end
                 end
 
@@ -381,11 +385,15 @@ classdef SimManager < handle
                             mod(obj.dataManager.globalTrailer2Data.Theta + rotationAngleRad + pi, 2*pi) - pi;
                     end
                 else
-                    obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X + offsetX;
-                    obj.dataManager.globalVehicle2Data.Y = obj.dataManager.globalVehicle2Data.Y + offsetY;
+                    % Compute shift based on Vehicle 2 initial position
+                    initialPos2 = [obj.dataManager.globalVehicle2Data.X(1), obj.dataManager.globalVehicle2Data.Y(1)];
+                    shift2 = [offsetX, offsetY] - initialPos2;
+                    % Apply same shift to both tractor and trailer
+                    obj.dataManager.globalVehicle2Data.X = obj.dataManager.globalVehicle2Data.X + shift2(1);
+                    obj.dataManager.globalVehicle2Data.Y = obj.dataManager.globalVehicle2Data.Y + shift2(2);
                     if obj.vehicleSim2.simParams.includeTrailer
-                        obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X + offsetX;
-                        obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y + offsetY;
+                        obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X + shift2(1);
+                        obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y + shift2(2);
                     end
                 end
                 end  % end fresh-run transform guard
@@ -411,9 +419,17 @@ classdef SimManager < handle
                 mapObj.LaneColor    = [0.8275, 0.8275, 0.8275];
                 mapObj.LaneWidth    = 5;
 
-                mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
-                                               mapObj.LaneCommands, ...
-                                               mapObj.LaneColor);
+                % Plot lane map if enabled in simulation controls
+                if obj.uiManager.getMapTrajectoryFlag()
+                % Initialize LaneMap and capture map image handle
+                mapObj = LaneMap(mapWidth, mapHeight);
+                mapObj.LaneCommands = obj.map;
+                mapObj.LaneColor    = [0.8275, 0.8275, 0.8275];
+                % Plot lane map and get handle for toggling
+                mapHandle = mapObj.plotLaneMapWithCommands(obj.plotManager.sharedAx, ...
+                                                          mapObj.LaneCommands, ...
+                                                          mapObj.LaneColor);
+                end
 
                 % Ensure trajectories and markers are on top of the track
                 try
@@ -435,23 +451,53 @@ classdef SimManager < handle
                 includeTrailer2 = isfield(obj.vehicleSim2.simParams, 'includeTrailer') && ...
                                       obj.vehicleSim2.simParams.includeTrailer;
 
-                % Retrieve playback speed multiplier (default 1)
-                playbackSpeed = 1;
-                try
-                    playbackSpeed = obj.uiManager.getPlaybackSpeed();
-                catch
-                    % UI playback speed control not available, use default
-                end
-                % Animate frames; skip frames for faster playback
-                skipSteps = max(1, floor(playbackSpeed));
-                frameDelay = obj.dt;
-                for iStep = 1:skipSteps:totalSteps
+                % Highlight initial positions
+                obj.plotManager.highlightInitialPositions(obj.dataManager);
+                % Initialize simulation control flags (pause until Play pressed)
+                obj.uiManager.pauseFlag = true;
+                obj.uiManager.stopFlag  = false;
+                % Start playback loop
+                iStep = 1;
+                while iStep <= totalSteps
+                    % Toggle map visibility based on control
+                    try
+                        if obj.uiManager.getMapTrajectoryFlag()
+                            mapHandle.Visible = 'on';
+                        else
+                            mapHandle.Visible = 'off';
+                        end
+                    catch
+                        % ignore if mapHandle invalid
+                    end
+                    % Check for stop request
+                    if obj.uiManager.getStopFlag()
+                        disp('Simulation stopped by user.');
+                        break;
+                    end
+                    % Wait while paused
+                    while obj.uiManager.getPauseFlag()
+                        pause(0.1);
+                    end
+                    % Update trajectories and outlines
                     obj.plotManager.updateTrajectories(obj.dataManager, iStep, ...
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
                     obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, vehicleParams2, trailerParams2);
                     drawnow;
+                    % Get dynamic playback speed
+                    try
+                        playbackSpeed = obj.uiManager.getPlaybackSpeed();
+                        if ~isnumeric(playbackSpeed) || playbackSpeed <= 0
+                            playbackSpeed = 1;
+                        end
+                    catch
+                        playbackSpeed = 1;
+                    end
+                    % Compute skip and delay
+                    skipSteps = max(1, floor(playbackSpeed));
+                    frameDelay = obj.dt / playbackSpeed;
                     pause(frameDelay);
+                    iStep = iStep + skipSteps;
                 end
 
                 disp('Animation complete. Fetching collision results from the background...');
