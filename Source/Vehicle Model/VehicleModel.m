@@ -1176,7 +1176,105 @@ classdef VehicleModel < handle
             end
         end
                                 
-        function [tractorX, tractorY, tractorTheta, trailerX, trailerY, trailerTheta, globalVehicleFlags, steeringAnglesSim, speedData] = runSimulation(obj)
+        function [ ...
+                tractorX, ...
+                tractorY, ...
+                tractorTheta, ...
+                trailerX, ...
+                trailerY, ...
+                trailerTheta, ...
+                globalVehicleFlags, ...
+                steeringAnglesSim, ...
+                speedData, ...
+                simParams, ...
+                engine, ...
+                maxSpeedSteer, ...
+                steerAngles, ...
+                accelerationData, ...
+                tirePressureData, ...
+                steeringEnded, ...
+                accelerationEnded, ...
+                tirePressureEnded, ...
+                perTireLoadTractor, ...
+                totalLoadTrailer, ...
+                perTireLoadTrailer, ...
+                frontAxlePosition, ...
+                maxAngleAtZeroSpeed, ...
+                horsepowerSim, ...
+                desiredGear, ...
+                isWigglingArray, ...
+                isRolloverArray, ...
+                isSkiddingArray, ...
+                isJackknifeArray, ...
+                h_CoG_trailer, ...
+                trackWidth_trailer, ...
+                x_trailer, ...
+                y_trailer, ...
+                u_trailer, ...
+                v_trailer, ...
+                r_trailer, ...
+                W_trailer, ...
+                centerOfGravityTrailer, ...
+                pressureMatrixKeyTractor, ...
+                centerOfGravity, ...
+                totalContactArea, ...
+                tireWidth, ...
+                rollThreshold, ...
+                hitchInstabilityThreshold, ...
+                hitchPointDistance, ...
+                U, ...
+                L, ...
+                tolerance, ...
+                stabilityChecker, ...
+                timeArray, ...
+                positionX, ...
+                positionY, ...
+                orientationArray, ...
+                velocityU, ...
+                lateralVelocityV, ...
+                yawRateR, ...
+                rollAngleArray, ...
+                rollRateArray, ...
+                accelerationLongitudinal, ...
+                accelerationLateral, ...
+                jerkLongitudinal, ...
+                jerkLateral, ...
+                speedZeroReached, ...
+                reportInterval, ...
+                pathFollower, ...
+                throttle, ...
+                flatTireIndices, ...
+                flatTireIndicesTractor,...
+                flatTireIndicesTrailer,...
+                totalTiresTractor, ...
+                totalTiresTrailer, ...
+                logMessages, ...
+                tractorMass,...
+                trailerMass,...
+                forceCalc, ...
+                u, ...
+                x,...
+                y,...
+                v,...
+                r,...
+                hitch_offset_plot,...
+                numSteps,...
+                psi_trailer,...
+                theta,...
+                dt,...
+                tractorWheelbase,...
+                tractorTrackWidth,...
+                tractorTireHeight,...
+                totalMassToUse,...
+                dynamicsUpdater, ...
+                transmission, ...
+                clutch, ...
+                brakeSystem, ...
+                hitchModel,...
+                time, ...
+                maxSpeed, ...
+                windowSize ...
+                ] = initializeFrameData(obj)
             % runSimulation Executes the vehicle simulation and computes the dynamics
         
             % Initialize output variables
@@ -1708,7 +1806,6 @@ classdef VehicleModel < handle
                 % Interpolate data if dtMultiplier ≠ 1
                 if dtMultiplier ~= 1
                     new_time = time(1):dt:time(end);
-                    
                     % Interpolate steering and acceleration signals using linear interpolation
                     steerAngles = interp1(time, steerAngles, new_time, 'linear', 'extrap');
                     accelerationData = interp1(time, accelerationData, new_time, 'linear', 'extrap');
@@ -1765,7 +1862,9 @@ classdef VehicleModel < handle
         
                 % Set tractor tire dimensions
                 tractorParams.updateTireDimensions('tractor', tractorTireHeight, tractorTireWidth);
-        
+                
+                totalLoadTrailer = 0;
+                perTireLoadTrailer = 0;
                 %% Trailer Tire Pressures and Contact Areas (if trailer included)
                 if simParams.includeTrailer
                     % Calculate total load for trailer
@@ -1829,7 +1928,6 @@ classdef VehicleModel < handle
         
                 % Set the hitch_offset to be at the calculated hitch position
                 hitch_offset = hitchPosition;
-        
                 % Initialize arrays to store positions for plotting
                 tractorX = zeros(1, numSteps);
                 tractorY = zeros(1, numSteps);
@@ -1854,6 +1952,12 @@ classdef VehicleModel < handle
                 % Moment of inertia of the tractor (approximate, assuming rectangular prism)
                 I_tractor = (1/12) * m_tractor * (L_tractor^2 + W_tractor^2);
         
+                x_trailer = 0;
+                y_trailer = 0;
+                u_trailer = 0;
+                v_trailer = 0;
+                r_trailer = 0;
+                psi_trailer = 0;
                 % --- Check if Trailer is Included ---
                 if simParams.includeTrailer
                     % Trailer parameters
@@ -1989,7 +2093,6 @@ classdef VehicleModel < handle
                 % --- Select and Validate Pressure Matrices for Tractor ---
                 % Calculate total number of tractor tires
                 totalNumberOfTiresTractor = size(loadDistribution, 1);
-        
                 % Generate the pressure matrix key based on the number of tractor tires
                 pressureMatrixKeyTractor = sprintf('Tires%d', totalNumberOfTiresTractor);
         
@@ -2016,6 +2119,7 @@ classdef VehicleModel < handle
                 positions = loadDistribution(:,1:3);
                 centerOfGravity = KinematicsCalculator.calculateCenterOfGravity(loads, positions);
         
+                totalContactArea = 0;
                 %% Initialize load distribution and center of gravity for the trailer
                 if simParams.includeTrailer
                     numAxlesTrailer = trailerParams.numAxles;
@@ -2203,6 +2307,9 @@ classdef VehicleModel < handle
                 end
         
                 trailerInertiaVal = 0;
+                rollThreshold = 0;
+                hitchInstabilityThreshold = 0;
+                hitchModel = 0;
                 if simParams.includeTrailer
                     %% Instantiate HitchModel
                     % Define Hitch Points in respective frames
@@ -2383,9 +2490,9 @@ classdef VehicleModel < handle
                 % Directional stability parameters
                 U = -1.8; % deg/g (negative for oversteer)
                 L = 3.5; % m (wheelbase)
-                
                 % Tolerance
                 tolerance = 0.10; % 10% tolerance
+                stabilityChecker = 0;
                 if simParams.includeTrailer
                     %% Instantiate StabilityChecker
                     stabilityChecker = StabilityChecker(...
@@ -2499,506 +2606,787 @@ classdef VehicleModel < handle
                     gaussianSigma ...
                     );
                 throttle = Throttle(1,0.1);
-
-                for i = 1:numSteps
-                    % --- Update Waitbar ---
-                    if mod(i, reportInterval) == 0 || i == numSteps
-                        progress = (i / numSteps) * 100;
-                        waitbar(i / numSteps, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress));
-                    end
-                    
-                    templim = find(tirePressureEnded, 1, 'first');
-                    if  i <= templim
-                        selectedPressures = tirePressureData(i, :);
-                        simParams.pressureMatrices = selectedPressures;
-                        % obj.guiManager.setPressureMatrices(selectedPressures);
-                    else
-                        selectedPressures = tirePressureData(find(tirePressureEnded, 1, 'first'), :);
-                        simParams.pressureMatrices = selectedPressures;
-                    end
-
-                    % --- Split the pressures into tractor and trailer pressures ---
-                    tractorTirePressures = selectedPressures(1:totalTiresTractor);
-                    if simParams.includeTrailer
-                        trailerTirePressures = selectedPressures(totalTiresTractor+1:end);
-                    else
-                        trailerTirePressures = [];
-                    end
-
-                    % Validate the lengths
-                    if length(tractorTirePressures) ~= totalTiresTractor
-                        error('Mismatch in number of tractor tire pressures.');
-                    end
-                    if simParams.includeTrailer && length(trailerTirePressures) ~= totalTiresTrailer
-                        error('Mismatch in number of trailer tire pressures.');
-                    end
-                    % --- End of Split Pressures ---
-
-                    % --- Begin Flat Tire Logic ---
-                    % Define Pressure Threshold
-                    % Convert 14 psi to Pascals (1 psi ≈ 6895 Pa)
-                    pressureThresholdPa = 14 * 6895; % 14 psi in Pa
-
-                    % Log the pressure threshold
-                    logMessages{end+1} = sprintf('Pressure Threshold set to %.2f Pa (14 psi).', pressureThresholdPa);
-
-                    % --- Check and Set Flat Tires for Tractor ---
-                    for n = 1:length(tractorTirePressures)
-                        if tractorTirePressures(n) < pressureThresholdPa
-                            % Collect the index of the flat tire
-                            flatTireIndicesTractor(end+1) = n;
-                            % Log the flat tire event
-                            logMessages{end+1} = sprintf('Warning: Tractor Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', n, tractorTirePressures(n), pressureThresholdPa);
-                            % Mark the tire as flat by setting its contact area to zero
-                            tractorTirePressures(n) = 0; 
-                        end
-                    end
-
-                    % --- Check and Set Flat Tires for Trailer ---
-                    if simParams.includeTrailer
-                        for n = 1:length(trailerTirePressures)
-                            if trailerTirePressures(n) < pressureThresholdPa
-                                % Adjust the index to account for the total number of tractor tires
-                                adjustedIndex = n + length(tractorTirePressures);
-                                % Collect the index of the flat tire
-                                flatTireIndicesTrailer(end+1) = adjustedIndex;
-                                % Log the flat tire event
-                                logMessages{end+1} = sprintf('Warning: Trailer Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', n, trailerTirePressures(n), pressureThresholdPa);
-                                % Mark the tire as flat by setting its contact area to zero
-                                trailerTirePressures(n) = 0; 
-                            end
-                        end
-                    end
-                    % Combine flat tire indices
-                    flatTireIndices = [flatTireIndicesTractor, flatTireIndicesTrailer];
-                    % --- End Flat Tire Logic ---
-
-                    % --- Set Flat Tires in ForceCalculator ---
-                    if ~isempty(flatTireIndices)
-                        forceCalc = forceCalc.setFlatTire(flatTireIndices);
-                    end
-
-                    % --- Compute Contact Areas ---
-                    % Compute per-tire loads (assuming equal distribution for simplicity)
-                    perTireLoadTractor = (tractorMass * 9.81) / totalTiresTractor; % N
-                    if simParams.includeTrailer
-                        perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer; % N
-                    end
-
-                    % Compute per-tire contact areas
-                    % Avoid division by zero by setting contact area to zero if pressure is zero (flat tire)
-                    tractorContactAreas = zeros(size(tractorTirePressures));
-                    for n = 1:length(tractorTirePressures)
-                        if tractorTirePressures(n) > 0
-                            tractorContactAreas(n) = perTireLoadTractor / tractorTirePressures(n); % m^2
-                        else
-                            tractorContactAreas(n) = 0; % Flat tire
-                        end
-                    end
-
-                    if simParams.includeTrailer
-                        trailerContactAreas = zeros(size(trailerTirePressures));
-                        for n = 1:length(trailerTirePressures)
-                            if trailerTirePressures(n) > 0
-                                trailerContactAreas(n) = perTireLoadTrailer / trailerTirePressures(n); % m^2
-                            else
-                                trailerContactAreas(n) = 0; % Flat tire
-                            end
-                        end
-                    else
-                        trailerContactAreas = [];
-                    end
-                    %--- End of Compute Contact Areas ---
-
-                    currentSpeed = u;
-
-                    forceCalc.turnRadius = dynamicsUpdater.forceCalculator.turnRadius;
-
-                    % --- Update PathFollower with Current State ---
-                    currentState = [x, y];
-                    pathFollower = pathFollower.updateState(currentState, theta, u);
-                
-                    % --- Compute Control Commands from PathFollower ---
-                    [pathFollower, desiredSteeringAngleDeg] = pathFollower.computeSteering();
-
-                    % --- Apply Steering and Acceleration Commands ---
-                    % Limit steering angle and acceleration based on simulation constraints
-                    limitedSteerAngleDeg = obj.steeringController.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
-                
-                    steeringAnglesSim(i) = deg2rad(limitedSteerAngleDeg); % Convert to radians
-        
-                    % --- Steering Control ---
-                    desiredSteerAngleDeg = steerAngles(i); % In degrees
-                    if ~steeringEnded(i)
-                        limitedSteerAngleDeg = obj.steeringController.computeSteeringAngle(desiredSteerAngleDeg, currentSpeed);
-                    end
-                    steerAngleRad = deg2rad(limitedSteerAngleDeg);
-                    steerAngleRad = AckermannGeometry.enforceSteeringLimits(steerAngleRad);
-                    steeringAnglesSim(i) = steerAngleRad;
-                    [~, ~, R] = AckermannGeometry.calculateAckermannSteeringAngles(steerAngleRad, tractorWheelbase, tractorTrackWidth);
-                    dynamicsUpdater.forceCalculator.turnRadius = R;
-                    dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
-        
-                    % --- Compute Desired Acceleration ---
-                    accData = accelerationData(i);
-                    if ~accelerationEnded(i)
-                        desired_acceleration = accelerationData(i);
-                        desired_acceleration_sim(i) = desired_acceleration;
-                        logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
-                    else
-                        desired_acceleration = obj.speedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
-                        desired_acceleration_sim(i) = 0;
-                        logMessages{end+1} = sprintf('Step %d: Computed acceleration using SpeedController: %.4f m/s^2', i, desired_acceleration);
-                    end
-        
-                    % --- Speed Limiter Integration ---
-                    if currentSpeed >= maxSpeed
-                        desired_acceleration = 0; % No further acceleration
-                        logMessages{end+1} = sprintf('Step %d: Max speed reached (%.2f m/s). Throttle set to 0.', i, currentSpeed);
-                    end
-        
-                    % --- Apply Acceleration Limiter ---
-                    limited_acceleration = obj.accelerationLimiter.applyLimits(desired_acceleration, currentSpeed);
-                    limited_acceleration = movmean(limited_acceleration, floor(windowSize/dt));
-                    limited_acceleration_sig(i) = limited_acceleration;
-                    logMessages{end+1} = sprintf('Step %d: Limited acceleration: %.4f m/s^2', i, limited_acceleration);
-                    % --- End of Acceleration Limiter ---
-        
-                    % --- Transmission Gear Update ---
-                    [transmission, desiredGear(i)] = transmission.updateGear(currentSpeed, limited_acceleration, time(i), dt);
-                    logMessages{end+1} = sprintf('Step %d: Current Gear after update: %d', i, transmission.currentGear);
-                    % --- End of Transmission Gear Update ---
-                    ClutchPedal(i) = clutch.engagementPercentage;
-        
-                    % --- Determine Desired Braking Force Based on Desired Acceleration ---
-                    if limited_acceleration < 0
-                        % Negative acceleration: Deceleration command
-                        desired_decel = abs(limited_acceleration);
-                        brakeForceInput = desired_decel * totalMassToUse; % F = m * a
-                        brakeSystem = brakeSystem.setDesiredBrakingForce(brakeForceInput);
-                        logMessages{end+1} = sprintf('Step %d: Desired braking force set to %.2f N.', i, brakeForceInput);
-                    else
-                        % Positive acceleration: No braking
-                        brakeSystem = brakeSystem.setDesiredBrakingForce(0);
-                        brakeForceInput = 0;
-                        logMessages{end+1} = sprintf('Step %d: Desired braking force set to 0 N.', i);
-                    end
-                    % --- End of Desired Braking Force Determination ---
-        
-                    % --- Apply Brakes ---
-                    brakeForceInputSig(i) = brakeForceInput;
-                    brakeSystem = brakeSystem.applyBrakes(dt);
-                    F_brake = brakeSystem.computeTotalBrakingForce();
-                    F_brake = movmean(F_brake, floor(windowSize/dt));
-                    F_brakesig(i) = F_brake;
-                    logMessages{end+1} = sprintf('Step %d: Braking Force applied: %.2f N.', i, F_brake);
-                    % --- End of Brake Application ---
-        
-                    % --- Transmission Engine Braking ---
-                    % Get engine braking torque from Transmission
-                    engineBrakeTorque = transmission.getEngineBrakeTorque();
-                    logMessages{end+1} = sprintf('Step %d: Engine Brake Torque: %.2f Nm.', i, engineBrakeTorque);
-        
-                    % Convert engine braking torque to braking force
-                    wheelRadius = tractorTireHeight / 2; % meters
-                    F_engineBrake = engineBrakeTorque / wheelRadius; % F = Torque / Radius
-                    logMessages{end+1} = sprintf('Step %d: Engine Braking Force: %.2f N.', i, F_engineBrake);
-        
-                    % --- Combine BrakeSystem and Engine Braking Forces ---
-                    %total_F_brake = F_brake + F_engineBrake;
-                    %logMessages{end+1} = sprintf('Step %d: Total Braking Force (BrakeSystem + Engine): %.2f N.', i, total_F_brake);
-        
-                    % --- Update ForceCalculator with Combined Braking Force ---
-                    forceCalc = forceCalc.updateBrakingForce(-F_brake); % Apply total braking force oppositely
-                    logMessages{end+1} = sprintf('Step %d: Braking Force updated in ForceCalculator as %.2f N.', i, -F_brake);
-                    % --- End of Braking Force Update ---
-        
-                    % --- Determine Throttle Position ---
-                    if currentSpeed >= maxSpeed || limited_acceleration <= 0
-                        throttlePosition = 0; % No throttle during deceleration or at max speed
-                    else
-                        % Calculate maximum possible acceleration
-                        [engineTorqueMax, wheelTorqueMax] = engine.getTorque(1, transmission.currentGear); % Full throttle
-                        maxAvailableForce = wheelTorqueMax / wheelRadius; % F = Torque / Radius
-                        maxPossibleAcceleration = maxAvailableForce / totalMassToUse; % a = F / m
-        
-                        % Limit desired acceleration to max possible
-                        limited_acceleration = min(limited_acceleration, maxPossibleAcceleration);
-                        % Calculate required traction force
-                        F_required = limited_acceleration * totalMassToUse; % F = m * a
-                        wheelTorqueRequired = F_required * wheelRadius; % Torque = Force * Radius
-                
-                        % Compute loadTorque
-                        loadTorque = wheelTorqueRequired / (transmission.gearRatios(transmission.currentGear) * ...
-                                           transmission.finalDriveRatio * engine.efficiency);
-        
-                        % Compute throttle position needed
-                        throttlePosition = wheelTorqueRequired / wheelTorqueMax;
-                        throttlePosition = max(0, min(1, throttlePosition)); % Clamp between 0 and 1
-                    end
-
-                    if clutch.isEngaged
-                        throttle = throttle.setThrottle(throttlePosition);
-                        throttle = throttle.updateThrottle(clutch.engagementPercentage, dt);
-                        throttlePositionSig(i) = throttlePosition;
-                        logMessages{end+1} = sprintf('Step %d: Throttle Position set to %.2f%%.', i, throttlePosition * 100);
-                    else
-                        throttle = throttle.setThrottle(0);
-                        throttle = throttle.updateThrottle(clutch.engagementPercentage, dt);
-                        throttlePositionSig(i) = 0;
-                    end
-        
-                    % --- Get Actual Torque from Engine ---
-                    [engineTorque, wheelTorque] = engine.getTorque(throttlePosition, transmission.currentGear);
-                                        
-                    % 2) Convert brake force to brake torque
-                    %    Suppose F_brake is the total braking force on wheels (N)
-                    %    Then brakeTorque = F_brake * radius
-                    %    We already have wheelRadius=0.5 => so:
-                    brakeTorque = F_brake * forceCalc.wheelRadius; 
-                    % If wheelRadius is a scalar, that’s easy. If it's per-wheel array, you might distribute brake force differently.
-
-                    % ---------------------------------------------------------------
-                    % %%% NEW LINES %%%: Integrate wheel speeds
-                    % ---------------------------------------------------------------
-                    % We integrate wheel speeds using net torque from engine & brake:
-                    % We'll do an approximate "engineTorque = total torque / #wheels" if distributing equally. 
-                    % For simplicity, pass total engineTorque, total brakeTorque and let updateWheelSpeeds
-                    % distribute them equally. 
-                    forceCalc = forceCalc.updateWheelSpeeds(dt, engineTorque, brakeTorque);
-
-                    % Include engine braking torque when throttle is zero
-                    if throttlePosition == 0
-                        engineTorque = -transmission.engineBrakeTorque; % Negative torque for engine braking
-                        wheelTorque = engineTorque * transmission.currentGear * transmission.finalDriveRatio * engine.efficiency;
-                        logMessages{end+1} = sprintf('Step %d: Engine Braking Torque applied: %.2f Nm.', i, engineTorque);        
-                        % Recalculate loadTorque due to engine braking
-                        loadTorque = engineBrakeTorque / (transmission.gearRatios(transmission.currentGear) * ...
-                                         transmission.finalDriveRatio * engine.efficiency);
-                    elseif clutch.isEngaged      
-                        engineTorque = transmission.engineBrakeTorque; % Negative torque for engine braking
-                        % Recalculate loadTorque based on wheelTorque
-                        loadTorque = (wheelTorque / (transmission.gearRatios(transmission.currentGear) * ...
-                                     transmission.finalDriveRatio * engine.efficiency));
-                    else
-                        engineTorque = 0;
-                        loadTorque = (wheelTorque / (transmission.gearRatios(transmission.currentGear) * ...
-                                     transmission.finalDriveRatio * engine.efficiency));
-                    end
-
-                    % --- Update Engine RPM ---
-                    engine.updateRPM(throttle.getThrottle(), loadTorque, dt, transmission.currentGear);
-                    logMessages{end+1} = sprintf('Step %d: Engine Torque: %.2f Nm, Wheel Torque: %.2f Nm.', i, engineTorque, wheelTorque);
-        
-                    % --- **Account for Number of Drive Tires in F_traction Calculation** ---
-                    % **Assumption:** All tractor and trailer tires are drive tires.
-                    % Adjust these variables if only a subset of tires are drive tires.
-                    numDriveTiresTractor = totalTiresTractor; 
-                    if simParams.includeTrailer
-                        numDriveTiresTrailer = totalTiresTrailer;
-                    else
-                        numDriveTiresTrailer = 0;
-                    end
-        
-                    totalDriveTires = numDriveTiresTractor + numDriveTiresTrailer;
-                    logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor: %d, Trailer: %d)', totalDriveTires, numDriveTiresTractor, numDriveTiresTrailer);
-                    % --- End of Drive Tires Accounting ---
-        
-                    % --- Update ForceCalculator with Traction Force ---
-                    F_traction_per_tire = wheelTorque / wheelRadius; % Traction force per tire
-                    F_traction = F_traction_per_tire; % Total traction force
-                    forceCalc.updateTractionForce(F_traction);
-                    logMessages{end+1} = sprintf('Step %d: Traction Force updated in ForceCalculator as %.2f N.', i, F_traction);
-        
-                    % --- Calculate Horsepower ---
-                    engineRPM = engine.getRPM(); % Retrieve the current RPM from the engine object
-                    horsePower = (engineTorque * engineRPM) / 7127; % Convert torque and RPM to horsepower
-                    logMessages{end+1} = sprintf('Step %d: Horsepower: %.2f HP', i, horsePower);
-        
-                    % Update the force calculator's calculated forces
-                    dynamicsUpdater.forceCalculator.calculatedForces.traction = [F_traction; 0; 0];
-        
-                    % Optionally store horsepower in a data array if you wish to log it over time
-                    horsepowerSim(i) = horsePower; % This array can be saved or plotted later
-        
-                    %% Integration of HitchModel Forces if trailer is included
-                    if simParams.includeTrailer
-                        % Define tractor and trailer states for HitchModel
-                        tractorState = struct('position', [x; y; 0], ...
-                                               'orientation', [0; 0; theta], ...
-                                               'velocity', [u; v; 0], ...
-                                               'angularVelocity', [0; 0; r]);
-        
-                        trailerState = struct('position', [x_trailer; y_trailer; 0], ...
-                                               'orientation', [0; 0; psi_trailer], ...
-                                               'velocity', [u_trailer; v_trailer; 0], ...
-                                               'angularVelocity', [0; 0; r_trailer]);
-        
-                        % Calculate Hitch Forces and Moments
-                        [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
-                        % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
-                        dynamicsUpdater.forceCalculator.calculatedForces.momentZ = M_hitch;
-        
-                        % Update trailer's orientation and yaw rate from HitchModel
-                        psi_trailer = hitchModel.angularState.psi;
-                        r_trailer = hitchModel.angularState.omega;
-        
-                        % Update trailerState for next iteration
-                        trailerState.orientation(3) = psi_trailer;
-                        trailerState.angularVelocity(3) = r_trailer;
-        
-                        % Update trailer's velocity (assuming simple model for demonstration)
-                        u_trailer = u; % For simplicity, trailer's longitudinal speed equals tractor's speed
-                        v_trailer = v; % Assuming negligible sideslip difference
-        
-                        % Apply Hitch Forces to ForceCalculator
-                        dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
-        
-                        %% Update Trailer's State in DynamicsUpdater
-                        dynamicsUpdater = dynamicsUpdater.setTrailerVelocity([u_trailer; v_trailer; 0]);
-                        dynamicsUpdater = dynamicsUpdater.setTrailerAngularVelocity([0; 0; r_trailer]);
-                    end
-        
-                    %% Update dynamics for the tractor
-                    dynamicsUpdater = dynamicsUpdater.updateState();
-        
-                    % Retrieve updated state variables for the tractor
-                    x = dynamicsUpdater.position(1);
-                    y = dynamicsUpdater.position(2);
-                    theta = dynamicsUpdater.orientation;
-                    u = dynamicsUpdater.velocity;
-                    v = dynamicsUpdater.lateralVelocity;
-                    r = dynamicsUpdater.yawRate;
-                    phi = dynamicsUpdater.rollAngle;   % Retrieve roll angle
-                    p = dynamicsUpdater.rollRate;      % Retrieve roll rate
-        
-                    %% Update StabilityChecker and Check Stability if trailer is included
-                    if simParams.includeTrailer
-                        % Update omega_trailer and currentHitchAngle
-                        % Update StabilityChecker's dynamic parameters
-                        % Extract current dynamic parameters
-                        newVelocity = [u; v; 0];               % [u; v; w] in m/s
-                        newAngularVelocity = [0; 0; r];        % [p; q; r] in rad/s
-                        newTurnRadius = dynamicsUpdater.forceCalculator.turnRadius; % Assuming 'turnRadius' is a property of Transmission
-                        newVehicleMass = totalMassToUse;        % Total mass (tractor + trailer)
-        
-                        % Update StabilityChecker with new dynamics
-                        stabilityChecker = stabilityChecker.updateDynamics(newVelocity, newAngularVelocity, newTurnRadius, newVehicleMass, theta);
-        
-                        % Update Hitch Angle (delta) based on current articulation
-                        % Assuming 'delta' represents the current hitch articulation angle in radians
-                        % Update this value based on your simulation's articulation logic
-                        stabilityChecker.currentHitchAngle = psi_trailer; % Ensure 'delta' is defined and updated appropriately
-
-                        % stabilityChecker = stabilityChecker.updateDamping(simParams.dampingX);
-                        % Check stability conditions
-                        stabilityChecker = stabilityChecker.checkStability();
-        
-                        % Get stability flags
-                        [isWiggling, isRollover, isSkidding, isJackknife] = stabilityChecker.getStabilityFlags();
-
-                        % recommendedParams = stabilityChecker.generateRecommendedPacejkaParameters(highFidelityTireModel);
-                        % highFidelityTireModel.pCy1 = recommendedParams.pCy1;
-                        % highFidelityTireModel.pDy1 = recommendedParams.pDy1; 
-                        % highFidelityTireModel.pKy1 = recommendedParams.pKy1;
-                        % highFidelityTireModel.pEx1 = recommendedParams.pEx1;
-                        % highFidelityTireModel.pEx2 = recommendedParams.pEx2;
-                        % highFidelityTireModel.pEx3 = recommendedParams.pEx3;
-                        % highFidelityTireModel.pEx4 = recommendedParams.pEx4;
-                        % 
-                        % recommendedHitchParams = stabilityChecker.generateRecommendedHitchParameters(hitchModel);
-                        % hitchModel.stiffnessCoefficients.x = recommendedHitchParams.stiffnessCoefficients.x;
-                        % hitchModel.stiffnessCoefficients.y = recommendedHitchParams.stiffnessCoefficients.y;
-                        % hitchModel.stiffnessCoefficients.roll = recommendedHitchParams.stiffnessCoefficients.roll;
-                        % hitchModel.stiffnessCoefficients.pitch = recommendedHitchParams.stiffnessCoefficients.pitch;
-                        % hitchModel.stiffnessCoefficients.yaw = recommendedHitchParams.stiffnessCoefficients.yaw;
-                        % hitchModel.dampingCoefficients.x = recommendedHitchParams.dampingCoefficients.x;
-                        % hitchModel.dampingCoefficients.y = recommendedHitchParams.dampingCoefficients.y;
-                        % hitchModel.dampingCoefficients.roll = recommendedHitchParams.dampingCoefficients.roll;
-                        % hitchModel.dampingCoefficients.pitch = recommendedHitchParams.dampingCoefficients.pitch;
-                        % hitchModel.dampingCoefficients.yaw = recommendedHitchParams.dampingCoefficients.yaw;
-        
-                        % Update globalVehicleFlags
-                        globalVehicleFlags.isWiggling = globalVehicleFlags.isWiggling || isWiggling;
-                        globalVehicleFlags.isRollover = globalVehicleFlags.isRollover || isRollover;
-                        globalVehicleFlags.isSkidding = globalVehicleFlags.isSkidding || isSkidding;
-                        globalVehicleFlags.isJackknife = globalVehicleFlags.isJackknife || isJackknife;
-        
-                        % Store the flags for plotting
-                        isWigglingArray(i) = isWiggling;
-                        isRolloverArray(i) = isRollover;
-                        isSkiddingArray(i) = isSkidding;
-                        isJackknifeArray(i) = isJackknife;
-                    end
-
-                    % --- Ensure that the longitudinal speed does not go below zero ---
-                    if u < 0
-                        u = 0;
-                        dynamicsUpdater.velocity = 0; % Ensure updater's velocity is zero
-                        logMessages{end+1} = sprintf('Step %d: Corrected negative longitudinal speed to zero.', i);
-                    end
-                    % --- End of Speed Correction ---
-        
-                    % obj.speedController.updatePosition(x,y);
-                    % Store positions and angles for plotting
-                    tractorX(i) = x;
-                    tractorY(i) = y;
-                    tractorTheta(i) = theta;
-                    steeringAnglesSim(i) = steerAngleRad; % Store steering angle
-                    % Store Roll Dynamics
-                    rollAngleArray(i) = phi;   % Store roll angle
-                    rollRateArray(i) = p;      % Store roll rate
-        
-                    %% Align Trailer's Orientation and Position with Tractor if included
-                    if simParams.includeTrailer
-                        % Compute Hitch Point Position based on Tractor's Position and Orientation
-                        x_hitch = x - hitch_offset_plot * cos(theta);
-                        y_hitch = y - hitch_offset_plot * sin(theta);
-        
-                        % Set Trailer's Hitch Position to Hitch Point Position
-                        trailerX(i) = x_hitch;
-                        trailerY(i) = y_hitch;
-        
-                        % Calculate Trailer's Orientation based on Movement Direction
-                        if i > 1
-                            trailerTheta(i) = psi_trailer;
-                        else
-                            trailerTheta(i) = theta;
-                        end
-                    end
-        
-                    % Collect log messages
-                    logMessages{end+1} = sprintf('Step %d:', i);
-                    logMessages{end+1} = sprintf('  Tractor Position: (%.2f, %.2f)', x, y);
-                    logMessages{end+1} = sprintf('  Tractor Theta: %.4f radians', theta);
-                    logMessages{end+1} = sprintf('  Tractor Roll Angle: %.4f radians', phi);
-                    if simParams.includeTrailer
-                        logMessages{end+1} = sprintf('  Trailer Hitch Position: (%.2f, %.2f)', trailerX(i), trailerY(i));
-                        logMessages{end+1} = sprintf('  Trailer Theta: %.4f radians', trailerTheta(i));
-                    end
-                    logMessages{end+1} = '----------------------------------------';
-
-                    %% Store simulation data for Excel output
-                    positionX(i) = x;
-                    positionY(i) = y;
-                    orientationArray(i) = theta;
-                    velocityU(i) = u;
-                    lateralVelocityV(i) = v;
-                    yawRateR(i) = r;
-                    accelerationLongitudinal(i) = dynamicsUpdater.a_long;
-                    accelerationLateral(i) = dynamicsUpdater.a_lat;
-                    accelerationsim(i) = norm([dynamicsUpdater.a_long, dynamicsUpdater.a_lat]);
-                    % Compute jerk (derivative of acceleration)
-                    if i > 1
-                        jerkLongitudinal(i) = (accelerationLongitudinal(i) - accelerationLongitudinal(i-1)) / dt;
-                        jerkLateral(i) = (accelerationLateral(i) - accelerationLateral(i-1)) / dt;
-                    else
-                        jerkLongitudinal(i) = 0;
-                        jerkLateral(i) = 0;
-                    end
-                    % steeringAnglesSim already stored earlier
+            catch ME
+                % Handle any errors and ensure logs are saved
+                logMessages{end+1} = sprintf('Simulation Error: %s', ME.message);
+                try
+                    [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
+                    disp(['Logs saved to ', txtFilename, ' and ', csvFilename]);
+                catch logError
+                    warning('Failed to save simulation logs due to: %s', logError.message);
                 end
+                rethrow(ME); % Re-throw the error after logging
         
+                % --- Added: Update Waitbar to Indicate Error ---
+                waitbar(1, hWaitbar, 'Simulation Error Occurred.');
+                pause(1); % Optional pause to allow user to see the message
+                closeIfOpen(hWaitbar); % Close the waitbar
+            end
+        end
+        
+        function  [ ...
+                tractorX, ...
+                tractorY, ...
+                tractorTheta, ...
+                trailerX, ...
+                trailerY, ...
+                trailerTheta, ...
+                globalVehicleFlags, ...
+                steeringAnglesSim, ...
+                simParams, ...
+                perTireLoadTractor, ...
+                perTireLoadTrailer, ...
+                horsepowerSim, ...
+                desiredGear, ...
+                isWigglingArray, ...
+                isRolloverArray, ...
+                isSkiddingArray, ...
+                isJackknifeArray, ...
+                u_trailer, ...
+                v_trailer, ...
+                r_trailer, ...
+                stabilityChecker, ...
+                positionX, ...
+                positionY, ...
+                orientationArray, ...
+                velocityU, ...
+                lateralVelocityV, ...
+                yawRateR, ...
+                rollAngleArray, ...
+                rollRateArray, ...
+                accelerationLongitudinal, ...
+                accelerationLateral, ...
+                jerkLongitudinal, ...
+                jerkLateral, ...
+                pathFollower, ...
+                throttle, ...
+                flatTireIndices, ...
+                dynamicsUpdater, ...
+                transmission, ...
+                brakeSystem, ...
+                hitchModel,...
+                u, ...
+                x,...
+                y,...
+                v,...
+                r,...
+                psi_trailer,...
+                theta...
+                ] = computeNextFrame(obj, ...
+                i, ...
+                tractorX, ...
+                tractorY, ...
+                tractorTheta, ...
+                trailerX, ...
+                trailerY, ...
+                trailerTheta, ...
+                globalVehicleFlags, ...
+                steeringAnglesSim, ...
+                speedData, ...
+                simParams, ...
+                engine, ...
+                maxSpeedSteer, ...
+                steerAngles, ...
+                accelerationData, ...
+                tirePressureData, ...
+                steeringEnded, ...
+                accelerationEnded, ...
+                tirePressureEnded, ...
+                perTireLoadTractor, ...
+                totalLoadTrailer, ...
+                perTireLoadTrailer, ...
+                frontAxlePosition, ...
+                maxAngleAtZeroSpeed, ...
+                horsepowerSim, ...
+                desiredGear, ...
+                isWigglingArray, ...
+                isRolloverArray, ...
+                isSkiddingArray, ...
+                isJackknifeArray, ...
+                h_CoG_trailer, ...
+                trackWidth_trailer, ...
+                x_trailer, ...
+                y_trailer, ...
+                u_trailer, ...
+                v_trailer, ...
+                r_trailer, ...
+                W_trailer, ...
+                centerOfGravityTrailer, ...
+                pressureMatrixKeyTractor, ...
+                centerOfGravity, ...
+                totalContactArea, ...
+                tireWidth, ...
+                rollThreshold, ...
+                hitchInstabilityThreshold, ...
+                hitchPointDistance, ...
+                U, ...
+                L, ...
+                tolerance, ...
+                stabilityChecker, ...
+                timeArray, ...
+                positionX, ...
+                positionY, ...
+                orientationArray, ...
+                velocityU, ...
+                lateralVelocityV, ...
+                yawRateR, ...
+                rollAngleArray, ...
+                rollRateArray, ...
+                accelerationLongitudinal, ...
+                accelerationLateral, ...
+                jerkLongitudinal, ...
+                jerkLateral, ...
+                speedZeroReached, ...
+                reportInterval, ...
+                pathFollower, ...
+                throttle, ...
+                flatTireIndices,...
+                flatTireIndicesTractor,...
+                flatTireIndicesTrailer,...
+                numSteps,...
+                totalTiresTractor,...
+                totalTiresTrailer,...
+                logMessages,...
+                tractorMass,...
+                trailerMass,...
+                forceCalc,...
+                u,...
+                x,...
+                y,...
+                v,...
+                r,...
+                hitch_offset_plot, ...
+                psi_trailer,...
+                theta,...
+                dt,...
+                tractorWheelbase,...
+                tractorTrackWidth,...
+                tractorTireHeight,...
+                totalMassToUse,...
+                dynamicsUpdater, ...
+                transmission, ...
+                clutch, ...
+                brakeSystem, ...
+                hitchModel,...
+                time,...
+                maxSpeed,...
+                windowSize)
+            try
+                templim = find(tirePressureEnded, 1, 'first');
+                if  i <= templim
+                    selectedPressures = tirePressureData(i, :);
+                    simParams.pressureMatrices = selectedPressures;
+                    % obj.guiManager.setPressureMatrices(selectedPressures);
+                else
+                    selectedPressures = tirePressureData(find(tirePressureEnded, 1, 'first'), :);
+                    simParams.pressureMatrices = selectedPressures;
+                end
+
+                % --- Split the pressures into tractor and trailer pressures ---
+                tractorTirePressures = selectedPressures(1:totalTiresTractor);
+                if simParams.includeTrailer
+                    trailerTirePressures = selectedPressures(totalTiresTractor+1:end);
+                else
+                    trailerTirePressures = [];
+                end
+
+                % Validate the lengths
+                if length(tractorTirePressures) ~= totalTiresTractor
+                    error('Mismatch in number of tractor tire pressures.');
+                end
+                if simParams.includeTrailer && length(trailerTirePressures) ~= totalTiresTrailer
+                    error('Mismatch in number of trailer tire pressures.');
+                end
+                % --- End of Split Pressures ---
+
+                % --- Begin Flat Tire Logic ---
+                % Define Pressure Threshold
+                % Convert 14 psi to Pascals (1 psi ≈ 6895 Pa)
+                pressureThresholdPa = 14 * 6895; % 14 psi in Pa
+
+                % Log the pressure threshold
+                logMessages{end+1} = sprintf('Pressure Threshold set to %.2f Pa (14 psi).', pressureThresholdPa);
+
+                % --- Check and Set Flat Tires for Tractor ---
+                for n = 1:length(tractorTirePressures)
+                    if tractorTirePressures(n) < pressureThresholdPa
+                        % Collect the index of the flat tire
+                        flatTireIndicesTractor(end+1) = n;
+                        % Log the flat tire event
+                        logMessages{end+1} = sprintf('Warning: Tractor Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', n, tractorTirePressures(n), pressureThresholdPa);
+                        % Mark the tire as flat by setting its contact area to zero
+                        tractorTirePressures(n) = 0; 
+                    end
+                end
+
+                % --- Check and Set Flat Tires for Trailer ---
+                if simParams.includeTrailer
+                    for n = 1:length(trailerTirePressures)
+                        if trailerTirePressures(n) < pressureThresholdPa
+                            % Adjust the index to account for the total number of tractor tires
+                            adjustedIndex = n + length(tractorTirePressures);
+                            % Collect the index of the flat tire
+                            flatTireIndicesTrailer(end+1) = adjustedIndex;
+                            % Log the flat tire event
+                            logMessages{end+1} = sprintf('Warning: Trailer Tire %d is flat (Pressure: %.2f Pa < %.2f Pa).', n, trailerTirePressures(n), pressureThresholdPa);
+                            % Mark the tire as flat by setting its contact area to zero
+                            trailerTirePressures(n) = 0; 
+                        end
+                    end
+                end
+                % Combine flat tire indices
+                flatTireIndices = [flatTireIndicesTractor, flatTireIndicesTrailer];
+                % --- End Flat Tire Logic ---
+
+                % --- Set Flat Tires in ForceCalculator ---
+                if ~isempty(flatTireIndices)
+                    forceCalc = forceCalc.setFlatTire(flatTireIndices);
+                end
+
+                % --- Compute Contact Areas ---
+                % Compute per-tire loads (assuming equal distribution for simplicity)
+                perTireLoadTractor = (tractorMass * 9.81) / totalTiresTractor; % N
+                if simParams.includeTrailer
+                    perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer; % N
+                end
+
+                % Compute per-tire contact areas
+                % Avoid division by zero by setting contact area to zero if pressure is zero (flat tire)
+                tractorContactAreas = zeros(size(tractorTirePressures));
+                for n = 1:length(tractorTirePressures)
+                    if tractorTirePressures(n) > 0
+                        tractorContactAreas(n) = perTireLoadTractor / tractorTirePressures(n); % m^2
+                    else
+                        tractorContactAreas(n) = 0; % Flat tire
+                    end
+                end
+
+                if simParams.includeTrailer
+                    trailerContactAreas = zeros(size(trailerTirePressures));
+                    for n = 1:length(trailerTirePressures)
+                        if trailerTirePressures(n) > 0
+                            trailerContactAreas(n) = perTireLoadTrailer / trailerTirePressures(n); % m^2
+                        else
+                            trailerContactAreas(n) = 0; % Flat tire
+                        end
+                    end
+                else
+                    trailerContactAreas = [];
+                end
+                %--- End of Compute Contact Areas ---
+
+                currentSpeed = u;
+
+                forceCalc.turnRadius = dynamicsUpdater.forceCalculator.turnRadius;
+
+                % --- Update PathFollower with Current State ---
+                currentState = [x, y];
+                pathFollower = pathFollower.updateState(currentState, theta, u);
+            
+                % --- Compute Control Commands from PathFollower ---
+                [pathFollower, desiredSteeringAngleDeg] = pathFollower.computeSteering();
+
+                % --- Apply Steering and Acceleration Commands ---
+                % Limit steering angle and acceleration based on simulation constraints
+                limitedSteerAngleDeg = obj.steeringController.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
+            
+                steeringAnglesSim(i) = deg2rad(limitedSteerAngleDeg); % Convert to radians
+    
+                % --- Steering Control ---
+                desiredSteerAngleDeg = steerAngles(i); % In degrees
+                if ~steeringEnded(i)
+                    limitedSteerAngleDeg = obj.steeringController.computeSteeringAngle(desiredSteerAngleDeg, currentSpeed);
+                end
+                steerAngleRad = deg2rad(limitedSteerAngleDeg);
+                steerAngleRad = AckermannGeometry.enforceSteeringLimits(steerAngleRad);
+                steeringAnglesSim(i) = steerAngleRad;
+                [~, ~, R] = AckermannGeometry.calculateAckermannSteeringAngles(steerAngleRad, tractorWheelbase, tractorTrackWidth);
+                dynamicsUpdater.forceCalculator.turnRadius = R;
+                dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
+    
+                % --- Compute Desired Acceleration ---
+                accData = accelerationData(i);
+                if ~accelerationEnded(i)
+                    desired_acceleration = accelerationData(i);
+                    desired_acceleration_sim(i) = desired_acceleration;
+                    logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
+                else
+                    desired_acceleration = obj.speedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
+                    desired_acceleration_sim(i) = 0;
+                    logMessages{end+1} = sprintf('Step %d: Computed acceleration using SpeedController: %.4f m/s^2', i, desired_acceleration);
+                end
+    
+                % --- Speed Limiter Integration ---
+                if currentSpeed >= maxSpeed
+                    desired_acceleration = 0; % No further acceleration
+                    logMessages{end+1} = sprintf('Step %d: Max speed reached (%.2f m/s). Throttle set to 0.', i, currentSpeed);
+                end
+    
+                % --- Apply Acceleration Limiter ---
+                limited_acceleration = obj.accelerationLimiter.applyLimits(desired_acceleration, currentSpeed);
+                limited_acceleration = movmean(limited_acceleration, floor(windowSize/dt));
+                limited_acceleration_sig(i) = limited_acceleration;
+                logMessages{end+1} = sprintf('Step %d: Limited acceleration: %.4f m/s^2', i, limited_acceleration);
+                % --- End of Acceleration Limiter ---
+    
+                % --- Transmission Gear Update ---
+                [transmission, desiredGear(i)] = transmission.updateGear(currentSpeed, limited_acceleration, time(i), dt);
+                logMessages{end+1} = sprintf('Step %d: Current Gear after update: %d', i, transmission.currentGear);
+                % --- End of Transmission Gear Update ---
+                ClutchPedal(i) = clutch.engagementPercentage;
+    
+                % --- Determine Desired Braking Force Based on Desired Acceleration ---
+                if limited_acceleration < 0
+                    % Negative acceleration: Deceleration command
+                    desired_decel = abs(limited_acceleration);
+                    brakeForceInput = desired_decel * totalMassToUse; % F = m * a
+                    brakeSystem = brakeSystem.setDesiredBrakingForce(brakeForceInput);
+                    logMessages{end+1} = sprintf('Step %d: Desired braking force set to %.2f N.', i, brakeForceInput);
+                else
+                    % Positive acceleration: No braking
+                    brakeSystem = brakeSystem.setDesiredBrakingForce(0);
+                    brakeForceInput = 0;
+                    logMessages{end+1} = sprintf('Step %d: Desired braking force set to 0 N.', i);
+                end
+                % --- End of Desired Braking Force Determination ---
+    
+                % --- Apply Brakes ---
+                brakeForceInputSig(i) = brakeForceInput;
+                brakeSystem = brakeSystem.applyBrakes(dt);
+                F_brake = brakeSystem.computeTotalBrakingForce();
+                F_brake = movmean(F_brake, floor(windowSize/dt));
+                F_brakesig(i) = F_brake;
+                logMessages{end+1} = sprintf('Step %d: Braking Force applied: %.2f N.', i, F_brake);
+                % --- End of Brake Application ---
+    
+                % --- Transmission Engine Braking ---
+                % Get engine braking torque from Transmission
+                engineBrakeTorque = transmission.getEngineBrakeTorque();
+                logMessages{end+1} = sprintf('Step %d: Engine Brake Torque: %.2f Nm.', i, engineBrakeTorque);
+    
+                % Convert engine braking torque to braking force
+                wheelRadius = tractorTireHeight / 2; % meters
+                F_engineBrake = engineBrakeTorque / wheelRadius; % F = Torque / Radius
+                logMessages{end+1} = sprintf('Step %d: Engine Braking Force: %.2f N.', i, F_engineBrake);
+    
+                % --- Combine BrakeSystem and Engine Braking Forces ---
+                %total_F_brake = F_brake + F_engineBrake;
+                %logMessages{end+1} = sprintf('Step %d: Total Braking Force (BrakeSystem + Engine): %.2f N.', i, total_F_brake);
+    
+                % --- Update ForceCalculator with Combined Braking Force ---
+                forceCalc = forceCalc.updateBrakingForce(-F_brake); % Apply total braking force oppositely
+                logMessages{end+1} = sprintf('Step %d: Braking Force updated in ForceCalculator as %.2f N.', i, -F_brake);
+                % --- End of Braking Force Update ---
+    
+                % --- Determine Throttle Position ---
+                if currentSpeed >= maxSpeed || limited_acceleration <= 0
+                    throttlePosition = 0; % No throttle during deceleration or at max speed
+                else
+                    % Calculate maximum possible acceleration
+                    [engineTorqueMax, wheelTorqueMax] = engine.getTorque(1, transmission.currentGear); % Full throttle
+                    maxAvailableForce = wheelTorqueMax / wheelRadius; % F = Torque / Radius
+                    maxPossibleAcceleration = maxAvailableForce / totalMassToUse; % a = F / m
+    
+                    % Limit desired acceleration to max possible
+                    limited_acceleration = min(limited_acceleration, maxPossibleAcceleration);
+                    % Calculate required traction force
+                    F_required = limited_acceleration * totalMassToUse; % F = m * a
+                    wheelTorqueRequired = F_required * wheelRadius; % Torque = Force * Radius
+            
+                    % Compute loadTorque
+                    loadTorque = wheelTorqueRequired / (transmission.gearRatios(transmission.currentGear) * ...
+                                       transmission.finalDriveRatio * engine.efficiency);
+    
+                    % Compute throttle position needed
+                    throttlePosition = wheelTorqueRequired / wheelTorqueMax;
+                    throttlePosition = max(0, min(1, throttlePosition)); % Clamp between 0 and 1
+                end
+
+                if clutch.isEngaged
+                    throttle = throttle.setThrottle(throttlePosition);
+                    throttle = throttle.updateThrottle(clutch.engagementPercentage, dt);
+                    throttlePositionSig(i) = throttlePosition;
+                    logMessages{end+1} = sprintf('Step %d: Throttle Position set to %.2f%%.', i, throttlePosition * 100);
+                else
+                    throttle = throttle.setThrottle(0);
+                    throttle = throttle.updateThrottle(clutch.engagementPercentage, dt);
+                    throttlePositionSig(i) = 0;
+                end
+    
+                % --- Get Actual Torque from Engine ---
+                [engineTorque, wheelTorque] = engine.getTorque(throttlePosition, transmission.currentGear);
+                                    
+                % 2) Convert brake force to brake torque
+                %    Suppose F_brake is the total braking force on wheels (N)
+                %    Then brakeTorque = F_brake * radius
+                %    We already have wheelRadius=0.5 => so:
+                brakeTorque = F_brake * forceCalc.wheelRadius; 
+                % If wheelRadius is a scalar, that’s easy. If it's per-wheel array, you might distribute brake force differently.
+
+                % ---------------------------------------------------------------
+                % %%% NEW LINES %%%: Integrate wheel speeds
+                % ---------------------------------------------------------------
+                % We integrate wheel speeds using net torque from engine & brake:
+                % We'll do an approximate "engineTorque = total torque / #wheels" if distributing equally. 
+                % For simplicity, pass total engineTorque, total brakeTorque and let updateWheelSpeeds
+                % distribute them equally. 
+                forceCalc = forceCalc.updateWheelSpeeds(dt, engineTorque, brakeTorque);
+
+                % Include engine braking torque when throttle is zero
+                if throttlePosition == 0
+                    engineTorque = -transmission.engineBrakeTorque; % Negative torque for engine braking
+                    wheelTorque = engineTorque * transmission.currentGear * transmission.finalDriveRatio * engine.efficiency;
+                    logMessages{end+1} = sprintf('Step %d: Engine Braking Torque applied: %.2f Nm.', i, engineTorque);        
+                    % Recalculate loadTorque due to engine braking
+                    loadTorque = engineBrakeTorque / (transmission.gearRatios(transmission.currentGear) * ...
+                                     transmission.finalDriveRatio * engine.efficiency);
+                elseif clutch.isEngaged      
+                    engineTorque = transmission.engineBrakeTorque; % Negative torque for engine braking
+                    % Recalculate loadTorque based on wheelTorque
+                    loadTorque = (wheelTorque / (transmission.gearRatios(transmission.currentGear) * ...
+                                 transmission.finalDriveRatio * engine.efficiency));
+                else
+                    engineTorque = 0;
+                    loadTorque = (wheelTorque / (transmission.gearRatios(transmission.currentGear) * ...
+                                 transmission.finalDriveRatio * engine.efficiency));
+                end
+
+                % --- Update Engine RPM ---
+                engine.updateRPM(throttle.getThrottle(), loadTorque, dt, transmission.currentGear);
+                logMessages{end+1} = sprintf('Step %d: Engine Torque: %.2f Nm, Wheel Torque: %.2f Nm.', i, engineTorque, wheelTorque);
+    
+                % --- **Account for Number of Drive Tires in F_traction Calculation** ---
+                % **Assumption:** All tractor and trailer tires are drive tires.
+                % Adjust these variables if only a subset of tires are drive tires.
+                numDriveTiresTractor = totalTiresTractor; 
+                if simParams.includeTrailer
+                    numDriveTiresTrailer = totalTiresTrailer;
+                else
+                    numDriveTiresTrailer = 0;
+                end
+    
+                totalDriveTires = numDriveTiresTractor + numDriveTiresTrailer;
+                logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor: %d, Trailer: %d)', totalDriveTires, numDriveTiresTractor, numDriveTiresTrailer);
+                % --- End of Drive Tires Accounting ---
+    
+                % --- Update ForceCalculator with Traction Force ---
+                F_traction_per_tire = wheelTorque / wheelRadius; % Traction force per tire
+                F_traction = F_traction_per_tire; % Total traction force
+                forceCalc.updateTractionForce(F_traction);
+                logMessages{end+1} = sprintf('Step %d: Traction Force updated in ForceCalculator as %.2f N.', i, F_traction);
+    
+                % --- Calculate Horsepower ---
+                engineRPM = engine.getRPM(); % Retrieve the current RPM from the engine object
+                horsePower = (engineTorque * engineRPM) / 7127; % Convert torque and RPM to horsepower
+                logMessages{end+1} = sprintf('Step %d: Horsepower: %.2f HP', i, horsePower);
+    
+                % Update the force calculator's calculated forces
+                dynamicsUpdater.forceCalculator.calculatedForces.traction = [F_traction; 0; 0];
+    
+                % Optionally store horsepower in a data array if you wish to log it over time
+                horsepowerSim(i) = horsePower; % This array can be saved or plotted later
+    
+                %% Integration of HitchModel Forces if trailer is included
+                if simParams.includeTrailer
+                    % Define tractor and trailer states for HitchModel
+                    tractorState = struct('position', [x; y; 0], ...
+                                           'orientation', [0; 0; theta], ...
+                                           'velocity', [u; v; 0], ...
+                                           'angularVelocity', [0; 0; r]);
+    
+                    trailerState = struct('position', [x_trailer; y_trailer; 0], ...
+                                           'orientation', [0; 0; psi_trailer], ...
+                                           'velocity', [u_trailer; v_trailer; 0], ...
+                                           'angularVelocity', [0; 0; r_trailer]);
+    
+                    % Calculate Hitch Forces and Moments
+                    [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
+                    % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
+                    dynamicsUpdater.forceCalculator.calculatedForces.momentZ = M_hitch;
+    
+                    % Update trailer's orientation and yaw rate from HitchModel
+                    psi_trailer = hitchModel.angularState.psi;
+                    r_trailer = hitchModel.angularState.omega;
+    
+                    % Update trailerState for next iteration
+                    trailerState.orientation(3) = psi_trailer;
+                    trailerState.angularVelocity(3) = r_trailer;
+    
+                    % Update trailer's velocity (assuming simple model for demonstration)
+                    u_trailer = u; % For simplicity, trailer's longitudinal speed equals tractor's speed
+                    v_trailer = v; % Assuming negligible sideslip difference
+    
+                    % Apply Hitch Forces to ForceCalculator
+                    dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
+    
+                    %% Update Trailer's State in DynamicsUpdater
+                    dynamicsUpdater = dynamicsUpdater.setTrailerVelocity([u_trailer; v_trailer; 0]);
+                    dynamicsUpdater = dynamicsUpdater.setTrailerAngularVelocity([0; 0; r_trailer]);
+                end
+    
+                %% Update dynamics for the tractor
+                dynamicsUpdater = dynamicsUpdater.updateState();
+    
+                % Retrieve updated state variables for the tractor
+                x = dynamicsUpdater.position(1);
+                y = dynamicsUpdater.position(2);
+                theta = dynamicsUpdater.orientation;
+                u = dynamicsUpdater.velocity;
+                v = dynamicsUpdater.lateralVelocity;
+                r = dynamicsUpdater.yawRate;
+                phi = dynamicsUpdater.rollAngle;   % Retrieve roll angle
+                p = dynamicsUpdater.rollRate;      % Retrieve roll rate
+    
+                %% Update StabilityChecker and Check Stability if trailer is included
+                if simParams.includeTrailer
+                    % Update omega_trailer and currentHitchAngle
+                    % Update StabilityChecker's dynamic parameters
+                    % Extract current dynamic parameters
+                    newVelocity = [u; v; 0];               % [u; v; w] in m/s
+                    newAngularVelocity = [0; 0; r];        % [p; q; r] in rad/s
+                    newTurnRadius = dynamicsUpdater.forceCalculator.turnRadius; % Assuming 'turnRadius' is a property of Transmission
+                    newVehicleMass = totalMassToUse;        % Total mass (tractor + trailer)
+    
+                    % Update StabilityChecker with new dynamics
+                    stabilityChecker = stabilityChecker.updateDynamics(newVelocity, newAngularVelocity, newTurnRadius, newVehicleMass, theta);
+    
+                    % Update Hitch Angle (delta) based on current articulation
+                    % Assuming 'delta' represents the current hitch articulation angle in radians
+                    % Update this value based on your simulation's articulation logic
+                    stabilityChecker.currentHitchAngle = psi_trailer; % Ensure 'delta' is defined and updated appropriately
+
+                    % stabilityChecker = stabilityChecker.updateDamping(simParams.dampingX);
+                    % Check stability conditions
+                    stabilityChecker = stabilityChecker.checkStability();
+    
+                    % Get stability flags
+                    [isWiggling, isRollover, isSkidding, isJackknife] = stabilityChecker.getStabilityFlags();
+
+                    % recommendedParams = stabilityChecker.generateRecommendedPacejkaParameters(highFidelityTireModel);
+                    % highFidelityTireModel.pCy1 = recommendedParams.pCy1;
+                    % highFidelityTireModel.pDy1 = recommendedParams.pDy1; 
+                    % highFidelityTireModel.pKy1 = recommendedParams.pKy1;
+                    % highFidelityTireModel.pEx1 = recommendedParams.pEx1;
+                    % highFidelityTireModel.pEx2 = recommendedParams.pEx2;
+                    % highFidelityTireModel.pEx3 = recommendedParams.pEx3;
+                    % highFidelityTireModel.pEx4 = recommendedParams.pEx4;
+                    % 
+                    % recommendedHitchParams = stabilityChecker.generateRecommendedHitchParameters(hitchModel);
+                    % hitchModel.stiffnessCoefficients.x = recommendedHitchParams.stiffnessCoefficients.x;
+                    % hitchModel.stiffnessCoefficients.y = recommendedHitchParams.stiffnessCoefficients.y;
+                    % hitchModel.stiffnessCoefficients.roll = recommendedHitchParams.stiffnessCoefficients.roll;
+                    % hitchModel.stiffnessCoefficients.pitch = recommendedHitchParams.stiffnessCoefficients.pitch;
+                    % hitchModel.stiffnessCoefficients.yaw = recommendedHitchParams.stiffnessCoefficients.yaw;
+                    % hitchModel.dampingCoefficients.x = recommendedHitchParams.dampingCoefficients.x;
+                    % hitchModel.dampingCoefficients.y = recommendedHitchParams.dampingCoefficients.y;
+                    % hitchModel.dampingCoefficients.roll = recommendedHitchParams.dampingCoefficients.roll;
+                    % hitchModel.dampingCoefficients.pitch = recommendedHitchParams.dampingCoefficients.pitch;
+                    % hitchModel.dampingCoefficients.yaw = recommendedHitchParams.dampingCoefficients.yaw;
+    
+                    % Update globalVehicleFlags
+                    globalVehicleFlags.isWiggling = globalVehicleFlags.isWiggling || isWiggling;
+                    globalVehicleFlags.isRollover = globalVehicleFlags.isRollover || isRollover;
+                    globalVehicleFlags.isSkidding = globalVehicleFlags.isSkidding || isSkidding;
+                    globalVehicleFlags.isJackknife = globalVehicleFlags.isJackknife || isJackknife;
+    
+                    % Store the flags for plotting
+                    isWigglingArray(i) = isWiggling;
+                    isRolloverArray(i) = isRollover;
+                    isSkiddingArray(i) = isSkidding;
+                    isJackknifeArray(i) = isJackknife;
+                end
+
+                % --- Ensure that the longitudinal speed does not go below zero ---
+                if u < 0
+                    u = 0;
+                    dynamicsUpdater.velocity = 0; % Ensure updater's velocity is zero
+                    logMessages{end+1} = sprintf('Step %d: Corrected negative longitudinal speed to zero.', i);
+                end
+                % --- End of Speed Correction ---
+    
+                % obj.speedController.updatePosition(x,y);
+                % Store positions and angles for plotting
+                tractorX(i) = x;
+                tractorY(i) = y;
+                tractorTheta(i) = theta;
+                steeringAnglesSim(i) = steerAngleRad; % Store steering angle
+                % Store Roll Dynamics
+                rollAngleArray(i) = phi;   % Store roll angle
+                rollRateArray(i) = p;      % Store roll rate
+    
+                %% Align Trailer's Orientation and Position with Tractor if included
+                if simParams.includeTrailer
+                    % Compute Hitch Point Position based on Tractor's Position and Orientation
+                    x_hitch = x - hitch_offset_plot * cos(theta);
+                    y_hitch = y - hitch_offset_plot * sin(theta);
+    
+                    % Set Trailer's Hitch Position to Hitch Point Position
+                    trailerX(i) = x_hitch;
+                    trailerY(i) = y_hitch;
+    
+                    % Calculate Trailer's Orientation based on Movement Direction
+                    if i > 1
+                        trailerTheta(i) = psi_trailer;
+                    else
+                        trailerTheta(i) = theta;
+                    end
+                end
+    
+                % Collect log messages
+                logMessages{end+1} = sprintf('Step %d:', i);
+                logMessages{end+1} = sprintf('  Tractor Position: (%.2f, %.2f)', x, y);
+                logMessages{end+1} = sprintf('  Tractor Theta: %.4f radians', theta);
+                logMessages{end+1} = sprintf('  Tractor Roll Angle: %.4f radians', phi);
+                if simParams.includeTrailer
+                    logMessages{end+1} = sprintf('  Trailer Hitch Position: (%.2f, %.2f)', trailerX(i), trailerY(i));
+                    logMessages{end+1} = sprintf('  Trailer Theta: %.4f radians', trailerTheta(i));
+                end
+                logMessages{end+1} = '----------------------------------------';
+
+                %% Store simulation data for Excel output
+                positionX(i) = x;
+                positionY(i) = y;
+                orientationArray(i) = theta;
+                velocityU(i) = u;
+                lateralVelocityV(i) = v;
+                yawRateR(i) = r;
+                accelerationLongitudinal(i) = dynamicsUpdater.a_long;
+                accelerationLateral(i) = dynamicsUpdater.a_lat;
+                accelerationsim(i) = norm([dynamicsUpdater.a_long, dynamicsUpdater.a_lat]);
+                % Compute jerk (derivative of acceleration)
+                if i > 1
+                    jerkLongitudinal(i) = (accelerationLongitudinal(i) - accelerationLongitudinal(i-1)) / dt;
+                    jerkLateral(i) = (accelerationLateral(i) - accelerationLateral(i-1)) / dt;
+                else
+                    jerkLongitudinal(i) = 0;
+                    jerkLateral(i) = 0;
+                end
+                % steeringAnglesSim already stored earlier
+            catch ME
+                % Handle any errors and ensure logs are saved
+                %logMessages{end+1} = sprintf('Simulation Error: %s', ME.message);
+                try
+                    [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
+                    disp(['Logs saved to ', txtFilename, ' and ', csvFilename]);
+                catch logError
+                    warning('Failed to save simulation logs due to: %s', logError.message);
+                end
+                rethrow(ME); % Re-throw the error after logging
+        
+                % --- Added: Update Waitbar to Indicate Error ---
+                %waitbar(1, hWaitbar, 'Simulation Error Occurred.');
+                %pause(1); % Optional pause to allow user to see the message
+                %closeIfOpen(hWaitbar); % Close the waitbar
+            end
+         end
+        
+        function  [ ...
+                tractorX, ...
+                tractorY, ...
+                tractorTheta, ...
+                trailerX, ...
+                trailerY, ...
+                trailerTheta, ...
+                globalVehicleFlags, ...
+                steeringAnglesSim, ...
+                simParams, ...
+                perTireLoadTractor, ...
+                perTireLoadTrailer, ...
+                horsepowerSim, ...
+                desiredGear, ...
+                isWigglingArray, ...
+                isRolloverArray, ...
+                isSkiddingArray, ...
+                isJackknifeArray, ...
+                u_trailer, ...
+                v_trailer, ...
+                r_trailer, ...
+                stabilityChecker, ...
+                positionX, ...
+                positionY, ...
+                orientationArray, ...
+                velocityU, ...
+                lateralVelocityV, ...
+                yawRateR, ...
+                rollAngleArray, ...
+                rollRateArray, ...
+                accelerationLongitudinal, ...
+                accelerationLateral, ...
+                jerkLongitudinal, ...
+                jerkLateral, ...
+                pathFollower, ...
+                throttle, ...
+                flatTireIndices ...
+                ] = closeSimulation(obj, ...
+                i, ...
+                tractorX, ...
+                tractorY, ...
+                tractorTheta, ...
+                trailerX, ...
+                trailerY, ...
+                trailerTheta, ...
+                globalVehicleFlags, ...
+                steeringAnglesSim, ...
+                speedData, ...
+                simParams, ...
+                engine, ...
+                maxSpeedSteer, ...
+                steerAngles, ...
+                accelerationData, ...
+                tirePressureData, ...
+                steeringEnded, ...
+                accelerationEnded, ...
+                tirePressureEnded, ...
+                perTireLoadTractor, ...
+                totalLoadTrailer, ...
+                perTireLoadTrailer, ...
+                frontAxlePosition, ...
+                maxAngleAtZeroSpeed, ...
+                horsepowerSim, ...
+                desiredGear, ...
+                isWigglingArray, ...
+                isRolloverArray, ...
+                isSkiddingArray, ...
+                isJackknifeArray, ...
+                h_CoG_trailer, ...
+                trackWidth_trailer, ...
+                x_trailer, ...
+                y_trailer, ...
+                u_trailer, ...
+                v_trailer, ...
+                r_trailer, ...
+                W_trailer, ...
+                centerOfGravityTrailer, ...
+                pressureMatrixKeyTractor, ...
+                centerOfGravity, ...
+                totalContactArea, ...
+                tireWidth, ...
+                rollThreshold, ...
+                hitchInstabilityThreshold, ...
+                hitchPointDistance, ...
+                U, ...
+                L, ...
+                tolerance, ...
+                stabilityChecker, ...
+                timeArray, ...
+                positionX, ...
+                positionY, ...
+                orientationArray, ...
+                velocityU, ...
+                lateralVelocityV, ...
+                yawRateR, ...
+                rollAngleArray, ...
+                rollRateArray, ...
+                accelerationLongitudinal, ...
+                accelerationLateral, ...
+                jerkLongitudinal, ...
+                jerkLateral, ...
+                speedZeroReached, ...
+                reportInterval, ...
+                pathFollower, ...
+                throttle, ...
+                flatTireIndices)
+            try
                 logMessages{end+1} = '--- Simulation Completed ---';
         
                 % Plot Stability Flags
