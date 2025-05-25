@@ -1,6 +1,7 @@
 %/**
 % * @class SimManager
 % * @brief Handles running simulations, detecting collisions, and plotting results for Vehicles in parallel.
+% * @see PARALLEL_COMPUTING.md for detailed strategies on implementing parallel execution and performance improvements.
 % *
 % * This revised version launches collision detection in parallel to animating the trajectories.
 % *
@@ -69,7 +70,11 @@ classdef SimManager < handle
         % */
         function runSimulations(obj)
             try
-                %% 1. Clear Previous Plots
+            %% 1. Prepare parallel pool and clear previous plots
+            % Ensure a parallel pool is available for concurrent execution
+            if isempty(gcp('nocreate'))
+                parpool('local');
+            end
                 disp('Clearing previous plots...');
                 obj.plotManager.clearPlots();
 
@@ -444,7 +449,7 @@ classdef SimManager < handle
                         v1.v,...
                         v1.r,...
                         v1.theta...
-                        ] = obj.vehicleSim1.computeNextFrame( ...
+                        ] = obj.vehicleSim2.computeNextFrame( ...
                         iStep, ...
                         v1.tractorX, ...
                         v1.tractorY, ...
@@ -742,6 +747,8 @@ classdef SimManager < handle
                     %% 9. Transfer Simulation Results
                     disp('Transferring simulation results to DataManager...');
                     obj.transferSimulationResults();
+                    % Ensure consistent data length for extension
+                    maxLength = totalSteps;
                 end
 
                 obj.dataManager.globalVehicle1Data.X = extendData(obj.dataManager.globalVehicle1Data.X, maxLength);
@@ -1399,6 +1406,15 @@ classdef SimManager < handle
                 'steeringAngles', steeringAngles, ...
                 'speedData', speedData ...
             );
+        end
+        
+        function simResultsArray = runBatchVehicleSimulations(vehicleSimArray)
+            % runBatchVehicleSimulations Runs multiple vehicle simulations in parallel
+            n = numel(vehicleSimArray);
+            simResultsArray = cell(1, n);
+            parfor k = 1:n
+                simResultsArray{k} = SimManager.runVehicleSim1(vehicleSimArray{k});
+            end
         end
     end
 end

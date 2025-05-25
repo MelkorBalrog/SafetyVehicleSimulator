@@ -364,6 +364,7 @@ classdef ForceCalculator
                 E = obj.E_tires;
                 Fy = D .* sin(C .* atan(B .* alpha - E .* (B .* alpha - atan(B .* alpha))));
             else
+                % High-fidelity tire model: compute per-tire forces sequentially
                 Fy = zeros(numTires,1);
                 for i = 1:numTires
                     Fy(i) = obj.highFidelityTireModel.calculateLateralForce(alpha(i), loads(i), i);
@@ -499,18 +500,16 @@ classdef ForceCalculator
 
         %% calculateInertiaPassenger
         function inertia = calculateInertiaPassenger(obj)
-            Ixx=0; Iyy=0; Izz=0;
-            numLoads = size(obj.loadDistribution, 1);
-            for i=1:numLoads
-                loadWeight = obj.loadDistribution(i,4);
-                loadMass   = loadWeight/obj.gravity;
-                r = obj.loadDistribution(i,1:3)' - obj.centerOfGravity;
-
-                Ixx = Ixx + loadMass*(r(2)^2 + r(3)^2);
-                Iyy = Iyy + loadMass*(r(1)^2 + r(3)^2);
-                Izz = Izz + loadMass*(r(1)^2 + r(2)^2);
-            end
-            inertia = [Ixx,Iyy,Izz];
+            % Vectorized inertia calculation for passenger loads
+            loads = obj.loadDistribution(:,4);         % load weights (N)
+            masses = loads / obj.gravity;             % convert to mass (kg)
+            % position vectors relative to CoG [x,y,z]
+            relPos = obj.loadDistribution(:,1:3) - obj.centerOfGravity';
+            % compute inertia sums
+            Ixx = sum(masses .* (relPos(:,2).^2 + relPos(:,3).^2));
+            Iyy = sum(masses .* (relPos(:,1).^2 + relPos(:,3).^2));
+            Izz = sum(masses .* (relPos(:,1).^2 + relPos(:,2).^2));
+            inertia = [Ixx, Iyy, Izz];
         end
 
         %% setFlatTire
