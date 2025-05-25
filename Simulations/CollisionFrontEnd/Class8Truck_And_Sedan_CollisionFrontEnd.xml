@@ -2904,8 +2904,9 @@
       <trailerAxleSpacing>1.31</trailerAxleSpacing>
       <trailerHitchDistance>1.31</trailerHitchDistance>
       <tractorHitchDistance>4.5</tractorHitchDistance>
-      <steeringCommands>pathfollower_(200)</steeringCommands>
-      <accelerationCommands>pathfollower_(200)</accelerationCommands>
+      <steeringCommands>simval_(195)|ramp_-30(1)|keep_-30(0.8)|ramp_0(0.2)|keep_0(1)</steeringCommands>
+      <accelerationCommands>simval_(200)</accelerationCommands>
+      <tirePressureCommands>pressure_(t:150-[tire:9,psi:70];[tire:2,psi:72];[tire:1,psi:7])</tirePressureCommands>
       <maxEngineTorque>3000</maxEngineTorque>
       <maxPower>400000</maxPower>
       <idleRPM>600</idleRPM>
@@ -3023,16 +3024,16 @@
       <roadRoughness>0</roadRoughness>
       <stiffnessX>10000</stiffnessX>
       <stiffnessY>10000</stiffnessY>
-      <stiffnessZ>10000</stiffnessZ>
+      <stiffnessZ>50000</stiffnessZ>
       <stiffnessRoll>5000</stiffnessRoll>
       <stiffnessPitch>1000</stiffnessPitch>
       <stiffnessYaw>2000</stiffnessYaw>
       <dampingX>100000</dampingX>
       <dampingY>100000</dampingY>
       <dampingZ>50000</dampingZ>
-      <dampingRoll>400000</dampingRoll>
-      <dampingPitch>400000</dampingPitch>
-      <dampingYaw>800000</dampingYaw>
+      <dampingRoll>5000</dampingRoll>
+      <dampingPitch>1000</dampingPitch>
+      <dampingYaw>2000</dampingYaw>
       <K_spring>30000</K_spring>
       <C_damping>1500</C_damping>
       <restLength>0.5</restLength>
@@ -3099,8 +3100,9 @@
       <trailerAxleSpacing>1.31</trailerAxleSpacing>
       <trailerHitchDistance>1.31</trailerHitchDistance>
       <tractorHitchDistance>4.5</tractorHitchDistance>
-      <steeringCommands>step_0(150)|ramp_0(1)|keep_0(49)</steeringCommands>
-      <accelerationCommands>pathfollower_(200)</accelerationCommands>
+      <steeringCommands>simval_(200)</steeringCommands>
+      <accelerationCommands>simval_(200)</accelerationCommands>
+      <tirePressureCommands>pressure_(t:1-[tire:2,psi:72];[tire:1,psi:7])</tirePressureCommands>
       <maxEngineTorque>250</maxEngineTorque>
       <maxPower>150000</maxPower>
       <idleRPM>800</idleRPM>
@@ -3205,12 +3207,12 @@
       <excelData/>
    </Vehicle2>
    <UIFields>
-      <vehicle1OffsetX>100</vehicle1OffsetX>
+      <vehicle1OffsetX>-75</vehicle1OffsetX>
       <vehicle1OffsetY>200</vehicle1OffsetY>
       <rotateVehicle1>false</rotateVehicle1>
       <vehicle1RotationAngle>0</vehicle1RotationAngle>
-      <offsetX>-1600</offsetX>
-      <offsetY>300</offsetY>
+      <offsetX>100</offsetX>
+      <offsetY>205</offsetY>
       <rotateVehicle2>false</rotateVehicle2>
       <rotationAngle>0</rotationAngle>
       <severityBoundType>Average</severityBoundType>

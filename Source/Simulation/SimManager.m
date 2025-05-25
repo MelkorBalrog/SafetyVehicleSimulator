@@ -483,7 +483,7 @@ classdef SimManager < handle
                         obj.vehicleSim1.simParams, obj.vehicleSim2.simParams);
                     obj.plotManager.updateVehicleOutlines(obj.dataManager, iStep, ...
                         vehicleParams1, trailerParams1, vehicleParams2, trailerParams2);
-                    drawnow;
+                    drawnow limitrate; % faster frame updates by limiting draw rate
                     % Get dynamic playback speed
                     try
                         playbackSpeed = obj.uiManager.getPlaybackSpeed();
