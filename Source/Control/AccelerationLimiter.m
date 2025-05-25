@@ -173,13 +173,13 @@ classdef AccelerationLimiter < handle
                 % Apply acceleration limits
                 maxAccel = obj.computeMaxAcceleration(speed);
                 limitedAccel = min(filteredAccel, maxAccel);
-                fprintf('AccelerationLimiter: Desired Accel = %.2f m/s^2, Filtered Accel = %.2f m/s^2, Max Allowed Accel = %.2f m/s^2\n', ...
+                debugLog('AccelerationLimiter: Desired Accel = %.2f m/s^2, Filtered Accel = %.2f m/s^2, Max Allowed Accel = %.2f m/s^2\n', ...
                     desiredAccel, filteredAccel, maxAccel);
             else
                 % Apply deceleration limits
                 maxDecel = obj.computeMaxDeceleration(speed);
                 limitedAccel = max(filteredAccel, maxDecel);  % Since maxDecel is negative
-                fprintf('AccelerationLimiter: Desired Decel = %.2f m/s^2, Filtered Decel = %.2f m/s^2, Max Allowed Decel = %.2f m/s^2\n', ...
+                debugLog('AccelerationLimiter: Desired Decel = %.2f m/s^2, Filtered Decel = %.2f m/s^2, Max Allowed Decel = %.2f m/s^2\n', ...
                     desiredAccel, filteredAccel, maxDecel);
             end
             

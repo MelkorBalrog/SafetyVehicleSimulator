@@ -101,6 +101,8 @@ classdef UIManager < handle
         % Simulation control flags
         pauseFlag                % Logical flag for pause state
         stopFlag                 % Logical flag for stop state
+
+        suppressDebugCheckbox
     end
 
     methods
@@ -645,26 +647,45 @@ classdef UIManager < handle
             obj.pauseFlag = false;
             obj.stopFlag = false;
             obj.simControlFig = uifigure('Name', 'Simulation Controls', ...
-                'Position', [1800, 100, 300, 180], ...
+                'Position', [1800, 100, 300, 220], ...
                 'Color', [0.95, 0.95, 0.95]);
-            grid = uigridlayout(obj.simControlFig, [3, 1], ...
-                'RowHeight', {30, 60, 30}, 'Padding', [10, 10, 10, 10], ...
+            % 4 rows: map toggle, debug toggle, playback buttons, stop button
+            grid = uigridlayout(obj.simControlFig, [4, 1], ...
+                'RowHeight', {30, 30, 60, 30}, 'Padding', [10, 10, 10, 10], ...
                 'RowSpacing', 10);
             % Map Trajectory Checkbox
+            % Toggle map trajectory display (row 1)
             obj.mapTrajectoryCheckbox = uicheckbox(grid, ...
                 'Text', 'Show Map Trajectory', ...
-                'Value', true);
+                'Value', true, ...
+                'ValueChangedFcn', @(src,~) setappdata(0,'ShowMapTrajectory',src.Value));
+            obj.mapTrajectoryCheckbox.Layout.Row = 1;
+            obj.mapTrajectoryCheckbox.Layout.Column = 1;
+            setappdata(0, 'ShowMapTrajectory', true);
+            % Toggle debug message suppression (row 2)
+            obj.suppressDebugCheckbox = uicheckbox(grid, ...
+                'Text', 'Suppress Debug Messages', ...
+                'Value', true, ...
+                'ValueChangedFcn', @(src,~) setappdata(0,'SuppressDebug',src.Value));
+            obj.suppressDebugCheckbox.Layout.Row = 2;
+            obj.suppressDebugCheckbox.Layout.Column = 1;
+            setappdata(0, 'SuppressDebug', true);
             % Playback Buttons Panel
+            % Playback buttons panel (row 3)
             btnPanel = uipanel(grid, 'Title', 'Playback', 'BackgroundColor', [1,1,1]);
-            btnPanel.Layout.Row = 2; btnPanel.Layout.Column = 1;
+            btnPanel.Layout.Row = 3;
+            btnPanel.Layout.Column = 1;
             btnGrid = uigridlayout(btnPanel, [1,3], ...
                 'ColumnWidth', {'1x','1x','1x'}, 'RowHeight', {30}, 'ColumnSpacing', 5);
             obj.playButton = uibutton(btnGrid, 'push', 'Text', 'Play', ...
                 'ButtonPushedFcn', @(~,~) obj.onPlay());
             obj.pauseButton = uibutton(btnGrid, 'push', 'Text', 'Pause', ...
                 'ButtonPushedFcn', @(~,~) obj.onPause());
+            % Stop simulation button (row 4)
             obj.stopButton = uibutton(grid, 'push', 'Text', 'Stop Simulation', ...
                 'ButtonPushedFcn', @(~,~) obj.onStop());
+            obj.stopButton.Layout.Row = 4;
+            obj.stopButton.Layout.Column = 1;
         end
 
         function onPlay(obj)
@@ -690,6 +711,10 @@ classdef UIManager < handle
 
         function showMap = getMapTrajectoryFlag(obj)
             showMap = obj.mapTrajectoryCheckbox.Value;
+        end
+        function suppressDebug = getSuppressDebugFlag(obj)
+            % Returns true if debug messages are suppressed
+            suppressDebug = obj.suppressDebugCheckbox.Value;
         end
     end
 end

@@ -14,7 +14,49 @@
 % *
 % * @version 3.4
 % * @date 2024-12-28
-% */
+ % */
+% ============================================================================
+% Module Interface
+% Methods:
+%   updateDynamics(newVelocity,newAngularVelocity,newTurnRadius,newVehicleMass,orientation)
+%   detectWiggling()
+%   detectRollover()
+%   detectSkidding()
+%   detectJackknife()
+%   recommendPacejkaUpdates(dt)
+%   recommendHitchUpdates(dt)
+%
+% Properties:
+%   Stability flags: isWiggling, isRollover, isSkidding, isJackknife
+%   Thresholds and scores for various instability modes
+%   Dynamic parameters: velocity, angularVelocity, turnRadius, vehicleMass, orientation
+%   Adaptation parameters: pDy1_current, K_hitchYaw_current
+%
+% Dependencies:
+%   DynamicsUpdater, ForceCalculator, KinematicsCalculator
+%
+% Bottlenecks:
+%   - Per-sample buffer operations for yaw history (wiggle detection)
+%   - ODE-based parameter adaptation loops in recommend* methods
+%   - Frequent threshold recalculations
+%
+% Proposed Optimizations:
+%   - Pre-allocate circular buffer for yaw angles to avoid dynamic array resizing
+%   - Vectorize wobble detection via convolution or sign-change on buffered array
+%   - Replace ODE adaptation with closed-form update or use fewer integration steps
+%   - Cache threshold computations and update only when parameters change
+% ============================================================================
+% Embedded Systems Best Practices:
+%   - Pre-allocate ring buffers (e.g., trailerYawBuffer) with fixed length
+%   - Replace array shifts with circular buffer index arithmetic
+%   - Vectorize detection logic using convolution or logical operations
+%   - Inline critical scoring operations to reduce runtime overhead
+%   - Guard debug/printf calls with a compile-time flag
+%   - Cache threshold and coefficient values to avoid repeated computations
+%   - Use lookup tables for nonlinear functions (e.g., risk-curves)
+%   - Minimize floating-point divisions and transcendentals in fast paths
+%   - Generate MEX functions for compute-intensive segments
+% ============================================================================
 classdef StabilityChecker
     properties
         % ----------------------------------------------------------------
@@ -67,8 +109,10 @@ classdef StabilityChecker
         %  Wiggling Detection
         % ----------------------------------------------------------------
 
-        % A short-term buffer of trailer yaw angles for sign-change detection
-        trailerYawBuffer
+        % A short-term circular buffer of trailer yaw angles for sign-change detection
+        trailerYawBuffer               % Trailer yaw angle circular buffer (preallocated)
+        trailerYawIndex = 0            % Current write index in trailerYawBuffer
+        trailerYawCount = 0            % Number of samples filled in trailerYawBuffer (<= wiggleWindowSize)
         wiggleWindowSize = 20     % how many past samples to store
         wigglingThreshold = 0.4   % if wiggleMeasure > 0.4 => we say "exceed"
 
@@ -140,7 +184,7 @@ classdef StabilityChecker
         % ================================================================
         function obj = StabilityChecker(dynamicsUpdater, forceCalc, kinematicsCalc, ...
                                         m_trailer, L_trailer, mu, h_CoG)
-            fprintf('Initializing StabilityChecker (auto-threshold calculation)...\n');
+            debugLog('Initializing StabilityChecker (auto-threshold calculation)...\n');
 
             obj.dynamicsUpdater      = dynamicsUpdater;
             obj.forceCalculator      = forceCalc;
@@ -175,9 +219,14 @@ classdef StabilityChecker
             obj.maxArticulationAngle      = atan(obj.L_trailer / (2 * obj.h_CoG));
             obj.yawMomentThreshold        = obj.mu * obj.m_trailer * g * (obj.L_trailer / 2);
 
-            fprintf('Auto-threshold => rollAngle=%.4f, hitch=%.2f N, maxArtic=%.4f, yawMoment=%.2f\n',...
-                obj.rollAngleThreshold, obj.hitchInstabilityThreshold, ...
-                obj.maxArticulationAngle, obj.yawMomentThreshold);
+            debugLog('Auto-threshold => rollAngle=%.4f, hitch=%.2f N, maxArtic=%.4f, yawMoment=%.2f\n', ...
+                     obj.rollAngleThreshold, obj.hitchInstabilityThreshold, ...
+                     obj.maxArticulationAngle, obj.yawMomentThreshold);
+            
+            % Initialize trailer yaw circular buffer
+            obj.trailerYawBuffer = zeros(obj.wiggleWindowSize, 1);
+            obj.trailerYawIndex = 0;
+            obj.trailerYawCount = 0;
         end
 
         % ================================================================
@@ -198,25 +247,24 @@ classdef StabilityChecker
         function obj = detectWiggling(obj)
             % 1) Get trailer yaw angle from forceCalculator (or kinematicsCalculator)
             forces = obj.forceCalculator.getCalculatedForces();
-            if isKey(forces, 'trailerPsi')
-                currentTrailerYaw = forces('trailerPsi');
+            if isfield(forces, 'trailerPsi')
+                currentTrailerYaw = forces.trailerPsi;
             else
                 currentTrailerYaw = 0; % fallback
             end
 
-            % 2) Append to trailerYawBuffer
-            obj.trailerYawBuffer(end+1) = currentTrailerYaw;
-            if length(obj.trailerYawBuffer) > obj.wiggleWindowSize
-                obj.trailerYawBuffer(1) = [];  % remove oldest
+            % 2) Update circular buffer of trailer yaw angles
+            obj.trailerYawIndex = mod(obj.trailerYawIndex, obj.wiggleWindowSize) + 1;
+            obj.trailerYawBuffer(obj.trailerYawIndex) = currentTrailerYaw;
+            if obj.trailerYawCount < obj.wiggleWindowSize
+                obj.trailerYawCount = obj.trailerYawCount + 1;
+                return;  % wait until buffer is full
             end
-
-            % If we haven't reached the window size yet, skip
-            if length(obj.trailerYawBuffer) < obj.wiggleWindowSize
-                return;
-            end
-
-            % 3) Compute discrete differences of yaw angles
-            diffs = diff(obj.trailerYawBuffer);
+            % 3) Extract buffer contents in chronological order
+            idx = mod((obj.trailerYawIndex + (1:obj.wiggleWindowSize)) - 1, obj.wiggleWindowSize) + 1;
+            data = obj.trailerYawBuffer(idx);
+            % 4) Compute discrete differences of yaw angles
+            diffs = diff(data);
 
             % Optionally ignore small diffs < minYawAmplitude
             diffs(abs(diffs) < obj.minYawAmplitude) = 0;
@@ -264,8 +312,8 @@ classdef StabilityChecker
             % 1) Get raw rollover risk index from ForceCalculator
             forces = obj.forceCalculator.getCalculatedForces();
             rolloverRiskRaw = 0;
-            if isKey(forces, 'rolloverRiskIndex')
-                rolloverRiskRaw = forces('rolloverRiskIndex');
+            if isfield(forces, 'rolloverRiskIndex')
+                rolloverRiskRaw = forces.rolloverRiskIndex;
             end
         
             % 2) Increase threshold to avoid small spurious triggers
@@ -323,8 +371,8 @@ classdef StabilityChecker
             end
         
             F_traction = 0;
-            if isKey(forces, 'traction')
-                F_traction_vec = forces('traction');
+            if isfield(forces, 'traction')
+                F_traction_vec = forces.traction;
                 F_traction     = F_traction_vec(1);
             end
         
@@ -350,8 +398,8 @@ classdef StabilityChecker
         function obj = detectJackknife(obj)
             forces = obj.forceCalculator.getCalculatedForces();
             F_hitch_lateral = 0;
-            if isKey(forces, 'hitchLateralForce')
-                F_hitch_lateral = forces('hitchLateralForce');
+            if isfield(forces, 'hitchLateralForce')
+                F_hitch_lateral = forces.hitchLateralForce;
             end
 
             % Suppose we store trailer yaw minus tractor yaw in currentHitchAngle
@@ -433,8 +481,8 @@ classdef StabilityChecker
         function [obj, pDy1_updated] = recommendPacejkaUpdates(obj, dt)
             forces = obj.forceCalculator.getCalculatedForces();
             rolloverRisk = 0;
-            if isKey(forces, 'rolloverRiskIndex')
-                rolloverRisk = forces('rolloverRiskIndex');
+            if isfield(forces, 'rolloverRiskIndex')
+                rolloverRisk = forces.rolloverRiskIndex;
             end
 
             alpha_roll = 0.05;  
@@ -457,8 +505,8 @@ classdef StabilityChecker
         function [obj, K_hitch_updated] = recommendHitchUpdates(obj, dt)
             forces = obj.forceCalculator.getCalculatedForces();
             jackRisk = 0;
-            if isKey(forces, 'jackknifeRiskIndex')
-                jackRisk = forces('jackknifeRiskIndex');
+            if isfield(forces, 'jackknifeRiskIndex')
+                jackRisk = forces.jackknifeRiskIndex;
             end
 
             gamma_jack  = 100.0;  

@@ -2816,7 +2816,7 @@ classdef VehicleModel < handle
                     logMessages{end+1} = sprintf('Step %d: Horsepower: %.2f HP', i, horsePower);
         
                     % Update the force calculator's calculated forces
-                    dynamicsUpdater.forceCalculator.calculatedForces('traction') = [F_traction; 0; 0];
+                    dynamicsUpdater.forceCalculator.calculatedForces.traction = [F_traction; 0; 0];
         
                     % Optionally store horsepower in a data array if you wish to log it over time
                     horsepowerSim(i) = horsePower; % This array can be saved or plotted later
@@ -2837,7 +2837,7 @@ classdef VehicleModel < handle
                         % Calculate Hitch Forces and Moments
                         [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
                         % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
-                        dynamicsUpdater.forceCalculator.calculatedForces('momentZ') = M_hitch;
+                        dynamicsUpdater.forceCalculator.calculatedForces.momentZ = M_hitch;
         
                         % Update trailer's orientation and yaw rate from HitchModel
                         psi_trailer = hitchModel.angularState.psi;
@@ -2852,7 +2852,7 @@ classdef VehicleModel < handle
                         v_trailer = v; % Assuming negligible sideslip difference
         
                         % Apply Hitch Forces to ForceCalculator
-                        dynamicsUpdater.forceCalculator.calculatedForces('hitch') = F_hitch;
+                        dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
         
                         %% Update Trailer's State in DynamicsUpdater
                         dynamicsUpdater = dynamicsUpdater.setTrailerVelocity([u_trailer; v_trailer; 0]);
