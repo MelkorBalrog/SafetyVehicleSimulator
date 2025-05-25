@@ -38,6 +38,12 @@ classdef PlotManager < handle
         trl1StartMarker
         veh2StartMarker
         trl2StartMarker
+
+        % Handles to wheel patches for tires
+        veh1WheelPatches
+        trl1WheelPatches
+        veh2WheelPatches
+        trl2WheelPatches
     end
 
     methods
@@ -244,13 +250,13 @@ classdef PlotManager < handle
             outline1 = [corners1; corners1(1,:)]; % close polygon
             set(obj.veh1Outline, 'XData', outline1(:,1), 'YData', outline1(:,2));
 
-            % Trailer 1
+            % Trailer 1: plot using simulated hitch positions
             if ~isempty(trailerParams1)
-                cornersT1 = VehiclePlotter.getVehicleCorners( ...
-                    dataManager.globalTrailer1Data.X(iStep), ...
-                    dataManager.globalTrailer1Data.Y(iStep), ...
-                    dataManager.globalTrailer1Data.Theta(iStep), ...
-                    trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
+                hitchX1 = dataManager.globalTrailer1Data.X(iStep);
+                hitchY1 = dataManager.globalTrailer1Data.Y(iStep);
+                tTh1 = dataManager.globalTrailer1Data.Theta(iStep);
+                cornersT1 = VehiclePlotter.getVehicleCorners(...
+                    hitchX1, hitchY1, tTh1, trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
                 outlineT1 = [cornersT1; cornersT1(1,:)];
                 set(obj.trl1Outline, 'XData', outlineT1(:,1), 'YData', outlineT1(:,2));
             else
@@ -266,17 +272,237 @@ classdef PlotManager < handle
             outline2 = [corners2; corners2(1,:)];
             set(obj.veh2Outline, 'XData', outline2(:,1), 'YData', outline2(:,2));
 
-            % Trailer 2
+            % Trailer 2: plot using simulated hitch positions
             if ~isempty(trailerParams2)
-                cornersT2 = VehiclePlotter.getVehicleCorners( ...
-                    dataManager.globalTrailer2Data.X(iStep), ...
-                    dataManager.globalTrailer2Data.Y(iStep), ...
-                    dataManager.globalTrailer2Data.Theta(iStep), ...
-                    trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
+                hitchX2 = dataManager.globalTrailer2Data.X(iStep);
+                hitchY2 = dataManager.globalTrailer2Data.Y(iStep);
+                tTh2 = dataManager.globalTrailer2Data.Theta(iStep);
+                cornersT2 = VehiclePlotter.getVehicleCorners(...
+                    hitchX2, hitchY2, tTh2, trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
                 outlineT2 = [cornersT2; cornersT2(1,:)];
                 set(obj.trl2Outline, 'XData', outlineT2(:,1), 'YData', outlineT2(:,2));
             else
                 set(obj.trl2Outline, 'XData', NaN, 'YData', NaN);
+            end
+            % Update wheel patches (rectangles)
+            % Vehicle 1 tires
+            steer1 = rad2deg(dataManager.globalVehicle1Data.SteeringAngle(iStep));
+            [shX1, shY1] = obj.computeAllWheelShapes( ...
+                dataManager.globalVehicle1Data.X(iStep), ...
+                dataManager.globalVehicle1Data.Y(iStep), ...
+                dataManager.globalVehicle1Data.Theta(iStep), vehicleParams1, steer1);
+            for k = 1:numel(shX1)
+                set(obj.veh1WheelPatches(k), 'XData', shX1{k}, 'YData', shY1{k});
+            end
+            % Trailer 1 tires
+            if ~isempty(trailerParams1)
+                [shT1X, shT1Y] = obj.computeAllWheelShapes( ...
+                    hitchX1, ...
+                    hitchY1, ...
+                    tTh1, trailerParams1, 0);
+                for k = 1:numel(shT1X)
+                    set(obj.trl1WheelPatches(k), 'XData', shT1X{k}, 'YData', shT1Y{k});
+                end
+            end
+            % Vehicle 2 tires
+            steer2 = rad2deg(dataManager.globalVehicle2Data.SteeringAngle(iStep));
+            [shX2, shY2] = obj.computeAllWheelShapes( ...
+                dataManager.globalVehicle2Data.X(iStep), ...
+                dataManager.globalVehicle2Data.Y(iStep), ...
+                dataManager.globalVehicle2Data.Theta(iStep), vehicleParams2, steer2);
+            for k = 1:numel(shX2)
+                set(obj.veh2WheelPatches(k), 'XData', shX2{k}, 'YData', shY2{k});
+            end
+            % Trailer 2 tires
+            if ~isempty(trailerParams2)
+                [shT2X, shT2Y] = obj.computeAllWheelShapes( ...
+                    hitchX2, ...
+                    hitchY2, ...
+                    tTh2, trailerParams2, 0);
+                for k = 1:numel(shT2X)
+                    set(obj.trl2WheelPatches(k), 'XData', shT2X{k}, 'YData', shT2Y{k});
+                end
+            end
+        end
+
+        %% Initialize Wheel Patches for Tires
+        function initWheelMarkers(obj, dataManager, vehicleParams1, trailerParams1, vehicleParams2, trailerParams2)
+            i0 = 1;
+            % Vehicle 1 tires (apply steering angle for front axle)
+            steer1 = rad2deg(dataManager.globalVehicle1Data.SteeringAngle(i0));
+            [shX1, shY1] = obj.computeAllWheelShapes( ...
+                dataManager.globalVehicle1Data.X(i0), ...
+                dataManager.globalVehicle1Data.Y(i0), ...
+                dataManager.globalVehicle1Data.Theta(i0), vehicleParams1, steer1);
+            obj.veh1WheelPatches = gobjects(1, numel(shX1));
+            for k = 1:numel(shX1)
+                obj.veh1WheelPatches(k) = fill(shX1{k}, shY1{k}, 'k', 'Parent', obj.sharedAx);
+            end
+            % Trailer 1 tires
+            if ~isempty(trailerParams1)
+                tX0 = dataManager.globalTrailer1Data.X(i0);
+                tY0 = dataManager.globalTrailer1Data.Y(i0);
+                tTh0 = dataManager.globalTrailer1Data.Theta(i0);
+                shiftT0 = trailerParams1.HitchDistance - trailerParams1.length/2;
+                hitchX0 = tX0 - shiftT0 * cos(tTh0);
+                hitchY0 = tY0 - shiftT0 * sin(tTh0);
+                [shT1X, shT1Y] = obj.computeAllWheelShapes( ...
+                    hitchX0, ...
+                    hitchY0, ...
+                    tTh0, trailerParams1, 0);
+                obj.trl1WheelPatches = gobjects(1, numel(shT1X));
+                for k = 1:numel(shT1X)
+                    obj.trl1WheelPatches(k) = fill(shT1X{k}, shT1Y{k}, 'k', 'Parent', obj.sharedAx);
+                end
+            else
+                obj.trl1WheelPatches = gobjects(0);
+            end
+            % Vehicle 2 tires (apply steering angle for front axle)
+            steer2 = rad2deg(dataManager.globalVehicle2Data.SteeringAngle(i0));
+            [shX2, shY2] = obj.computeAllWheelShapes( ...
+                dataManager.globalVehicle2Data.X(i0), ...
+                dataManager.globalVehicle2Data.Y(i0), ...
+                dataManager.globalVehicle2Data.Theta(i0), vehicleParams2, steer2);
+            obj.veh2WheelPatches = gobjects(1, numel(shX2));
+            for k = 1:numel(shX2)
+                obj.veh2WheelPatches(k) = fill(shX2{k}, shY2{k}, 'k', 'Parent', obj.sharedAx);
+            end
+            % Trailer 2 tires
+            if ~isempty(trailerParams2)
+                tX20 = dataManager.globalTrailer2Data.X(i0);
+                tY20 = dataManager.globalTrailer2Data.Y(i0);
+                tTh20 = dataManager.globalTrailer2Data.Theta(i0);
+                shiftT20 = trailerParams2.HitchDistance - trailerParams2.length/2;
+                hitchX20 = tX20 - shiftT20 * cos(tTh20);
+                hitchY20 = tY20 - shiftT20 * sin(tTh20);
+                [shT2X, shT2Y] = obj.computeAllWheelShapes( ...
+                    hitchX20, ...
+                    hitchY20, ...
+                    tTh20, trailerParams2, 0);
+                obj.trl2WheelPatches = gobjects(1, numel(shT2X));
+                for k = 1:numel(shT2X)
+                    obj.trl2WheelPatches(k) = fill(shT2X{k}, shT2Y{k}, 'k', 'Parent', obj.sharedAx);
+                end
+            else
+                obj.trl2WheelPatches = gobjects(0);
+            end
+            % Ensure vehicles are on top of other graphics
+            try
+                uistack([obj.veh1Outline, obj.trl1Outline, obj.veh2Outline, obj.trl2Outline, ...
+                         obj.veh1WheelPatches, obj.trl1WheelPatches, obj.veh2WheelPatches, obj.trl2WheelPatches], 'top');
+            catch
+            end
+        end
+
+        %% Compute wheel center positions for all axles
+        function [xCenters, yCenters] = computeWheelCenters(obj, x, y, theta, params)
+            len = params.length;
+            wh = params.wheelHeight;
+            tw = params.trackWidth;
+            numAxles = params.numAxles;
+            numTires = params.numTiresPerAxle;
+            axlePositions = linspace(-len/2 + wh/2, len/2 - wh/2, numAxles);
+            perp = [cos(theta+pi/2); sin(theta+pi/2)];
+            dirv = [cos(theta); sin(theta)];
+            centers = [];
+            gap = 0.01;
+            for i = 1:numAxles
+                pos = axlePositions(i);
+                center = [x; y] + pos*dirv;
+                leftC = center + (tw/2)*perp;
+                rightC = center - (tw/2)*perp;
+                if numTires == 2
+                    centers = [centers; leftC'; rightC'];
+                else
+                    off = (wh + gap)/2;
+                    dvec = off*perp;
+                    centers = [centers; (leftC+dvec)'; (leftC-dvec)'; (rightC+dvec)'; (rightC-dvec)'];
+                end
+            end
+            xCenters = centers(:,1);
+            yCenters = centers(:,2);
+        end
+        
+        %% Compute wheel polygon shapes for all tires at a given pose
+        % Optional steeringAngleDeg (deg) for front axle steering
+        function [shapesX, shapesY] = computeAllWheelShapes(obj, x, y, theta, params, steeringAngleDeg)
+            % Compute polygon vertex lists for all wheel rectangles
+            if nargin < 6
+                steeringAngleDeg = 0;
+            end
+            % compute axle offsets from vehicle body origin and wheel rectangle basis
+            len = params.length;
+            tw = params.trackWidth;
+            numAxles = params.numAxles;
+            numTires = params.numTiresPerAxle;
+            % baseOffset aligns vehicle body center to simulation origin x,y
+            if params.isTractor
+                baseOffset = -params.length/2;
+            else
+                % trailer: origin is hitch point, center at hitch + remainingLength/2
+                hd = params.HitchDistance;
+                remainingLength = params.length - hd;
+                baseOffset = hd - params.length/2;
+            end
+            % compute axle offsets behind body origin
+            sp = params.axleSpacing;
+            if params.isTractor
+                rearOffsets = (1:numAxles) * sp - params.length/2;
+                frontOffset = -params.length/2 + sp + params.wheelbase;
+                offsets = [rearOffsets, frontOffset];
+            else
+                remain = params.length - params.HitchDistance;
+                offsets = -remain/2 + (1:numAxles) * sp;
+            end
+            dirv = [cos(theta); sin(theta)];
+            perp = [cos(theta + pi/2); sin(theta + pi/2)];
+            % origin shift for wheel centers
+            x0 = x + baseOffset * cos(theta);
+            y0 = y + baseOffset * sin(theta);
+            % local wheel rectangle coords: longitudinal along vehicle (height), lateral across track (width)
+            h = params.wheelHeight;  % longitudinal length of tire
+            w = params.wheelWidth;   % lateral width of tire
+            % localX along vehicle heading, localY across track
+            localX = [-h/2,  h/2,  h/2, -h/2, -h/2];
+            localY = [-w/2, -w/2,  w/2,  w/2, -w/2];
+            shapesX = {};
+            shapesY = {};
+            gap = 0.01;
+            % loop through each axle offset
+            for i = 1:length(offsets)
+                pos = offsets(i);
+                center = [x0; y0] + pos * dirv;
+                leftC = center + (tw/2) * perp;
+                rightC = center - (tw/2) * perp;
+                % decide tire count for this axle (only tractor front axle gets 2 tires)
+                if params.isTractor && i == length(offsets)
+                    tiresThisAxle = 2;
+                else
+                    tiresThisAxle = numTires;
+                end
+                % compute wheel center positions
+                wheelCenters = {};
+                if tiresThisAxle == 2
+                    wheelCenters = {leftC, rightC};
+                else
+                    % dual tires: separate each side by small lateral gap
+                    d = (w + gap)/2;
+                    offVec = d * perp;
+                    wheelCenters = {leftC+offVec, leftC-offVec, rightC+offVec, rightC-offVec};
+                end
+                % orientation for wheels
+                phi = 0;
+                if i == length(offsets)
+                    phi = deg2rad(steeringAngleDeg);
+                end
+                Rw = [cos(theta+phi), -sin(theta+phi); sin(theta+phi), cos(theta+phi)];
+                % build shapes
+                for wc = wheelCenters
+                    v = wc{1};
+                    rot = Rw * [localX; localY];
+                    shapesX{end+1} = rot(1,:) + v(1);
+                    shapesY{end+1} = rot(2,:) + v(2);
+                end
             end
         end
 
@@ -345,10 +571,33 @@ classdef PlotManager < handle
 
             % Plot Trailers First
             if ~isempty(dataManager.globalTrailer1Data.X)
+                % compute world position of tractor middle axle for alignment
+                th1 = dataManager.globalVehicle1Data.Theta(plotStep);
+                len1 = vehicleParams1.length;
+                axSp1 = vehicleParams1.axleSpacing;
+                numAx1 = vehicleParams1.numAxles;
+                midIdx1 = ceil(numAx1/2);
+                frontOff1 = len1/2;
+                midOff1 = midIdx1 * axSp1;
+                xCOM1 = dataManager.globalVehicle1Data.X(plotStep);
+                yCOM1 = dataManager.globalVehicle1Data.Y(plotStep);
+                xFront1 = xCOM1 + frontOff1 * cos(th1);
+                yFront1 = yCOM1 + frontOff1 * sin(th1);
+                xMidAx1 = xFront1 - midOff1 * cos(th1);
+                yMidAx1 = yFront1 - midOff1 * sin(th1);
+                % compute trailer hitch based on tractor middle axle alignment
+                hDist = trailerParams1.HitchDistance;
+                hitchX = xMidAx1 - hDist * cos(th1);
+                hitchY = yMidAx1 - hDist * sin(th1);
+                % adjust to mid-point between middle and rear axle
+                hitchX = hitchX - (vehicleParams1.axleSpacing/2) * cos(th1);
+                hitchY = hitchY - (vehicleParams1.axleSpacing/2) * sin(th1);
+                % trailer orientation
+                tTh = dataManager.globalTrailer1Data.Theta(plotStep);
                 obj.trl1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
-                    dataManager.globalTrailer1Data.X(plotStep), ...
-                    dataManager.globalTrailer1Data.Y(plotStep), ...
-                    dataManager.globalTrailer1Data.Theta(plotStep), ...
+                    hitchX, ...
+                    hitchY, ...
+                    tTh, ...
                     trailerParams1, ...
                     'b', ...
                     false, ...
@@ -358,10 +607,33 @@ classdef PlotManager < handle
                     trailerParams1.numAxles);
             end
             if ~isempty(dataManager.globalTrailer2Data.X)
+                % compute world position of tractor 2 middle axle for alignment
+                th2 = dataManager.globalVehicle2Data.Theta(plotStep);
+                len2 = vehicleParams2.length;
+                axSp2 = vehicleParams2.axleSpacing;
+                numAx2 = vehicleParams2.numAxles;
+                midIdx2 = ceil(numAx2/2);
+                frontOff2 = len2/2;
+                midOff2 = midIdx2 * axSp2;
+                xCOM2 = dataManager.globalVehicle2Data.X(plotStep);
+                yCOM2 = dataManager.globalVehicle2Data.Y(plotStep);
+                xFront2 = xCOM2 + frontOff2 * cos(th2);
+                yFront2 = yCOM2 + frontOff2 * sin(th2);
+                xMidAx2 = xFront2 - midOff2 * cos(th2);
+                yMidAx2 = yFront2 - midOff2 * sin(th2);
+                % compute trailer hitch based on tractor2 middle axle alignment
+                hDist2 = trailerParams2.HitchDistance;
+                hitchX2 = xMidAx2 - hDist2 * cos(th2);
+                hitchY2 = yMidAx2 - hDist2 * sin(th2);
+                % adjust to mid-point between middle and rear axle of tractor2
+                hitchX2 = hitchX2 - (vehicleParams2.axleSpacing/2) * cos(th2);
+                hitchY2 = hitchY2 - (vehicleParams2.axleSpacing/2) * sin(th2);
+                % trailer2 orientation
+                tTh2 = dataManager.globalTrailer2Data.Theta(plotStep);
                 obj.trl2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
-                    dataManager.globalTrailer2Data.X(plotStep), ...
-                    dataManager.globalTrailer2Data.Y(plotStep), ...
-                    dataManager.globalTrailer2Data.Theta(plotStep), ...
+                    hitchX2, ...
+                    hitchY2, ...
+                    tTh2, ...
                     trailerParams2, ...
                     'c', ...
                     false, ...

@@ -61,9 +61,17 @@ classdef VehiclePlotter
             wheelHeight = vehicleParams.wheelHeight;
             wheelbase = vehicleParams.wheelbase;
 
-            % === Hardcode trailerHitchDistance to 2.620 meters ===
-            trailerHitchDistance = 1.310 * 2;
-            % Calculate the remaining length of the trailer
+            % Get hitch distance for trailer (distance from hitch to front of body)
+            if isTractor
+                trailerHitchDistance = 0;
+            else
+                if isfield(vehicleParams, 'HitchDistance')
+                    trailerHitchDistance = vehicleParams.HitchDistance;
+                else
+                    trailerHitchDistance = 0;
+                end
+            end
+            % Calculate the remaining length of the trailer body
             remainingLength = length - trailerHitchDistance;
 
             % Initialize localCorners based on vehicle type
@@ -82,7 +90,7 @@ classdef VehiclePlotter
                                 -width/2, -width/2, width/2, width/2];
             else
                 % === Tractor or Passenger Vehicle Corner Calculation ===
-                % Front of the vehicle is at (0, 0), extend back by 'length' along X-axis
+                % Front of the vehicle is at (0,0), extend back by 'length' along X-axis
                 % Order: front-left, front-right, back-right, back-left
                 localCorners = [0, -length, -length, 0;
                                 -width/2, -width/2, width/2, width/2];
@@ -130,8 +138,8 @@ classdef VehiclePlotter
             % Extract parameters from vehicleParams
             length = vehicleParams.length;
             width = vehicleParams.width;
-            wheelWidth = vehicleParams.wheelHeight;
-            wheelHeight = vehicleParams.wheelWidth;
+            wheelWidth = vehicleParams.wheelWidth;
+            wheelHeight = vehicleParams.wheelHeight;
             wheelbase = vehicleParams.wheelbase;
 
             if (~isTractor && ~isPassengerVehicle)
@@ -139,11 +147,9 @@ classdef VehiclePlotter
                 remainingLength = length - trailerHitchDistance;
                 localCorners = [trailerHitchDistance, -remainingLength, -remainingLength, trailerHitchDistance, trailerHitchDistance;
                                 -width/2, -width/2, width/2, width/2, -width/2];
-                baseOffset = -remainingLength/2;
             else
                 localCorners = [0, -length, -length, 0, 0;
                                 -width/2, -width/2, width/2, width/2, -width/2];
-                baseOffset = -length/2;
             end
 
             R = [cos(theta), -sin(theta); sin(theta), cos(theta)];

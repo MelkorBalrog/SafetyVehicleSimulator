@@ -199,7 +199,7 @@ classdef DataManager < handle
             % Check for existence of required fields in simParams
             requiredFields = {'trailerLength', 'trailerWidth', 'trailerHeight', 'trailerCoGHeight', ...
                               'trailerWheelbase', 'trailerTrackWidth', 'trailerNumAxles', ...
-                              'trailerAxleSpacing', 'trailerMass', 'numTiresPerAxleTrailer', 'W_FrontLeft', 'W_FrontRight', 'W_RearLeft', 'W_RearRight'};
+                              'trailerAxleSpacing', 'trailerHitchDistance', 'trailerMass', 'numTiresPerAxleTrailer', 'W_FrontLeft', 'W_FrontRight', 'W_RearLeft', 'W_RearRight'};
 
             for i = 1:length(requiredFields)
                 if ~isfield(simParams, requiredFields{i})
@@ -227,9 +227,10 @@ classdef DataManager < handle
                 'mass', simParams.trailerMass, ...
                 'wheelWidth', wheelWidth, ...    % Retrieved from simParams
                 'wheelHeight', wheelHeight, ...  % Retrieved from simParams
-                'numTiresPerAxle', numTiresPerAxle, ... % Added numTiresPerAxle
-                'W_Total', simParams.W_FrontLeft + simParams.W_FrontRight + simParams.W_RearLeft + simParams.W_RearRight, ... % Total Width or another relevant metric
-                'includeTrailer', simParams.includeTrailer ... % Included for consistency
+                'numTiresPerAxle', numTiresPerAxle, ...
+                'HitchDistance', simParams.trailerHitchDistance, ... % Distance from hitch to first axle
+                'W_Total', simParams.W_FrontLeft + simParams.W_FrontRight + simParams.W_RearLeft + simParams.W_RearRight, ...
+                'includeTrailer', simParams.includeTrailer ...
             );
 
             % Set the appropriate TrailerLength property
