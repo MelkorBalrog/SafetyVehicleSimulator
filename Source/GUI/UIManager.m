@@ -80,7 +80,6 @@ classdef UIManager < handle
         laneCommandsField
         buildMapButton
 
-<<<<<<< HEAD
         % Per-Vehicle Command Tab Fields
         vehicle1CommandsTab           % Commands tab for Vehicle 1
         vehicle1SteeringCommandsField
@@ -90,12 +89,6 @@ classdef UIManager < handle
         vehicle2SteeringCommandsField
         vehicle2AccelerationCommandsField
         vehicle2TirePressureCommandsField
-=======
-        % Command Tab Fields
-        steeringCommandsField
-        accelerationCommandsField
-        tirePressureCommandsField
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         % Playback speed for simulation (multiplier)
         playbackSpeedField
 
@@ -731,7 +724,6 @@ classdef UIManager < handle
             % Returns true if debug messages are suppressed
             suppressDebug = obj.suppressDebugCheckbox.Value;
         end
-<<<<<<< HEAD
 
         %% Create Commands Panel for Each Vehicle
         % Hosts steering, acceleration, and tire pressure inputs per vehicle
@@ -773,8 +765,6 @@ classdef UIManager < handle
                 obj.vehicle2TirePressureCommandsField = tpField;
             end
         end
-=======
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
     end
 end
 

@@ -6,7 +6,6 @@
 % *        Integrated braking functionality to handle deceleration.
 % *
 % * This version has additional optional calculations at the end of `calculateForces`
-<<<<<<< HEAD
 % * to enhance rollover and jackknife detection by combining roll rate and hitch angle dynamics.
 % *
 % * @author Miguel Marina
@@ -56,57 +55,6 @@
 %   - Precompute and cache constant matrices/coefficients outside time-critical loops
 %   - Consider generating MEX or C code for critical inner loops via MATLAB Coder
 % ============================================================================
-=======
-% * to enhance rollover and jackknife detection by combining roll rate and hitch angle dynamics.
-% *
-% * @author Miguel Marina
- % */
-% ============================================================================
-% Module Interface
-% Constructor:
-%   obj = ForceCalculator(vehicleType, mass, friction, velocity, dragCoeff, airDensity, frontalArea, sideArea, sideForceCoeff, ...
-%                          turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, dt, trailerMass, trailerWheelbase, numTrailerTires, tireModelFlag, highFidelityTireModel, windVector, brakeSystem, [wheelSpeeds, wheelRadius, wheelInertia])
-% Public Methods:
-%   calculateForces(vehicleState): computes forces and moments, updates internal containers
-%   getFilteredForces(): returns filtered force map
-%   updateWheelSpeeds(dt, engineTorque, brakeTorque): updates wheel angular speeds
-%   setFlatTire(flatTireIndices): simulate flat tires
-% Properties:
-%   Stores vehicle, trailer, tire, suspension, wind, and braking parameters
-%
-% Dependencies:
-%   SuspensionModel: for suspension forces/moments
-%   BrakeSystem: for braking force computation
-%   TireModel/HighFidelityModel: for tire force calculations
-%   containers.Map for dynamic force storage
-%
-% Bottlenecks:
-%   - Loops over tires for force calculations (unvectorized)
-%   - Repeated trigonometric and matrix operations inside loops
-%   - Extensive conditional branching for vehicle types
-%   - Use of containers.Map introduces dynamic field access overhead
-%
-% Proposed Optimizations:
-%   - Vectorize per-tire force computations, replacing loops with array operations
-%   - Precompute constant rotation matrices and reuse
-%   - Replace containers.Map with pre-allocated struct or arrays for fixed fields
-%   - Consolidate duplicate code paths for tractor, tractor-trailer, passenger
-%   - Approximate aerodynamic forces using polynomial fits or lookup tables
-%   - Use built-in MATLAB vectorization to compute drag/side forces in bulk
-% ============================================================================
-% Embedded Systems Best Practices:
-%   - Pre-allocate and recycle all data buffers to avoid heap allocations
-%   - Use fixed-size structs/arrays instead of dynamic containers or grows
-%   - Pool objects and reuse memory for repeated simulation calls
-%   - Minimize MATLAB function calls in hot loops; inline small routines
-%   - Eliminate or gate off debug/fprintf statements under a compile-time flag
-%   - Employ fixed-point arithmetic or lower precision floats where tolerable
-%   - Use lookup tables for nonlinear functions (tire curves, aero drag)
-%   - Avoid branching inside loops; replace with vectorized masks
-%   - Precompute and cache constant matrices/coefficients outside time-critical loops
-%   - Consider generating MEX or C code for critical inner loops via MATLAB Coder
-% ============================================================================
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 classdef ForceCalculator
     properties
         % ----------------------------------------------------------------
@@ -131,11 +79,7 @@ classdef ForceCalculator
         inertia                  % [Ixx, Iyy, Izz] (kg·m²)
         gravity                  % Gravitational acceleration (m/s²)
         slopeAngle               % Slope angle (radians)
-<<<<<<< HEAD
         calculatedForces         % struct to store calculated forces and moments
-=======
-        calculatedForces         % struct to store calculated forces and moments
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         orientation              % Orientation angle (theta) in radians
 
         trackWidth
@@ -214,11 +158,7 @@ classdef ForceCalculator
         % --- Filtering ---
         forceBuffers
         filterWindowSize
-<<<<<<< HEAD
         calculatedForces_filtered % struct to store filtered forces
-=======
-        calculatedForces_filtered % struct to store filtered forces
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
         % --- Slip Ratio Props ---
         wheelSpeeds     % wheel angular speeds [rad/s] per wheel
@@ -263,7 +203,6 @@ classdef ForceCalculator
             obj.slopeAngle          = slopeAngle;
             obj.trackWidth          = trackWidth;
             obj.wheelbase           = wheelbase;
-<<<<<<< HEAD
             obj.gravity             = 9.81;         % m/s²
             % Initialize calculated forces struct with zero values
             forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',... 
@@ -276,20 +215,6 @@ classdef ForceCalculator
             for iKey = 1:numel(forceKeys)
                 obj.calculatedForces.(forceKeys{iKey}) = 0;
             end
-=======
-            obj.gravity             = 9.81;         % m/s²
-            % Initialize calculated forces struct with zero values
-            forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',... 
-                         'momentZ_wind','traction','traction_force','M_z','momentZ',...  
-                         'F_y_total','momentRoll','totalForce','F_y_trailer','momentZ_trailer',...   
-                         'F_total_trailer_local','F_total_trailer_global','yawMoment_trailer',...  
-                         'momentRoll_trailer','trailerPsi','trailerOmega','rolloverRiskIndex',...  
-                         'jackknifeRiskIndex','braking'};
-            obj.calculatedForces = struct();
-            for iKey = 1:numel(forceKeys)
-                obj.calculatedForces.(forceKeys{iKey}) = 0;
-            end
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
             obj.orientation         = 0;            % initial orientation
             obj.steeringAngle       = 0;
             obj.C_alpha_front       = 80000;        % example
@@ -314,7 +239,6 @@ classdef ForceCalculator
                 obj.trailerPsi       = 0;
                 obj.trailerOmega     = 0;
                 obj.trailerPosition  = [0; 0; 0];
-<<<<<<< HEAD
                 if nargin < 21 || isempty(trailerInertia)
                     obj.trailerInertia = 10000;  % default trailer inertia
                     debugLog('Using default trailer inertia: %.2f kg·m²\n', obj.trailerInertia);
@@ -324,17 +248,6 @@ classdef ForceCalculator
                 if nargin < 22 || isempty(dt)
                     obj.dt = 0.01;  % default timestep
                     debugLog('Using default time step dt: %.4f s\n', obj.dt);
-=======
-                if nargin < 21 || isempty(trailerInertia)
-                    obj.trailerInertia = 10000;  % default trailer inertia
-                    debugLog('Using default trailer inertia: %.2f kg·m²\n', obj.trailerInertia);
-                else
-                    obj.trailerInertia = trailerInertia;
-                end
-                if nargin < 22 || isempty(dt)
-                    obj.dt = 0.01;  % default timestep
-                    debugLog('Using default time step dt: %.4f s\n', obj.dt);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                 else
                     obj.dt = dt;
                 end
@@ -411,7 +324,6 @@ classdef ForceCalculator
             end
 
             % --- Filter Setup ---
-<<<<<<< HEAD
             obj.filterWindowSize = 5;
             % Pre-allocate force buffers and filtered forces for moving average (fixed-size)
             obj.forceBuffers = struct();
@@ -421,17 +333,6 @@ classdef ForceCalculator
                 obj.forceBuffers.(key) = struct('data', zeros(obj.filterWindowSize,1), 'sum', 0, 'index', 0, 'count', 0);
                 obj.calculatedForces_filtered.(key) = 0;
             end
-=======
-            obj.filterWindowSize = 5;
-            % Pre-allocate force buffers and filtered forces for moving average (fixed-size)
-            obj.forceBuffers = struct();
-            obj.calculatedForces_filtered = struct();
-            for iKey = 1:numel(forceKeys)
-                key = forceKeys{iKey};
-                obj.forceBuffers.(key) = struct('data', zeros(obj.filterWindowSize,1), 'sum', 0, 'index', 0, 'count', 0);
-                obj.calculatedForces_filtered.(key) = 0;
-            end
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
             % --- Optional wheel parameters via varargin ---
             if length(varargin) >= 3
@@ -444,7 +345,6 @@ classdef ForceCalculator
                 obj.wheelInertia = 1.0;               % default
             end
         end
-<<<<<<< HEAD
         
         %% computeTireForces (vectorized lateral forces and yaw moment)
         function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r)
@@ -473,36 +373,6 @@ classdef ForceCalculator
             F_y_total = sum(Fy);
             M_z = sum(xPos .* Fy);
         end
-=======
-        
-        %% computeTireForces (vectorized lateral forces and yaw moment)
-        function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r)
-            numTires = numel(loads);
-            xPos = obj.loadDistribution(:,1);
-            a = obj.wheelbase/2;
-            b = obj.wheelbase/2;
-            alpha_front = obj.steeringAngle - atan2(v + a*r, u);
-            alpha_rear  = -atan2(v - b*r, u);
-            alpha = alpha_rear * ones(numTires,1);
-            alpha(xPos>0) = alpha_front;
-            mu_t = obj.mu_tires;
-            if strcmp(obj.tireModelFlag, 'simple')
-                D = mu_t .* loads;
-                B = obj.B_tires;
-                C = obj.C_tires;
-                E = obj.E_tires;
-                Fy = D .* sin(C .* atan(B .* alpha - E .* (B .* alpha - atan(B .* alpha))));
-            else
-                % High-fidelity tire model: compute per-tire forces sequentially
-                Fy = zeros(numTires,1);
-                for i = 1:numTires
-                    Fy(i) = obj.highFidelityTireModel.calculateLateralForce(alpha(i), loads(i), i);
-                end
-            end
-            F_y_total = sum(Fy);
-            M_z = sum(xPos .* Fy);
-        end
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
         %% Accessor for filtered forces
         function forces_filtered = getFilteredForces(obj)
@@ -622,21 +492,14 @@ classdef ForceCalculator
             obj.inertia = [Ixx, Iyy, Izz];
 
             % Add trailer inertia to Izz if tractor-trailer
-<<<<<<< HEAD
             if strcmp(obj.vehicleType,'tractor-trailer')
                 obj.inertia(3) = obj.inertia(3) + obj.trailerInertia;
                 debugLog('Added trailer inertia to total inertia. New Izz: %.2f kg·m²\n', obj.inertia(3));
-=======
-            if strcmp(obj.vehicleType,'tractor-trailer')
-                obj.inertia(3) = obj.inertia(3) + obj.trailerInertia;
-                debugLog('Added trailer inertia to total inertia. New Izz: %.2f kg·m²\n', obj.inertia(3));
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
             end
         end
 
         %% calculateInertiaPassenger
         function inertia = calculateInertiaPassenger(obj)
-<<<<<<< HEAD
             % Vectorized inertia calculation for passenger loads
             loads = obj.loadDistribution(:,4);         % load weights (N)
             masses = loads / obj.gravity;             % convert to mass (kg)
@@ -647,18 +510,6 @@ classdef ForceCalculator
             Iyy = sum(masses .* (relPos(:,1).^2 + relPos(:,3).^2));
             Izz = sum(masses .* (relPos(:,1).^2 + relPos(:,2).^2));
             inertia = [Ixx, Iyy, Izz];
-=======
-            % Vectorized inertia calculation for passenger loads
-            loads = obj.loadDistribution(:,4);         % load weights (N)
-            masses = loads / obj.gravity;             % convert to mass (kg)
-            % position vectors relative to CoG [x,y,z]
-            relPos = obj.loadDistribution(:,1:3) - obj.centerOfGravity';
-            % compute inertia sums
-            Ixx = sum(masses .* (relPos(:,2).^2 + relPos(:,3).^2));
-            Iyy = sum(masses .* (relPos(:,1).^2 + relPos(:,3).^2));
-            Izz = sum(masses .* (relPos(:,1).^2 + relPos(:,2).^2));
-            inertia = [Ixx, Iyy, Izz];
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         end
 
         %% setFlatTire
@@ -675,19 +526,11 @@ classdef ForceCalculator
             assert(isscalar(obj.orientation), 'Orientation must be scalar.');
             obj = obj.updatePacejkaAttributes(vehicleState);
 
-<<<<<<< HEAD
             theta = obj.orientation;
             R_veh2glob = [ cos(theta), -sin(theta), 0;
                            sin(theta),  cos(theta), 0;
                            0,           0,          1];
             R_g2v = R_veh2glob';
-=======
-            theta = obj.orientation;
-            R_veh2glob = [ cos(theta), -sin(theta), 0;
-                           sin(theta),  cos(theta), 0;
-                           0,           0,          1];
-            R_g2v = R_veh2glob';
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
             u = obj.velocity(1);
             v = obj.velocity(2);
@@ -710,11 +553,7 @@ classdef ForceCalculator
             acceleration = vehicleState.acceleration;
             accel_magnitude = norm(acceleration);
 
-<<<<<<< HEAD
             obj.calculatedForces.hitchLateralForce = 0;  % default
-=======
-            obj.calculatedForces.hitchLateralForce = 0;  % default
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
             F_y_total=0; 
             M_z=0;
@@ -724,7 +563,6 @@ classdef ForceCalculator
             %---------------------------------------------
             if strcmp(obj.vehicleType,'tractor') && (accel_magnitude < 0.01)
                 if obj.enableSpeedController
-<<<<<<< HEAD
                     % 1) Aerodynamic forces and wind-induced yaw moment
                     [F_drag_g, F_side_g, M_z_wind] = obj.computeAeroForces(R_veh2glob);
                     obj.calculatedForces.F_drag_global = F_drag_g;
@@ -737,25 +575,10 @@ classdef ForceCalculator
                     % 2) Traction
                     if isfield(obj.calculatedForces,'traction')
                         F_traction_v = obj.calculatedForces.traction;
-=======
-                    % 1) Aerodynamic forces and wind-induced yaw moment
-                    [F_drag_g, F_side_g, M_z_wind] = obj.computeAeroForces(R_veh2glob);
-                    obj.calculatedForces.F_drag_global = F_drag_g;
-                    obj.calculatedForces.F_side_global = F_side_g;
-                    obj.calculatedForces.momentZ_wind  = M_z_wind;
-
-                    F_drag_v = R_g2v * F_drag_g;
-                    F_side_v = R_g2v * F_side_g;
-
-                    % 2) Traction
-                    if isfield(obj.calculatedForces,'traction')
-                        F_traction_v = obj.calculatedForces.traction;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     else
                         F_traction_v = [0;0;0];
                     end
 
-<<<<<<< HEAD
                     if size(obj.loadDistribution,2) < 5
                         error('loadDistribution must have 5 columns.');
                     end
@@ -780,32 +603,6 @@ classdef ForceCalculator
                     obj.calculatedForces.momentZ = M_z;
                     obj.calculatedForces.F_y_total = F_y_total;
                     obj.calculatedForces.M_z      = M_z;
-=======
-                    if size(obj.loadDistribution,2) < 5
-                        error('loadDistribution must have 5 columns.');
-                    end
-                    loads        = obj.loadDistribution(:,4);
-                    contactAreas = obj.loadDistribution(:,5);
-                    % Update tire friction coefficients
-                    pressures = loads ./ contactAreas;
-                    P_ref     = mean(pressures);
-                    mu_tires_ = obj.frictionCoefficient * (P_ref ./ pressures);
-                    mu_tires_ = max(min(mu_tires_, 1.0), 0.3);
-                    obj.mu_tires = mu_tires_;
-                    % Compute vectorized lateral forces and yaw moment
-                    [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
-                    % Add wind moment
-                    if isfield(obj.calculatedForces, 'momentZ_wind')
-                        M_z = M_z + obj.calculatedForces.momentZ_wind;
-                    end
-
-                    [~,M_susp] = obj.suspensionModel.calculateForcesAndMoments(vehicleState);
-                    M_z = M_z + M_susp;
-
-                    obj.calculatedForces.momentZ = M_z;
-                    obj.calculatedForces.F_y_total = F_y_total;
-                    obj.calculatedForces.M_z      = M_z;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                     % Combine lateral forces
                     F_side_v = R_g2v*F_side_g;
@@ -820,13 +617,8 @@ classdef ForceCalculator
                     F_susp_v = [0;0;F_susp_];
 
                     % Hitch
-<<<<<<< HEAD
                     if isfield(obj.calculatedForces,'hitch') && strcmp(obj.vehicleType,'tractor-trailer')
                         F_hitch_v = obj.calculatedForces.hitch;
-=======
-                    if isfield(obj.calculatedForces,'hitch') && strcmp(obj.vehicleType,'tractor-trailer')
-                        F_hitch_v = obj.calculatedForces.hitch;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     else
                         F_hitch_v = [0;0;0];
                     end
@@ -839,24 +631,15 @@ classdef ForceCalculator
                     F_side_aero  = F_side_v(2);
                     F_tire_lat   = F_y_total;
                     hitchLat = 0;
-<<<<<<< HEAD
                     if isfield(obj.calculatedForces,'hitchLateralForce')
                         hitchLat = obj.calculatedForces.hitchLateralForce;
-=======
-                    if isfield(obj.calculatedForces,'hitchLateralForce')
-                        hitchLat = obj.calculatedForces.hitchLateralForce;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     end
                     M_roll_aero  = F_side_aero*obj.h_CoG;
                     M_roll_tires = F_tire_lat* obj.h_CoG;
                     M_roll_hitch = hitchLat*   obj.h_CoG;
 
                     M_roll_total = M_roll_aero + M_roll_tires + M_roll_hitch;
-<<<<<<< HEAD
                     obj.calculatedForces.momentRoll = M_roll_total;
-=======
-                    obj.calculatedForces.momentRoll = M_roll_total;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                     % --- Trailer Dynamics (tractor-trailer) ---
                     if strcmp(obj.vehicleType,'tractor-trailer')
@@ -898,7 +681,6 @@ classdef ForceCalculator
                             end
 
                             Fz_trail_each = (obj.trailerMass*obj.gravity)/obj.numTrailerTires;
-<<<<<<< HEAD
                             % Vectorized trailer tire lateral forces
                             if isempty(obj.mu_tires_trailer)
                                 obj.mu_tires_trailer = obj.frictionCoefficient * ones(obj.numTrailerTires,1);
@@ -915,24 +697,6 @@ classdef ForceCalculator
                                 F_y_trailer_tires = arrayfun(@(m) obj.calculateTireForce(alpha_trailer, m, Fz_tr_each, 1), mu_tr);
                             end
                             F_y_trailer_total = sum(F_y_trailer_tires);
-=======
-                            % Vectorized trailer tire lateral forces
-                            if isempty(obj.mu_tires_trailer)
-                                obj.mu_tires_trailer = obj.frictionCoefficient * ones(obj.numTrailerTires,1);
-                            end
-                            mu_tr = obj.mu_tires_trailer;
-                            Fz_tr_each = (obj.trailerMass * obj.gravity) / obj.numTrailerTires;
-                            if strcmp(obj.tireModelFlag, 'simple')
-                                D_tr = mu_tr * Fz_tr_each;
-                                B_tr = obj.B_tires(1);
-                                C_tr = obj.C_tires(1);
-                                E_tr = obj.E_tires(1);
-                                F_y_trailer_tires = D_tr .* sin(C_tr .* atan(B_tr .* alpha_trailer - E_tr .* (B_tr .* alpha_trailer - atan(B_tr .* alpha_trailer))));
-                            else
-                                F_y_trailer_tires = arrayfun(@(m) obj.calculateTireForce(alpha_trailer, m, Fz_tr_each, 1), mu_tr);
-                            end
-                            F_y_trailer_total = sum(F_y_trailer_tires);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                             F_lateral_trailer = F_y_trailer_total + F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
@@ -948,7 +712,6 @@ classdef ForceCalculator
                             M_z_tr_wind = F_side_tr*(obj.trackWidth/2);
                             M_z_tr_total= M_z_tr + M_z_tr_wind;
 
-<<<<<<< HEAD
                             obj.calculatedForces.F_y_trailer = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local = F_total_tr_local;
@@ -958,24 +721,12 @@ classdef ForceCalculator
                             F_total_tr_vehicle= R_g2tr'*F_total_tr_global;
                             hitchLatForce = F_total_tr_vehicle(2);
                             obj.calculatedForces.hitchLateralForce = hitchLatForce;
-=======
-                            obj.calculatedForces.F_y_trailer = F_y_trailer_total;
-                            obj.calculatedForces.momentZ_trailer = M_z_tr_total;
-                            obj.calculatedForces.F_total_trailer_local = F_total_tr_local;
-                            obj.calculatedForces.F_total_trailer_global = F_total_tr_global;
-                            obj.calculatedForces.yawMoment_trailer     = M_z_tr_total;
-
-                            F_total_tr_vehicle= R_g2tr'*F_total_tr_global;
-                            hitchLatForce = F_total_tr_vehicle(2);
-                            obj.calculatedForces.hitchLateralForce = hitchLatForce;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                             % Trailer yaw integration
                             trailer_yaw_accel = M_z_tr_total/obj.trailerInertia;
                             obj.trailerOmega  = obj.trailerOmega + trailer_yaw_accel*obj.dt;
                             obj.trailerPsi    = obj.trailerPsi+obj.trailerOmega*obj.dt;
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
-<<<<<<< HEAD
                             obj.calculatedForces.trailerPsi = obj.trailerPsi;
                             obj.calculatedForces.trailerOmega = obj.trailerOmega;
                         else
@@ -984,25 +735,11 @@ classdef ForceCalculator
                             obj.calculatedForces.momentZ_trailer = 0;
                             obj.calculatedForces.F_y_trailer = 0;
                             obj.calculatedForces.hitchLateralForce = 0;
-=======
-                            obj.calculatedForces.trailerPsi = obj.trailerPsi;
-                            obj.calculatedForces.trailerOmega = obj.trailerOmega;
-                        else
-                            % speed=0 => no movement
-                            obj.calculatedForces.momentRoll_trailer = 0;
-                            obj.calculatedForces.momentZ_trailer = 0;
-                            obj.calculatedForces.F_y_trailer = 0;
-                            obj.calculatedForces.hitchLateralForce = 0;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                             obj.trailerOmega=0;
                             obj.trailerPsi=0;
                         end
                     end
-<<<<<<< HEAD
                     obj.calculatedForces.totalForce = totalForce_vehicle;
-=======
-                    obj.calculatedForces.totalForce = totalForce_vehicle;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                 end
 
             %---------------------------------------------
@@ -1010,7 +747,6 @@ classdef ForceCalculator
             %---------------------------------------------
             else
                 if obj.enableSpeedController
-<<<<<<< HEAD
                     % Aerodynamic forces and wind-induced yaw moment
                     [F_drag_g, F_side_g, M_z_wind] = obj.computeAeroForces(R_veh2glob);
                     obj.calculatedForces.F_drag_global = F_drag_g;
@@ -1022,19 +758,6 @@ classdef ForceCalculator
 
                     if isfield(obj.calculatedForces,'traction')
                         F_traction_v = obj.calculatedForces.traction;
-=======
-                    % Aerodynamic forces and wind-induced yaw moment
-                    [F_drag_g, F_side_g, M_z_wind] = obj.computeAeroForces(R_veh2glob);
-                    obj.calculatedForces.F_drag_global = F_drag_g;
-                    obj.calculatedForces.F_side_global = F_side_g;
-                    obj.calculatedForces.momentZ_wind  = M_z_wind;
-
-                    F_drag_v = R_g2v * F_drag_g;
-                    F_side_v = R_g2v * F_side_g;
-
-                    if isfield(obj.calculatedForces,'traction')
-                        F_traction_v = obj.calculatedForces.traction;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     else
                         F_traction_v= [0;0;0];
                     end
@@ -1043,7 +766,6 @@ classdef ForceCalculator
                     if size(obj.loadDistribution,2)<5
                         error('loadDistribution must have 5 columns.');
                     end
-<<<<<<< HEAD
                     if size(obj.loadDistribution,2) < 5
                         error('loadDistribution must have 5 columns.');
                     end
@@ -1064,28 +786,6 @@ classdef ForceCalculator
                     obj.calculatedForces.momentZ   = M_z;
                     obj.calculatedForces.F_y_total = F_y_total;
                     obj.calculatedForces.M_z       = M_z;
-=======
-                    if size(obj.loadDistribution,2) < 5
-                        error('loadDistribution must have 5 columns.');
-                    end
-                    loads        = obj.loadDistribution(:,4);
-                    contactAreas = obj.loadDistribution(:,5);
-                    pressures    = loads ./ contactAreas;
-                    P_ref        = mean(pressures);
-                    mu_tires_    = obj.frictionCoefficient * (P_ref ./ pressures);
-                    mu_tires_    = max(min(mu_tires_, 1.0), 0.3);
-                    obj.mu_tires = mu_tires_;
-                    [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
-                    if isfield(obj.calculatedForces, 'momentZ_wind')
-                        M_z = M_z + obj.calculatedForces.momentZ_wind;
-                    end
-                    [~,M_susp] = obj.suspensionModel.calculateForcesAndMoments(vehicleState);
-                    M_z = M_z + M_susp;
-
-                    obj.calculatedForces.momentZ   = M_z;
-                    obj.calculatedForces.F_y_total = F_y_total;
-                    obj.calculatedForces.M_z       = M_z;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                     F_lat_v= [0;F_y_total;0] + F_side_v;
                     F_rr = sum(obj.rollingResistanceCoefficients.*loads);
@@ -1093,13 +793,8 @@ classdef ForceCalculator
                     [F_susp_, ~]= obj.suspensionModel.calculateForcesAndMoments(vehicleState);
                     F_susp_v= [0;0;F_susp_];
 
-<<<<<<< HEAD
                     if isfield(obj.calculatedForces,'hitch') && strcmp(obj.vehicleType,'tractor-trailer')
                         F_hitch_v = obj.calculatedForces.hitch;
-=======
-                    if isfield(obj.calculatedForces,'hitch') && strcmp(obj.vehicleType,'tractor-trailer')
-                        F_hitch_v = obj.calculatedForces.hitch;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     else
                         F_hitch_v= [0;0;0];
                     end
@@ -1111,23 +806,14 @@ classdef ForceCalculator
                     F_side_aero  = F_side_v(2);
                     F_tire_lat   = F_y_total;
                     hitchLat=0;
-<<<<<<< HEAD
                     if isfield(obj.calculatedForces,'hitchLateralForce')
                         hitchLat = obj.calculatedForces.hitchLateralForce;
-=======
-                    if isfield(obj.calculatedForces,'hitchLateralForce')
-                        hitchLat = obj.calculatedForces.hitchLateralForce;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     end
                     M_roll_aero  = F_side_aero* obj.h_CoG;
                     M_roll_tires = F_tire_lat*  obj.h_CoG;
                     M_roll_hitch = hitchLat*    obj.h_CoG;
                     M_roll_total = M_roll_aero + M_roll_tires + M_roll_hitch;
-<<<<<<< HEAD
                     obj.calculatedForces.momentRoll = M_roll_total;
-=======
-                    obj.calculatedForces.momentRoll = M_roll_total;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                     obj = obj.updatePacejkaBasedOnSuspension(0,0);
 
@@ -1191,7 +877,6 @@ classdef ForceCalculator
                             M_z_tr_wind= F_side_tr*(obj.trackWidth/2);
                             M_z_tr_total= M_z_tr+M_z_tr_wind;
 
-<<<<<<< HEAD
                             obj.calculatedForces.F_y_trailer            = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer       = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local  = F_total_tr_local;
@@ -1201,24 +886,12 @@ classdef ForceCalculator
                             F_total_tr_vehicle= R_g2tr*F_total_tr_global;
                             hitchLatForce= F_total_tr_vehicle(2);
                             obj.calculatedForces.hitchLateralForce = hitchLatForce;
-=======
-                            obj.calculatedForces.F_y_trailer            = F_y_trailer_total;
-                            obj.calculatedForces.momentZ_trailer       = M_z_tr_total;
-                            obj.calculatedForces.F_total_trailer_local  = F_total_tr_local;
-                            obj.calculatedForces.F_total_trailer_global = F_total_tr_global;
-                            obj.calculatedForces.yawMoment_trailer      = obj.calculatedForces.momentZ_trailer;
-
-                            F_total_tr_vehicle= R_g2tr*F_total_tr_global;
-                            hitchLatForce= F_total_tr_vehicle(2);
-                            obj.calculatedForces.hitchLateralForce = hitchLatForce;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
                             trailer_yaw_accel= M_z_tr_total/obj.trailerInertia;
                             obj.trailerOmega= obj.trailerOmega+ trailer_yaw_accel*obj.dt;
                             obj.trailerPsi  = obj.trailerPsi+ obj.trailerOmega*obj.dt;
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
 
-<<<<<<< HEAD
                             obj.calculatedForces.trailerPsi   = obj.trailerPsi;
                             obj.calculatedForces.trailerOmega = obj.trailerOmega;
                         else
@@ -1226,25 +899,12 @@ classdef ForceCalculator
                         obj.calculatedForces.momentZ_trailer    = 0;
                         obj.calculatedForces.F_y_trailer         = 0;
                         obj.calculatedForces.hitchLateralForce   = 0;
-=======
-                            obj.calculatedForces.trailerPsi   = obj.trailerPsi;
-                            obj.calculatedForces.trailerOmega = obj.trailerOmega;
-                        else
-                        obj.calculatedForces.momentRoll_trailer = 0;
-                        obj.calculatedForces.momentZ_trailer    = 0;
-                        obj.calculatedForces.F_y_trailer         = 0;
-                        obj.calculatedForces.hitchLateralForce   = 0;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                             obj.trailerOmega=0;
                             obj.trailerPsi=0;
                         end
                     end
 
-<<<<<<< HEAD
                     obj.calculatedForces.totalForce = totalForce_vehicle;
-=======
-                    obj.calculatedForces.totalForce = totalForce_vehicle;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     % <--- existing code ends here for main forces
                 end
             end
@@ -1266,7 +926,6 @@ classdef ForceCalculator
 
             % Get total lateral force in vehicle frame
             lateralForce = 0;
-<<<<<<< HEAD
             if isfield(obj.calculatedForces, 'F_y_total')
                 lateralForce = obj.calculatedForces.F_y_total;
             end
@@ -1276,17 +935,6 @@ classdef ForceCalculator
                 F_side_g = obj.calculatedForces.F_side_global;
                 F_side_v = R_g2v * F_side_g;
                 lateralForce = lateralForce + F_side_v(2);
-=======
-            if isfield(obj.calculatedForces, 'F_y_total')
-                lateralForce = obj.calculatedForces.F_y_total;
-            end
-
-            % Also add side force in vehicle frame (if it exists)
-            if isfield(obj.calculatedForces, 'F_side_global')
-                F_side_g = obj.calculatedForces.F_side_global;
-                F_side_v = R_g2v * F_side_g;
-                lateralForce = lateralForce + F_side_v(2);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
             end
 
             % Example new constants
@@ -1300,11 +948,7 @@ classdef ForceCalculator
             rolloverRiskIndex = normLateralMoment + ...
                                 k_rollRate * rollRate + ...
                                 k_rollAngle * rollAngle;
-<<<<<<< HEAD
             obj.calculatedForces.rolloverRiskIndex = rolloverRiskIndex;
-=======
-            obj.calculatedForces.rolloverRiskIndex = rolloverRiskIndex;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
             % 2) Jackknife Risk
             % Hitch angle = difference between trailer yaw and tractor yaw
@@ -1314,13 +958,8 @@ classdef ForceCalculator
             end
 
             hitchLatForce = 0;
-<<<<<<< HEAD
             if isfield(obj.calculatedForces, 'hitchLateralForce')
                 hitchLatForce = abs(obj.calculatedForces.hitchLateralForce);
-=======
-            if isfield(obj.calculatedForces, 'hitchLateralForce')
-                hitchLatForce = abs(obj.calculatedForces.hitchLateralForce);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
             end
 
             trailerYawRate = 0;
@@ -1336,11 +975,7 @@ classdef ForceCalculator
             jackknifeRiskIndex = c_hitchAngle * abs(hitchAngle) + ...
                                  c_trailerYaw * trailerYawRate + ...
                                  c_hitchForce * hitchLatForce;
-<<<<<<< HEAD
             obj.calculatedForces.jackknifeRiskIndex = jackknifeRiskIndex;
-=======
-            obj.calculatedForces.jackknifeRiskIndex = jackknifeRiskIndex;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
 
             %% Finally apply moving average filter
             obj = obj.applyMovingAverageFilter();
@@ -1349,23 +984,14 @@ classdef ForceCalculator
         %% updateTractionForce
         function obj = updateTractionForce(obj, F_traction)
             tractionForce= [F_traction;0;0];
-<<<<<<< HEAD
             obj.calculatedForces.traction = tractionForce;
             obj.calculatedForces.traction_force = tractionForce;
-=======
-            obj.calculatedForces.traction = tractionForce;
-            obj.calculatedForces.traction_force = tractionForce;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         end
 
         %% updateBrakingForce
         function obj = updateBrakingForce(obj, F_brake)
             obj.brakingForce= F_brake;
-<<<<<<< HEAD
             obj.calculatedForces.braking = [F_brake;0;0];
-=======
-            obj.calculatedForces.braking = [F_brake;0;0];
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         end
 
         %% calculateTireForce
@@ -1457,15 +1083,9 @@ classdef ForceCalculator
             end
 
             % Adjust for flat tires
-<<<<<<< HEAD
             if ~isempty(obj.flatTireIndices)
                 numFlat= length(obj.flatTireIndices);
                 debugLog('Adjusting Pacejka params for %d flat tire(s).\n', numFlat);
-=======
-            if ~isempty(obj.flatTireIndices)
-                numFlat= length(obj.flatTireIndices);
-                debugLog('Adjusting Pacejka params for %d flat tire(s).\n', numFlat);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                 for idx= obj.flatTireIndices
                     if idx<1 || idx>length(obj.mu_tires)
                         warning('Flat tire index %d out of range.', idx);
@@ -1504,11 +1124,7 @@ classdef ForceCalculator
                         obj.pKy3_tires(idx)= obj.pKy3_tires(idx)*stiffFactor;
                         obj.mu_tires(idx)= obj.mu_tires(idx)*frictionRed;
                         obj.rollingResistanceCoefficients(idx)= obj.rollingResistanceCoefficients(idx)*rrIncrease;
-<<<<<<< HEAD
                         debugLog('Adjusted highFidelity tire at index %d for flat.\n', idx);
-=======
-                        debugLog('Adjusted highFidelity tire at index %d for flat.\n', idx);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     else
                         if isempty(obj.tireModel)
                             error('Simple tireModel missing while adjusting flats.');
@@ -1519,11 +1135,7 @@ classdef ForceCalculator
                         obj.E_tires(idx)= obj.E_tires(idx)*curveAdjust;
                         obj.mu_tires(idx)= obj.mu_tires(idx)*frictionRed;
                         obj.rollingResistanceCoefficients(idx)= obj.rollingResistanceCoefficients(idx)*rrIncrease;
-<<<<<<< HEAD
                         debugLog('Adjusted simple tire at index %d for flat.\n', idx);
-=======
-                        debugLog('Adjusted simple tire at index %d for flat.\n', idx);
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                     end
                 end
             end
@@ -1572,17 +1184,12 @@ classdef ForceCalculator
                     obj.mu_tires(idx)= obj.mu_tires(idx)*frictionAdj;
                 end
             end
-<<<<<<< HEAD
                 debugLog('Pacejka updated based on suspension: stiff=%.3f, friction=%.3f, curve=%.3f.\n',...    
-=======
-                debugLog('Pacejka updated based on suspension: stiff=%.3f, friction=%.3f, curve=%.3f.\n',...    
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                 stiffAdj, frictionAdj, curveAdj);
         end
 
         %% applyMovingAverageFilter
         function obj = applyMovingAverageFilter(obj)
-<<<<<<< HEAD
             forceKeys = fieldnames(obj.calculatedForces);
             for iK=1:length(forceKeys)
                 key= forceKeys{iK};
@@ -1604,29 +1211,6 @@ classdef ForceCalculator
                 avgVal = buffStruct.sum / buffStruct.count;
                 obj.forceBuffers.(key) = buffStruct;
                 obj.calculatedForces_filtered.(key) = avgVal;
-=======
-            forceKeys = fieldnames(obj.calculatedForces);
-            for iK=1:length(forceKeys)
-                key= forceKeys{iK};
-                val = obj.calculatedForces.(key);
-
-            if isnumeric(val) && numel(val) == 1
-                % Moving average buffer update for scalar forces
-                buffStruct = obj.forceBuffers.(key);
-                buffStruct.index = buffStruct.index + 1;
-                if buffStruct.index > obj.filterWindowSize
-                    buffStruct.index = 1;
-                end
-                oldSample = buffStruct.data(buffStruct.index);
-                buffStruct.data(buffStruct.index) = val;
-                buffStruct.sum = buffStruct.sum + val - oldSample;
-                if buffStruct.count < obj.filterWindowSize
-                    buffStruct.count = buffStruct.count + 1;
-                end
-                avgVal = buffStruct.sum / buffStruct.count;
-                obj.forceBuffers.(key) = buffStruct;
-                obj.calculatedForces_filtered.(key) = avgVal;
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
                 end
             end
         end
@@ -1665,7 +1249,6 @@ classdef ForceCalculator
             end
         end
 
-<<<<<<< HEAD
         %% computeAeroForces
         % Computes aerodynamic drag, side force, and yaw moment in global frame
         function [F_drag_g, F_side_g, M_z_wind] = computeAeroForces(obj, R_veh2glob)
@@ -1692,47 +1275,14 @@ classdef ForceCalculator
             lever_arm = obj.trackWidth / 2;
             M_z_wind = F_side * lever_arm;
         end
-=======
-        %% computeAeroForces
-        % Computes aerodynamic drag, side force, and yaw moment in global frame
-        function [F_drag_g, F_side_g, M_z_wind] = computeAeroForces(obj, R_veh2glob)
-            % Global velocity relative to wind
-            vel_glob = R_veh2glob * obj.velocity;
-            rel_vel = vel_glob - obj.windVector;
-            v_rel = norm(rel_vel(1:2));
-            if v_rel == 0
-                F_drag_g = [0;0;0];
-            else
-                F_drag = 0.5 * obj.airDensity * obj.dragCoefficient * obj.frontalArea * v_rel^2;
-                dir = rel_vel(1:2) / v_rel;
-                F_drag_g = -F_drag * [dir; 0];
-            end
-            % Lateral wind force
-            v_wind_lat = obj.windVector(2);
-            if v_wind_lat == 0
-                F_side = 0;
-            else
-                F_side = 0.5 * obj.airDensity * obj.sideForceCoefficient * obj.sideArea * v_wind_lat^2 * sign(v_wind_lat);
-            end
-            F_side_g = [0; F_side; 0];
-            % Yaw moment due to side force
-            lever_arm = obj.trackWidth / 2;
-            M_z_wind = F_side * lever_arm;
-        end
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         function obj = applyBrakingForce(obj)
             if obj.vehicleMass>0
                 obj.brakingForce= obj.brakingForce; % already set
             else
                 obj.brakingForce=0;
             end
-<<<<<<< HEAD
             % Update braking force
             obj.calculatedForces.braking = [obj.brakingForce;0;0];
-=======
-            % Update braking force
-            obj.calculatedForces.braking = [obj.brakingForce;0;0];
->>>>>>> 663ada64c0d0a73b7da0f664105a594712f3e456
         end
     end
 end
