@@ -1176,7 +1176,7 @@ classdef VehicleModel < handle
             end
         end
                                 
-        function [tractorX, tractorY, tractorTheta, trailerX, trailerY, trailerTheta, globalVehicleFlags, steeringAnglesSim, speedData] = runSimulation(obj)
+        function [output] = initializeSim(obj)
             % runSimulation Executes the vehicle simulation and computes the dynamics
         
             % Initialize output variables
@@ -2500,6 +2500,34 @@ classdef VehicleModel < handle
                     );
                 throttle = Throttle(1,0.1);
 
+                % --- Auto-export of all local variables  --------------------------
+                thisFuncVars = setdiff(who, {'obj', 'output', 'fn', 'k'});   % all except 'obj' & 'output'
+                for k = 1:numel(thisFuncVars)
+                    varName = thisFuncVars{k};
+                    output.(varName) = eval(varName);             % output.varName = varName;
+                end
+                % ------------------------------------------------------------------------
+            catch ME
+                try
+                    [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
+                    disp(['Logs saved to ', txtFilename, ' and ', csvFilename]);
+                catch logError
+                    warning('Failed to save simulation logs due to: %s', logError.message);
+                end
+                rethrow(ME); % Re-throw the error after logging
+            end
+        end
+        
+        function [output] = computeNextSimFrame(obj,input)
+            try    
+                % --- Auto-import of all variables within 'input' ------------
+                fn = fieldnames(input);          % names
+                tot = numel(fn);
+                for k = 1:tot
+                    fld = fn{k};                 % name (string)
+                    eval([fld ' = input.' fld ';']);      % creates local variable
+                end
+                % -------------------------------------------------------------------------
                 for i = 1:numSteps
                     % --- Update Waitbar ---
                     if mod(i, reportInterval) == 0 || i == numSteps
@@ -2816,7 +2844,7 @@ classdef VehicleModel < handle
                     logMessages{end+1} = sprintf('Step %d: Horsepower: %.2f HP', i, horsePower);
         
                     % Update the force calculator's calculated forces
-                    dynamicsUpdater.forceCalculator.calculatedForces('traction') = [F_traction; 0; 0];
+                    dynamicsUpdater.forceCalculator.calculatedForces.traction = [F_traction; 0; 0];
         
                     % Optionally store horsepower in a data array if you wish to log it over time
                     horsepowerSim(i) = horsePower; % This array can be saved or plotted later
@@ -2837,7 +2865,7 @@ classdef VehicleModel < handle
                         % Calculate Hitch Forces and Moments
                         [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
                         % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
-                        dynamicsUpdater.forceCalculator.calculatedForces('momentZ') = M_hitch;
+                        dynamicsUpdater.forceCalculator.calculatedForces.momentZ = M_hitch;
         
                         % Update trailer's orientation and yaw rate from HitchModel
                         psi_trailer = hitchModel.angularState.psi;
@@ -2852,7 +2880,7 @@ classdef VehicleModel < handle
                         v_trailer = v; % Assuming negligible sideslip difference
         
                         % Apply Hitch Forces to ForceCalculator
-                        dynamicsUpdater.forceCalculator.calculatedForces('hitch') = F_hitch;
+                        dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
         
                         %% Update Trailer's State in DynamicsUpdater
                         dynamicsUpdater = dynamicsUpdater.setTrailerVelocity([u_trailer; v_trailer; 0]);
@@ -2871,7 +2899,9 @@ classdef VehicleModel < handle
                     r = dynamicsUpdater.yawRate;
                     phi = dynamicsUpdater.rollAngle;   % Retrieve roll angle
                     p = dynamicsUpdater.rollRate;      % Retrieve roll rate
-        
+
+                    stabilityChecker.forceCalculator = dynamicsUpdater.forceCalculator;
+
                     %% Update StabilityChecker and Check Stability if trailer is included
                     if simParams.includeTrailer
                         % Update omega_trailer and currentHitchAngle
@@ -2998,7 +3028,34 @@ classdef VehicleModel < handle
                     end
                     % steeringAnglesSim already stored earlier
                 end
+                % --- Auto-export of all local variables  --------------------------
+                thisFuncVars = setdiff(who, {'obj', 'output', 'fn', 'tot', 'k', 'fld', 'i', 'input'});   % all except 'obj' & 'output'
+                for k = 1:numel(thisFuncVars)
+                    varName = thisFuncVars{k};
+                    output.(varName) = eval(varName);             % output.varName = varName;
+                end
+                % ------------------------------------------------------------------------
+            catch ME
+                try
+                    [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
+                    disp(['Logs saved to ', txtFilename, ' and ', csvFilename]);
+                catch logError
+                    warning('Failed to save simulation logs due to: %s', logError.message);
+                end
+                rethrow(ME); % Re-throw the error after logging
+            end
+        end
         
+        function speedData = closeSim(obj,in)
+            try    
+                % --- Auto-import of all variables within 'input' ------------
+                functn = fieldnames(in);          % names
+                tot = numel(functn);
+                for pum = 1:tot
+                    fld = functn{pum};                 % name (string)
+                    eval([fld ' = in.' fld ';']);      % creates local variable
+                end
+                % -------------------------------------------------------------------------
                 logMessages{end+1} = '--- Simulation Completed ---';
         
                 % Plot Stability Flags
@@ -3080,7 +3137,7 @@ classdef VehicleModel < handle
                 obj.accelerationLimiter.plotLimits();
                 
                 % Plot Gaussian filter coefficients
-                obj.accelerationLimiter.plotGaussianResponse();
+                %obj.accelerationLimiter.plotGaussianResponse();
 
                 % Generate unique filename for .mat file
                 matFilename = obj.getUniqueFilename(obj.simulationName, '.mat');
@@ -3105,7 +3162,7 @@ classdef VehicleModel < handle
                 fprintf('--- Simulation Data and Logs Saved ---\n');
             catch ME
                 % Handle any errors and ensure logs are saved
-                logMessages{end+1} = sprintf('Simulation Error: %s', ME.message);
+                %logMessages{end+1} = sprintf('Simulation Error: %s', ME.message);
                 try
                     [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
                     disp(['Logs saved to ', txtFilename, ' and ', csvFilename]);
@@ -3113,11 +3170,6 @@ classdef VehicleModel < handle
                     warning('Failed to save simulation logs due to: %s', logError.message);
                 end
                 rethrow(ME); % Re-throw the error after logging
-        
-                % --- Added: Update Waitbar to Indicate Error ---
-                waitbar(1, hWaitbar, 'Simulation Error Occurred.');
-                pause(1); % Optional pause to allow user to see the message
-                closeIfOpen(hWaitbar); % Close the waitbar
             end
         end
 

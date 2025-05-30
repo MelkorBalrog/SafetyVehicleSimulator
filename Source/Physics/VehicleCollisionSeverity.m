@@ -14,7 +14,50 @@
 % * @author Miguel
 % * @version 2.5
 % * @date 2024-10-04
-% */
+ % */
+% ============================================================================
+% Module Interface
+% Constructor:
+%   obj = VehicleCollisionSeverity(m1, v1, r1, m2, v2, r2, e, n)
+% Methods:
+%   PerformCollision(): computes final velocities v1_final, v2_final
+%   CalculateSeverity(): computes deltaV for each vehicle and maps to severity levels
+%
+% Inputs:
+%   m1, m2: masses of vehicles
+%   v1, v2: pre-collision velocities [vx; vy; vz]
+%   r1, r2: r vectors to collision points
+%   e: restitution coefficient
+%   n: collision normal unit vector
+%
+% Outputs:
+%   v1_final, v2_final: post-collision velocities
+%   deltaV_vehicle1, deltaV_vehicle2: change in velocity in kph
+%   Vehicle1Severity, Vehicle2Severity: severity ratings (S0, S1, ...)
+%
+% Dependencies:
+%   determine_severity, get_thresholds (private)
+%
+% Bottlenecks:
+%   - Repeated norm and dot product calculations
+%   - get_thresholds uses switch/case for thresholds per collision type
+%
+% Proposed Optimizations:
+%   - Vectorize severity threshold lookup via precomputed threshold maps
+%   - Cache threshold tables for reuse across calls
+%   - Precompute inverse mass terms (1/m1, 1/m2) outside PerformCollision
+%   - Inline threshold selection and avoid switch-case overhead with direct indexing
+% ============================================================================
+% Embedded Systems Best Practices:
+%   - Precompute and store mass inverses (1/m1, 1/m2) to avoid divisions in performance paths
+%   - Use vectorized dot and norm operations; avoid loops for impulse and delta-V calculations
+%   - Replace switch/case in get_thresholds with direct indexing into preloaded threshold arrays
+%   - Pre-allocate output arrays for final velocities and severity results
+%   - Inline simple arithmetic to reduce function call overhead
+%   - Consolidate norm/v_rel calculations to minimize redundant computations
+%   - Use single precision floats where numerical precision allows for speed gains
+%   - Guard debug and fprintf calls under a compile-time or runtime verbosity flag
+%   - Offload critical computations (PerformCollision, CalculateSeverity) to MEX/C modules via MATLAB Coder
 classdef VehicleCollisionSeverity
     properties
         % Vehicle 1 Properties
@@ -43,6 +86,8 @@ classdef VehicleCollisionSeverity
         % Final Velocities After Collision
         v1_final    % Final velocity of Vehicle 1 after collision [vx; vy; vz] (m/s)
         v2_final    % Final velocity of Vehicle 2 after collision [vx; vy; vz] (m/s)
+        m1_inv      % Precomputed inverse mass of Vehicle 1 (1/kg)
+        m2_inv      % Precomputed inverse mass of Vehicle 2 (1/kg)
     end
     
     methods
@@ -71,6 +116,9 @@ classdef VehicleCollisionSeverity
 
             obj.e = e;
             obj.n = n;
+            % Precompute inverse masses for performance
+            obj.m1_inv = 1/obj.m1;
+            obj.m2_inv = 1/obj.m2;
             
             % Initialize CollisionType for both vehicles
             obj.CollisionType_vehicle1 = '';
@@ -103,12 +151,12 @@ classdef VehicleCollisionSeverity
             %     return;
             % end
             
-            % Calculate impulse scalar
-            J = -(1 + obj.e) * v_rel_normal / (1/obj.m1 + 1/obj.m2);
+            % Calculate impulse scalar using precomputed inverse masses
+            J = -(1 + obj.e) * v_rel_normal / (obj.m1_inv + obj.m2_inv);
             
-            % Update velocities
-            obj.v1_final = obj.v1 + (J / obj.m1) * obj.n;
-            obj.v2_final = obj.v2 - (J / obj.m2) * obj.n;
+            % Update velocities using inverse masses
+            obj.v1_final = obj.v1 + (J * obj.m1_inv) * obj.n;
+            obj.v2_final = obj.v2 - (J * obj.m2_inv) * obj.n;
         end
         
         %% Calculate Severity
@@ -163,73 +211,27 @@ classdef VehicleCollisionSeverity
             % Returns:
             %   thresholds - Nx2 matrix of [min, max] delta-V values in kph
 
-            % Define KE_J2980 thresholds per severity (in Joules)
-            switch bound_type_str
-                case 'LowerBound'
-                    switch collision_type
-                        case 'Head-On Collision'
-                            KE_thresholds = [0, 4; 4, 20; 20, 40; 40, Inf];
-                        case 'Rear-End Collision'
-                            KE_thresholds = [0, 4; 4, 20; 20, 40; 40, Inf];
-                        case 'Side Collision'
-                            KE_thresholds = [0, 2; 2, 8; 8, 16; 16, Inf];
-                        case 'Oblique Collision'
-                            KE_thresholds = [0, 3; 3, 14; 14, 28; 28, Inf];
-                        otherwise
-                            error('Invalid collision type: %s.', collision_type);
-                    end
-                case 'HigherBound'
-                    switch collision_type
-                        case 'Head-On Collision'
-                            KE_thresholds = [0, 10; 10, 50; 50, 65; 65, Inf];
-                        case 'Rear-End Collision'
-                            KE_thresholds = [0, 10; 10, 50; 50, 60; 60, Inf];
-                        case 'Side Collision'
-                            KE_thresholds = [0, 3; 10, 30; 30, 40; 40, Inf];
-                        case 'Oblique Collision'
-                            KE_thresholds = [0, 6.5; 10, 40; 40, 50; 50, Inf];
-                        otherwise
-                            error('Invalid collision type: %s.', collision_type);
-                    end
-                case 'Average'
-                    switch collision_type
-                        case 'Head-On Collision'
-                            KE_thresholds = [0, 7; 7, 35; 35, 52.5; 52.5, Inf];
-                        case 'Rear-End Collision'
-                            KE_thresholds = [0, 7; 7, 35; 35, 52.5; 52.5, Inf];
-                        case 'Side Collision'
-                            KE_thresholds = [0, 2.5; 2.5, 6; 6, 39; 39, Inf];
-                        case 'Oblique Collision'
-                            KE_thresholds = [0, 4.75; 4.75, 20.5; 20.5, 47.5; 47.5, Inf];
-                        otherwise
-                            error('Invalid collision type: %s.', collision_type);
-                    end
-                otherwise
-                    error('Invalid bound type: %s.', bound_type_str);
+            % Vectorized delta-V thresholds lookup based on SAE J2980 tables
+            persistent KE_tables
+            if isempty(KE_tables)
+                KE_tables.LowerBound.HeadOnCollision   = [0,4;4,20;20,40;40,Inf];
+                KE_tables.LowerBound.RearEndCollision  = [0,4;4,20;20,40;40,Inf];
+                KE_tables.LowerBound.SideCollision     = [0,2;2,8;8,16;16,Inf];
+                KE_tables.LowerBound.ObliqueCollision  = [0,3;3,14;14,28;28,Inf];
+                KE_tables.HigherBound.HeadOnCollision  = [0,10;10,50;50,65;65,Inf];
+                KE_tables.HigherBound.RearEndCollision = [0,10;10,50;50,60;60,Inf];
+                KE_tables.HigherBound.SideCollision    = [0,3;10,30;30,40;40,Inf];
+                KE_tables.HigherBound.ObliqueCollision = [0,6.5;10,40;40,50;50,Inf];
+                KE_tables.Average.HeadOnCollision      = [0,7;7,35;35,52.5;52.5,Inf];
+                KE_tables.Average.RearEndCollision     = [0,7;7,35;35,52.5;52.5,Inf];
+                KE_tables.Average.SideCollision        = [0,2.5;2.5,6;6,39;39,Inf];
+                KE_tables.Average.ObliqueCollision     = [0,4.75;4.75,20.5;20.5,47.5;47.5,Inf];
             end
-
-            % Initialize thresholds matrix
-            num_severities = size(KE_thresholds, 1);
-            thresholds = zeros(num_severities, 2);
-
-            for i = 1:num_severities
-                % Calculate delta-V thresholds based on KE = 0.5 * m_vehicle * dv_vehicle^2
-                KE_min = KE_thresholds(i, 1);
-                KE_max = KE_thresholds(i, 2);
-                KE_min = 0.5 * J2980MaxAssumedMass * (KE_min/3.6)^2; % in Joules
-                KE_max = 0.5 * J2980MaxAssumedMass * (KE_max/3.6)^2; % in Joules
-
-                % Therefore, dv_vehicle = sqrt(2 * KE / m_vehicle)
-                dv_min_mps = sqrt(2 * KE_min / vehicle_mass); % in m/s
-                dv_max_mps = sqrt(2 * KE_max / vehicle_mass); % in m/s
-
-                % Convert delta-V from m/s to kph
-                dv_min_kph = dv_min_mps * 3.6;
-                dv_max_kph = dv_max_mps * 3.6;
-
-                % Assign to thresholds matrix
-                thresholds(i, :) = [dv_min_kph, dv_max_kph];
-            end
+            bt = bound_type_str;
+            ct = regexprep(collision_type, '[- ]', '');
+            baseDV = KE_tables.(bt).(ct);
+            scale = sqrt(J2980MaxAssumedMass / vehicle_mass);
+            thresholds = baseDV * scale;
         end
 
         %/**

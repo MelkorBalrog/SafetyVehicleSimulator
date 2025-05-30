@@ -80,10 +80,15 @@ classdef UIManager < handle
         laneCommandsField
         buildMapButton
 
-        % Command Tab Fields
-        steeringCommandsField
-        accelerationCommandsField
-        tirePressureCommandsField
+        % Per-Vehicle Command Tab Fields
+        vehicle1CommandsTab           % Commands tab for Vehicle 1
+        vehicle1SteeringCommandsField
+        vehicle1AccelerationCommandsField
+        vehicle1TirePressureCommandsField
+        vehicle2CommandsTab           % Commands tab for Vehicle 2
+        vehicle2SteeringCommandsField
+        vehicle2AccelerationCommandsField
+        vehicle2TirePressureCommandsField
         % Playback speed for simulation (multiplier)
         playbackSpeedField
 
@@ -101,6 +106,8 @@ classdef UIManager < handle
         % Simulation control flags
         pauseFlag                % Logical flag for pause state
         stopFlag                 % Logical flag for stop state
+
+        suppressDebugCheckbox
     end
 
     methods
@@ -168,9 +175,12 @@ classdef UIManager < handle
             obj.vehicleTab2 = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Configuration');
             obj.createVehicle2VehicleConfig(obj.vehicleTab2);
 
-            % Commands Tab for lane map configuration
-            obj.commandsTab = uitab(obj.tabGroup, 'Title', 'Commands');
-            obj.createCommandsTab(obj.commandsTab);
+            % Commands Tab for Vehicle 1
+            obj.vehicle1CommandsTab = uitab(obj.tabGroup, 'Title', 'Vehicle 1 Commands');
+            obj.createVehicleCommandsTab(obj.vehicle1CommandsTab, 1);
+            % Commands Tab for Vehicle 2
+            obj.vehicle2CommandsTab = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Commands');
+            obj.createVehicleCommandsTab(obj.vehicle2CommandsTab, 2);
         end
 
         function createVehicle1Config(obj, parent)
@@ -645,26 +655,45 @@ classdef UIManager < handle
             obj.pauseFlag = false;
             obj.stopFlag = false;
             obj.simControlFig = uifigure('Name', 'Simulation Controls', ...
-                'Position', [1800, 100, 300, 180], ...
+                'Position', [1800, 100, 300, 220], ...
                 'Color', [0.95, 0.95, 0.95]);
-            grid = uigridlayout(obj.simControlFig, [3, 1], ...
-                'RowHeight', {30, 60, 30}, 'Padding', [10, 10, 10, 10], ...
+            % 4 rows: map toggle, debug toggle, playback buttons, stop button
+            grid = uigridlayout(obj.simControlFig, [4, 1], ...
+                'RowHeight', {30, 30, 60, 30}, 'Padding', [10, 10, 10, 10], ...
                 'RowSpacing', 10);
             % Map Trajectory Checkbox
+            % Toggle map trajectory display (row 1)
             obj.mapTrajectoryCheckbox = uicheckbox(grid, ...
                 'Text', 'Show Map Trajectory', ...
-                'Value', true);
+                'Value', true, ...
+                'ValueChangedFcn', @(src,~) setappdata(0,'ShowMapTrajectory',src.Value));
+            obj.mapTrajectoryCheckbox.Layout.Row = 1;
+            obj.mapTrajectoryCheckbox.Layout.Column = 1;
+            setappdata(0, 'ShowMapTrajectory', true);
+            % Toggle debug message suppression (row 2)
+            obj.suppressDebugCheckbox = uicheckbox(grid, ...
+                'Text', 'Suppress Debug Messages', ...
+                'Value', true, ...
+                'ValueChangedFcn', @(src,~) setappdata(0,'SuppressDebug',src.Value));
+            obj.suppressDebugCheckbox.Layout.Row = 2;
+            obj.suppressDebugCheckbox.Layout.Column = 1;
+            setappdata(0, 'SuppressDebug', true);
             % Playback Buttons Panel
+            % Playback buttons panel (row 3)
             btnPanel = uipanel(grid, 'Title', 'Playback', 'BackgroundColor', [1,1,1]);
-            btnPanel.Layout.Row = 2; btnPanel.Layout.Column = 1;
+            btnPanel.Layout.Row = 3;
+            btnPanel.Layout.Column = 1;
             btnGrid = uigridlayout(btnPanel, [1,3], ...
                 'ColumnWidth', {'1x','1x','1x'}, 'RowHeight', {30}, 'ColumnSpacing', 5);
             obj.playButton = uibutton(btnGrid, 'push', 'Text', 'Play', ...
                 'ButtonPushedFcn', @(~,~) obj.onPlay());
             obj.pauseButton = uibutton(btnGrid, 'push', 'Text', 'Pause', ...
                 'ButtonPushedFcn', @(~,~) obj.onPause());
+            % Stop simulation button (row 4)
             obj.stopButton = uibutton(grid, 'push', 'Text', 'Stop Simulation', ...
                 'ButtonPushedFcn', @(~,~) obj.onStop());
+            obj.stopButton.Layout.Row = 4;
+            obj.stopButton.Layout.Column = 1;
         end
 
         function onPlay(obj)
@@ -690,6 +719,51 @@ classdef UIManager < handle
 
         function showMap = getMapTrajectoryFlag(obj)
             showMap = obj.mapTrajectoryCheckbox.Value;
+        end
+        function suppressDebug = getSuppressDebugFlag(obj)
+            % Returns true if debug messages are suppressed
+            suppressDebug = obj.suppressDebugCheckbox.Value;
+        end
+
+        %% Create Commands Panel for Each Vehicle
+        % Hosts steering, acceleration, and tire pressure inputs per vehicle
+        function createVehicleCommandsTab(obj, parent, vehicleIndex)
+            grid = uigridlayout(parent, [3, 2], ...
+                'ColumnWidth', {150, '1x'}, ...
+                'RowHeight', {30, 30, 30}, ...
+                'Padding', [10, 10, 10, 10], ...
+                'RowSpacing', 10, ...
+                'ColumnSpacing', 10);
+
+            % Steering Commands
+            uilabel(grid, 'Text', 'Steering Commands:', 'HorizontalAlignment', 'right');
+            cmdField = uieditfield(grid, 'text', ...
+                'Value', 'simval_(195)|ramp_-30(1)|keep_-30(0.8)|ramp_0(0.2)|keep_0(1)');
+            if vehicleIndex == 1
+                obj.vehicle1SteeringCommandsField = cmdField;
+            else
+                obj.vehicle2SteeringCommandsField = cmdField;
+            end
+
+            % Acceleration Commands
+            uilabel(grid, 'Text', 'Acceleration Commands:', 'HorizontalAlignment', 'right');
+            accField = uieditfield(grid, 'text', ...
+                'Value', 'simval_(200)');
+            if vehicleIndex == 1
+                obj.vehicle1AccelerationCommandsField = accField;
+            else
+                obj.vehicle2AccelerationCommandsField = accField;
+            end
+
+            % Tire Pressure Commands
+            uilabel(grid, 'Text', 'Tire Pressure Commands:', 'HorizontalAlignment', 'right');
+            tpField = uieditfield(grid, 'text', ...
+                'Value', 'pressure_(t:150-[tire:9,psi:70];[tire:2,psi:72];[tire:1,psi:7])');
+            if vehicleIndex == 1
+                obj.vehicle1TirePressureCommandsField = tpField;
+            else
+                obj.vehicle2TirePressureCommandsField = tpField;
+            end
         end
     end
 end

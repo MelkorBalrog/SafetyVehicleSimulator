@@ -1,6 +1,7 @@
 %/**
 % * @class SimManager
 % * @brief Handles running simulations, detecting collisions, and plotting results for Vehicles in parallel.
+% * @see PARALLEL_COMPUTING.md for detailed strategies on implementing parallel execution and performance improvements.
 % *
 % * This revised version launches collision detection in parallel to animating the trajectories.
 % *
@@ -69,7 +70,11 @@ classdef SimManager < handle
         % */
         function runSimulations(obj)
             try
-                %% 1. Clear Previous Plots
+            %% 1. Prepare parallel pool and clear previous plots
+            % Ensure a parallel pool is available for concurrent execution
+            if isempty(gcp('nocreate'))
+                parpool('local');
+            end
                 disp('Clearing previous plots...');
                 obj.plotManager.clearPlots();
 
@@ -189,35 +194,85 @@ classdef SimManager < handle
                 %% Determine total steps for real-time animation
                 totalSteps = length(obj.vehicleSim1.simParams.steeringCommands);
                 fprintf('Total Simulation Steps set to: %d\n', totalSteps);
-                
+
                 %% 9. Run Vehicle Simulations (or use loaded data)
                 if obj.useSavedData
                     disp('Using loaded simulation data, skipping simulation runs and transfer.');
                 else
-                    Debug = 1;
-                    if Debug == 0
-                        disp('Running simulations asynchronously...');
-                        futures = cell(1, 2);
-                        futures{1} = parfeval(@SimManager.runVehicleSim1, 1, obj.vehicleSim1);
-                        futures{2} = parfeval(@SimManager.runVehicleSim2, 1, obj.vehicleSim2);
-                        simResultsArray = cell(1, 2);
-                        for idx = 1:2
-                            future = futures{idx};
-                            disp(['Fetching outputs for simulation ', num2str(idx), '...']);
-                            result = fetchOutputs(future);
-                            simResultsArray{idx} = result;
-                            progress = 0.15 + (0.85 / 2) * (idx / 2);
-                            waitbar(progress, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress * 100));
-                        end
-                        obj.sim1Results = simResultsArray{1};
-                        obj.sim2Results = simResultsArray{2};
-                    else
-                        disp('Running simulations synchronously...');
-                        obj.sim1Results = SimManager.runVehicleSim1(obj.vehicleSim1);
-                        disp('VehicleSim1 simulation completed.');
-                        obj.sim2Results = SimManager.runVehicleSim2(obj.vehicleSim2);
-                        disp('VehicleSim2 simulation completed.');
-                    end
+                    v1 = obj.vehicleSim1.initializeSim();
+                    v2 = obj.vehicleSim2.initializeSim();
+                    % if isappdata(0, 'SuppressDebug') && getappdata(0, 'SuppressDebug')
+                    %     disp('Running simulations asynchronously...');
+                    %     futures = cell(1, 2);
+                    %     totalSteps = v1.numSteps;
+                    % 
+                    %     hWaitbar = waitbar(0, 'Starting Simulation...', 'Name', 'Simulation Progress');
+                    %     cleanupObj = onCleanup(@() closeIfOpen(hWaitbar)); % Ensure waitbar closes on function exit
+                    %     reportInterval = ceil(totalSteps / 100); % Update every 1%
+                    % 
+                    %     for iStep = 1:totalSteps
+                    %         if mod(iStep, reportInterval) == 0 || iStep == totalSteps
+                    %             progress = (iStep / totalSteps) * 100;
+                    %             waitbar(iStep / totalSteps, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress));
+                    %         end
+                    % 
+                    %         futures{1} = parfeval(@SimManager.runVehicleSim1, 1, obj.vehicleSim1,v1,iStep);
+                    %         futures{2} = parfeval(@SimManager.runVehicleSim2, 1, obj.vehicleSim2,v2,iStep);
+                    %         simResultsArray = cell(1, 2);
+                    % 
+                    %         for idx = 1:2
+                    %             future = futures{idx};
+                    %             disp(['Fetching outputs for simulation ', num2str(idx), '...']);
+                    %             result = fetchOutputs(future);
+                    %             simResultsArray{idx} = result;
+                    %         end
+                    %     end
+                    % 
+                    %     obj.sim1Results = simResultsArray{1};
+                    %     obj.sim2Results = simResultsArray{2};
+                    % else
+                        % totalSteps = v1.numSteps;
+                        % for iStep = 1:totalSteps
+                            % progress = (iStep / totalSteps) * 100;
+                            % waitbar(iStep / totalSteps, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress));
+                            v1 = SimManager.runVehicleSim1(obj.vehicleSim1,v1);
+                            v2 = SimManager.runVehicleSim2(obj.vehicleSim2,v2);
+                        % end
+                    % end
+
+                    % v1 = obj.vehicleSim1.initializeSim();
+                    % v2 = obj.vehicleSim2.initializeSim();
+                    % 
+                    % disp('Running simulations asynchronously...');
+                    % 
+
+                    res1 = obj.vehicleSim1.closeSim(v1);
+                    res2 = obj.vehicleSim2.closeSim(v2);
+
+                    obj.sim1Results = struct(...
+                        'X', v1.tractorX, ...
+                        'Y', v1.tractorY, ...
+                        'Theta', v1.tractorTheta, ...
+                        'trailerX', v1.trailerX, ...
+                        'trailerY', v1.trailerY, ...
+                        'trailerTheta', v1.trailerTheta, ...
+                        'flags', v1.globalVehicleFlags, ...
+                        'steeringAngles', v1.steeringAnglesSim, ...
+                        'speedData', res1 ...
+                    );
+
+                    obj.sim2Results = struct(...
+                        'X', v2.tractorX, ...
+                        'Y', v2.tractorY, ...
+                        'Theta', v2.tractorTheta, ...
+                        'trailerX', v2.trailerX, ...
+                        'trailerY', v2.trailerY, ...
+                        'trailerTheta', v2.trailerTheta, ...
+                        'flags', v2.globalVehicleFlags, ...
+                        'steeringAngles', v2.steeringAnglesSim, ...
+                        'speedData', res2 ...
+                    );
+
                     %% 9. Transfer Simulation Results
                     disp('Transferring simulation results to DataManager...');
                     obj.transferSimulationResults();
@@ -853,42 +908,21 @@ classdef SimManager < handle
     end
 
     methods(Static)
-        function simResults = runVehicleSim1(vehicleSim, stepCallback)
-            if nargin < 2 || isempty(stepCallback)
-                stepCallback = [];
-            end
-            [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation();
-            simResults = struct(...
-                'X', X, ...
-                'Y', Y, ...
-                'Theta', Theta, ...
-                'trailerX', trailerX, ...
-                'trailerY', trailerY, ...
-                'trailerTheta', trailerTheta, ...
-                'flags', flags, ...
-                'steeringAngles', steeringAngles, ...
-                'speedData', speedData ...
-            );
+        function simResults = runVehicleSim1(vehicleSim, v1)
+            simResults = vehicleSim.computeNextSimFrame(v1);
         end
 
-        function simResults = runVehicleSim2(vehicleSim, stepCallback)
-            if nargin < 2 || isempty(stepCallback)
-                stepCallback = [];
+        function simResults = runVehicleSim2(vehicleSim, v2)
+            simResults = vehicleSim.computeNextSimFrame(v2);
+        end
+        
+        function simResultsArray = runBatchVehicleSimulations(vehicleSimArray)
+            % runBatchVehicleSimulations Runs multiple vehicle simulations in parallel
+            n = numel(vehicleSimArray);
+            simResultsArray = cell(1, n);
+            parfor k = 1:n
+                simResultsArray{k} = SimManager.runVehicleSim1(vehicleSimArray{k});
             end
-            [X, Y, Theta, trailerX, trailerY, trailerTheta, flags, ...
-                steeringAngles, speedData] = vehicleSim.runSimulation();
-            simResults = struct(...
-                'X', X, ...
-                'Y', Y, ...
-                'Theta', Theta, ...
-                'trailerX', trailerX, ...
-                'trailerY', trailerY, ...
-                'trailerTheta', trailerTheta, ...
-                'flags', flags, ...
-                'steeringAngles', steeringAngles, ...
-                'speedData', speedData ...
-            );
         end
     end
 end
@@ -911,3 +945,4 @@ function closeIfOpen(h)
         close(h);
     end
 end
+

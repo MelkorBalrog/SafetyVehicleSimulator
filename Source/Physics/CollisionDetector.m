@@ -14,7 +14,37 @@
 % * @author Miguel
 % * @version 1.2
 % * @date 2024-04-27
-% */
+ % */
+% ============================================================================
+% Embedded Systems Best Practices:
+%   - Precompute and cache axis normals for each bounding box once, not per collision
+%   - Use fixed-size arrays and avoid dynamic concatenation in getAxes
+%   - Vectorize polygon projection using matrix multiplications
+%   - Implement overlap checks with direct min/max comparisons (no temporary arrays)
+%   - Remove debug traces; guard any logging under a verbosity flag
+%   - Align data in column-major order for efficient memory access
+%   - Consider using bitmasks for axis selection to reduce operations
+%   - Offload compute-intensive loops to MEX/C for high-performance applications
+% ============================================================================
+% Module Interface
+% Methods:
+%   checkCollision(obj, corners1, corners2): returns collision boolean using SAT
+%   WhoIsBulletVehicle(obj, vehicle1, vehicle2, collisionType): identifies bullet and target vehicles
+%
+% Dependencies:
+%   getAxes (private)
+%
+% Bottlenecks:
+%   - Loop over edges to compute axes (8 axes), dynamic concatenation
+%   - unique(axes, 'rows') overhead
+%   - Projection loops per axis
+%
+% Proposed Optimizations:
+%   - Compute and store axes for static vehicle shapes to avoid repeated recomputation
+%   - Vectorize projection via matrix multiplication: projection = corners * axis'
+%   - Limit axes to minimal necessary (4 unique normals) rather than all edges
+%   - Inline simple overlap checks with direct min/max operations avoiding intermediate arrays
+% ============================================================================
 classdef CollisionDetector
     % CollisionDetector Class to handle collision detection between two rectangular vehicles using the Separating Axis Theorem (SAT).
     %
@@ -61,17 +91,18 @@ classdef CollisionDetector
             % Get the axes (normals) to be tested
             axes = obj.getAxes(corners1, corners2);
 
-            % Project both rectangles onto each axis and check for overlaps
-            for i = 1:size(axes,1)
-                axis = axes(i, :);
-                projection1 = obj.projectPolygon(corners1, axis);
-                projection2 = obj.projectPolygon(corners2, axis);
+            % Vectorized projection of both rectangles onto each axis
+            proj1 = corners1 * axes';
+            p1min = min(proj1, [], 1);
+            p1max = max(proj1, [], 1);
+            proj2 = corners2 * axes';
+            p2min = min(proj2, [], 1);
+            p2max = max(proj2, [], 1);
 
-                if ~obj.overlaps(projection1, projection2)
-                    % Separating axis found, no collision
-                    collision = false;
-                    return;
-                end
+            % Check for any separating axis
+            if any(p1max < p2min | p2max < p1min)
+                collision = false;
+                return;
             end
 
             % No separating axis found, collision detected
@@ -152,30 +183,24 @@ classdef CollisionDetector
             % Output:
             %   axes - Nx2 matrix of unit vectors representing the axes to test.
 
-            axes = [];
+            % Compute edge normals for both rectangles
+            edges1 = corners1([2:4,1], :) - corners1;
+            normals1 = [-edges1(:,2), edges1(:,1)];
+            edges2 = corners2([2:4,1], :) - corners2;
+            normals2 = [-edges2(:,2), edges2(:,1)];
 
-            % Extract edges from the first rectangle
-            for i = 1:4
-                edge = corners1(mod(i,4)+1, :) - corners1(i, :);
-                normal = [-edge(2), edge(1)]; % Perpendicular to the edge
-                if norm(normal) ~= 0
-                    normal = normal / norm(normal); % Normalize
-                    axes = [axes; normal];
-                end
-            end
+            % Combine and normalize, removing zero-length vectors
+            axes_raw = [normals1; normals2];
+            lens = sqrt(sum(axes_raw.^2, 2));
+            valid = lens > 0;
+            axes_norm = axes_raw(valid, :) ./ lens(valid);
 
-            % Extract edges from the second rectangle
-            for i = 1:4
-                edge = corners2(mod(i,4)+1, :) - corners2(i, :);
-                normal = [-edge(2), edge(1)]; % Perpendicular to the edge
-                if norm(normal) ~= 0
-                    normal = normal / norm(normal); % Normalize
-                    axes = [axes; normal];
-                end
-            end
+            % Canonicalize axis directions (ensure unique representation)
+            flip_idx = axes_norm(:,1) < 0 | (abs(axes_norm(:,1)) < eps & axes_norm(:,2) < 0);
+            axes_norm(flip_idx, :) = -axes_norm(flip_idx, :);
 
-            % Remove duplicate axes to optimize performance
-            axes = unique(axes, 'rows');
+            % Obtain unique axes (rows)
+            axes = unique(axes_norm, 'rows');
         end
 
         %/**

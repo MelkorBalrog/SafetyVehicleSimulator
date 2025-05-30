@@ -14,8 +14,46 @@
 % * 
 % * @version 2.5
 % * @date 2024-11-04
-% */
-classdef DynamicsUpdater
+ % */
+% ============================================================================
+% Embedded Systems Best Practices:
+%   - Use fixed-size pre-allocated arrays for state and derivative storage
+%   - Pool and reuse buffers to avoid dynamic memory allocation in real-time loops
+%   - Inline small utility functions to reduce function call overhead
+%   - Eliminate or conditionally compile out debug/log statements for performance builds
+%   - Use lookup tables for common nonlinear functions to reduce transcendental calls
+%   - Avoid branching in inner loops; use vectorized condition masks
+%   - Pre-compute constant transformation matrices and reuse across time steps
+%   - Minimize use of containers.Map; use structs or arrays for constant fields
+%   - Consider generating optimized C code (MEX) for computational hotspots
+% ============================================================================
+% Module Interface
+% Methods:
+%   updateState: selects integrator (Euler or RK4) and updates vehicle state
+%   updateStateEuler: Euler integration of state vector
+%   updateStateRK4: 4th order Runge-Kutta integration
+%   stateDerivative: computes state derivatives [d(position); d(orientation); d(momentum); d(roll)]
+%   Acceleration smoothing via smoothingCoefficient
+% Properties updated: position, orientation, linearMomentum, angularMomentum, rollAngle, rollRate, a_long, a_lat, velocity, lateralVelocity, yawRate
+%
+% Dependencies:
+%   ForceCalculator: computes forces/moments acting on vehicle
+%   KinematicsCalculator: computes kinematic transformations
+%   Transmission: handles gear updates
+%
+% Bottlenecks:
+%   - Allocation of state/derivative arrays each step
+%   - Conditional integrator switching overhead
+%   - Frequent property updates and dynamic method calls
+%
+% Proposed Optimizations:
+%   - Pre-allocate and reuse state and derivative buffers
+%   - Merge Euler and RK4 code paths or use single vectorized integrator
+%   - Replace containers.Map usage in ForceCalculator with static struct
+%   - Inline small helper methods and leverage MATLAB Coder for performance
+%   - Remove redundant updates to ForceCalculator properties
+% ============================================================================
+classdef DynamicsUpdater < handle
     properties
         position                % [x; y] position in meters
         orientation             % Yaw angle (theta) in radians
@@ -366,11 +404,11 @@ classdef DynamicsUpdater
             % Calculate forces based on vehicleState
             obj.forceCalculator = obj.forceCalculator.calculateForces(vehicleState);
 
-            % Retrieve calculated forces
+            % Retrieve calculated forces struct
             forces = obj.forceCalculator.getCalculatedForces();
-            totalForce = forces('totalForce');         % In vehicle frame [F_x; F_y; F_z]
-            totalMoment = forces('momentZ');           % Yaw moment (about Z-axis)
-            momentRoll = forces('momentRoll');         % Rolling moment (about X-axis)
+            totalForce = forces.totalForce;            % In vehicle frame [F_x; F_y; F_z]
+            totalMoment = forces.momentZ;              % Yaw moment (about Z-axis)
+            momentRoll = forces.momentRoll;            % Rolling moment (about X-axis)
 
             % Rate of change of momentum
             dp_x_dt = totalForce(1);

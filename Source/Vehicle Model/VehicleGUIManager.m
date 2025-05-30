@@ -47,6 +47,7 @@ classdef VehicleGUIManager < handle
         tractorMassField
         trailerMassField
         includeTrailerCheckbox   % Checkbox to include/remove trailer
+        enableLoggingCheckbox    % Checkbox to enable/disable log messages
         velocityField
         frontLeftWeightField
         frontRightWeightField
@@ -660,6 +661,10 @@ classdef VehicleGUIManager < handle
             obj.includeTrailerCheckbox = uicheckbox(obj.basicConfigTab, 'Position', [10, 320, 260, 20], ...
                 'Text', 'Include Trailer', 'Value', true, ...
                 'ValueChangedFcn', @(src, event)obj.includeTrailerChanged(src, event));
+            % Checkbox to enable/disable internal log messages
+            obj.enableLoggingCheckbox = uicheckbox(obj.basicConfigTab, 'Position', [10, 300, 260, 20], ...
+                'Text', 'Enable Logging', 'Value', true, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             % Initial Velocity
             uilabel(obj.basicConfigTab, 'Position', [10, 240, 150, 20], 'Text', 'Initial Velocity (m/s):');

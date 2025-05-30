@@ -15,7 +15,37 @@
 % * @author Miguel
 % * @version 2.0
 % * @date 2024-10-22
-% */
+ % */
+% ============================================================================
+% Module Interface
+% Methods:
+%   KinematicsCalculator: constructor initializes roll and lateral acceleration parameters
+%   calculateKinematics: compute distances, velocities, rotation matrices (example method names)
+%   updateRollDynamics: compute roll acceleration and update roll angle/rate
+%   getLateralAcceleration: returns lateralAcceleration property
+% Properties:
+%   h_CoG_tractor, h_CoG_trailer, K_roll_tractor, D_roll_tractor, I_roll_tractor, K_roll_trailer, D_roll_trailer, I_roll_trailer, dt, forceCalculator, h_CoG, lateralAcceleration
+% Dependencies:
+%   ForceCalculator: for forces/moments
+% Bottlenecks:
+%   - Loop-based inertia calculation for roll dynamics (could be vectorized)
+%   - Frequent printing/log statements hamper performance
+% Proposed Optimizations:
+%   - Vectorize inertia and cg calculations using matrix operations
+%   - Remove or gate debug fprintf calls under a verbosity flag
+%   - Combine repeated formulas into precomputed lookup tables for roll responses
+% ============================================================================
+% Embedded Systems Best Practices:
+%   - Pre-allocate all data structures and reuse buffers
+%   - Replace looped computations with vectorized matrix operations
+%   - Gate debug/log outputs under a runtime verbosity flag
+%   - Inline simple kinematic calculations to reduce function calls
+%   - Use lookup tables for sine and cosine computations
+%   - Avoid dynamic resizing of arrays; use fixed-size containers
+%   - Consider using fixed-point data types for limited-precision needs
+%   - Leverage MATLAB Coder for generating optimized compiled code
+%   - Minimize branching and use logical indexing in main loops
+% ============================================================================
 classdef KinematicsCalculator
     properties
         %/**
@@ -189,76 +219,76 @@ classdef KinematicsCalculator
             % Initialize center of gravity heights
             if isempty(h_CoG_tractor)
                 obj.h_CoG_tractor = 1.5; % Default value
-                fprintf('h_CoG_tractor not provided. Using default: %.2f meters\n', obj.h_CoG_tractor);
+                debugLog('h_CoG_tractor not provided. Using default: %.2f meters\n', obj.h_CoG_tractor);
             else
                 obj.h_CoG_tractor = h_CoG_tractor;
-                fprintf('h_CoG_tractor set to: %.2f meters\n', obj.h_CoG_tractor);
+                debugLog('h_CoG_tractor set to: %.2f meters\n', obj.h_CoG_tractor);
             end
             
             if isempty(h_CoG_trailer)
                 obj.h_CoG_trailer = 2.0; % Default value
-                fprintf('h_CoG_trailer not provided. Using default: %.2f meters\n', obj.h_CoG_trailer);
+                debugLog('h_CoG_trailer not provided. Using default: %.2f meters\n', obj.h_CoG_trailer);
             else
                 obj.h_CoG_trailer = h_CoG_trailer;
-                fprintf('h_CoG_trailer set to: %.2f meters\n', obj.h_CoG_trailer);
+                debugLog('h_CoG_trailer set to: %.2f meters\n', obj.h_CoG_trailer);
             end
             
             % Initialize roll dynamics parameters for tractor
             if isempty(K_roll_tractor)
                 obj.K_roll_tractor = 200000; % Default value (N·m/rad)
-                fprintf('K_roll_tractor not provided. Using default: %.2f N·m/rad\n', obj.K_roll_tractor);
+                debugLog('K_roll_tractor not provided. Using default: %.2f N·m/rad\n', obj.K_roll_tractor);
             else
                 obj.K_roll_tractor = K_roll_tractor;
-                fprintf('K_roll_tractor set to: %.2f N·m/rad\n', obj.K_roll_tractor);
+                debugLog('K_roll_tractor set to: %.2f N·m/rad\n', obj.K_roll_tractor);
             end
             
             if isempty(D_roll_tractor)
                 obj.D_roll_tractor = 5000; % Default value (N·m·s/rad)
-                fprintf('D_roll_tractor not provided. Using default: %.2f N·m·s/rad\n', obj.D_roll_tractor);
+                debugLog('D_roll_tractor not provided. Using default: %.2f N·m·s/rad\n', obj.D_roll_tractor);
             else
                 obj.D_roll_tractor = D_roll_tractor;
-                fprintf('D_roll_tractor set to: %.2f N·m·s/rad\n', obj.D_roll_tractor);
+                debugLog('D_roll_tractor set to: %.2f N·m·s/rad\n', obj.D_roll_tractor);
             end
             
             if isempty(I_roll_tractor)
                 obj.I_roll_tractor = 5000; % Default value (kg·m²)
-                fprintf('I_roll_tractor not provided. Using default: %.2f kg·m²\n', obj.I_roll_tractor);
+                debugLog('I_roll_tractor not provided. Using default: %.2f kg·m²\n', obj.I_roll_tractor);
             else
                 obj.I_roll_tractor = I_roll_tractor;
-                fprintf('I_roll_tractor set to: %.2f kg·m²\n', obj.I_roll_tractor);
+                debugLog('I_roll_tractor set to: %.2f kg·m²\n', obj.I_roll_tractor);
             end
             
             % Initialize roll dynamics parameters for trailer
             if isempty(K_roll_trailer)
                 obj.K_roll_trailer = 150000; % Default value (N·m/rad)
-                fprintf('K_roll_trailer not provided. Using default: %.2f N·m/rad\n', obj.K_roll_trailer);
+                debugLog('K_roll_trailer not provided. Using default: %.2f N·m/rad\n', obj.K_roll_trailer);
             else
                 obj.K_roll_trailer = K_roll_trailer;
-                fprintf('K_roll_trailer set to: %.2f N·m/rad\n', obj.K_roll_trailer);
+                debugLog('K_roll_trailer set to: %.2f N·m/rad\n', obj.K_roll_trailer);
             end
             
             if isempty(D_roll_trailer)
                 obj.D_roll_trailer = 4000; % Default value (N·m·s/rad)
-                fprintf('D_roll_trailer not provided. Using default: %.2f N·m·s/rad\n', obj.D_roll_trailer);
+                debugLog('D_roll_trailer not provided. Using default: %.2f N·m·s/rad\n', obj.D_roll_trailer);
             else
                 obj.D_roll_trailer = D_roll_trailer;
-                fprintf('D_roll_trailer set to: %.2f N·m·s/rad\n', obj.D_roll_trailer);
+                debugLog('D_roll_trailer not provided. Using default: %.2f N·m·s/rad\n', obj.D_roll_trailer);
             end
             
             if isempty(I_roll_trailer)
                 obj.I_roll_trailer = 8000; % Default value (kg·m²)
-                fprintf('I_roll_trailer not provided. Using default: %.2f kg·m²\n', obj.I_roll_trailer);
+                debugLog('I_roll_trailer not provided. Using default: %.2f kg·m²\n', obj.I_roll_trailer);
             else
                 obj.I_roll_trailer = I_roll_trailer;
-                fprintf('I_roll_trailer set to: %.2f kg·m²\n', obj.I_roll_trailer);
+                debugLog('I_roll_trailer set to: %.2f kg·m²\n', obj.I_roll_trailer);
             end
             
             if isempty(dt)
                 obj.dt = 0.01; % Default time step
-                fprintf('dt not provided. Using default: %.4f seconds\n', obj.dt);
+                debugLog('dt not provided. Using default: %.4f seconds\n', obj.dt);
             else
                 obj.dt = dt;
-                fprintf('dt set to: %.4f seconds\n', obj.dt);
+                debugLog('dt set to: %.4f seconds\n', obj.dt);
             end
             
             % Assign ForceCalculator instance
@@ -402,8 +432,8 @@ classdef KinematicsCalculator
             obj.lateralAccelerationTrailer = F_lateral_trailer / trailerMass;
             
             % Debug: Display updated lateral accelerations
-            fprintf('Updated Lateral Acceleration (Tractor): %.4f m/s²\n', obj.lateralAccelerationTractor);
-            fprintf('Updated Lateral Acceleration (Trailer): %.4f m/s²\n', obj.lateralAccelerationTrailer);
+            debugLog('Updated Lateral Acceleration (Tractor): %.4f m/s²\n', obj.lateralAccelerationTractor);
+            debugLog('Updated Lateral Acceleration (Trailer): %.4f m/s²\n', obj.lateralAccelerationTrailer);
         end
         
         %/**
@@ -457,8 +487,8 @@ classdef KinematicsCalculator
             obj.rollAngleTrailer = obj.rollAngleTrailer + obj.rollRateTrailer * obj.dt;
             
             % Debug: Display updated roll angles
-            fprintf('Updated Roll Angle (Tractor): %.4f rad (%.2f degrees)\n', obj.rollAngleTractor, rad2deg(obj.rollAngleTractor));
-            fprintf('Updated Roll Angle (Trailer): %.4f rad (%.2f degrees)\n', obj.rollAngleTrailer, rad2deg(obj.rollAngleTrailer));
+            debugLog('Updated Roll Angle (Tractor): %.4f rad (%.2f degrees)\n', obj.rollAngleTractor, rad2deg(obj.rollAngleTractor));
+            debugLog('Updated Roll Angle (Trailer): %.4f rad (%.2f degrees)\n', obj.rollAngleTrailer, rad2deg(obj.rollAngleTrailer));
         end
         
         %/**
@@ -477,12 +507,12 @@ classdef KinematicsCalculator
                 rollAngle = obj.rollAngleTractor;
                 
                 % Debug: Display the current roll angle for tractor
-                fprintf('Current Roll Angle (Tractor): %.4f rad (%.2f degrees)\n', rollAngle, rad2deg(rollAngle));
+                debugLog('Current Roll Angle (Tractor): %.4f rad (%.2f degrees)\n', rollAngle, rad2deg(rollAngle));
             elseif strcmp(vehiclePart, 'trailer')
                 rollAngle = obj.rollAngleTrailer;
                 
                 % Debug: Display the current roll angle for trailer
-                fprintf('Current Roll Angle (Trailer): %.4f rad (%.2f degrees)\n', rollAngle, rad2deg(rollAngle));
+                debugLog('Current Roll Angle (Trailer): %.4f rad (%.2f degrees)\n', rollAngle, rad2deg(rollAngle));
             else
                 error('Invalid vehicle part specified. Use ''tractor'' or ''trailer''.');
             end
@@ -543,7 +573,7 @@ classdef KinematicsCalculator
                 error('Mass must be positive to calculate lateral acceleration.');
             end
             obj.lateralAcceleration = lateralForce / mass;
-            fprintf('Updated Lateral Acceleration: %.4f m/s²\n', obj.lateralAcceleration);
+            debugLog('Updated Lateral Acceleration: %.4f m/s²\n', obj.lateralAcceleration);
         end
         
         %/**
@@ -558,7 +588,7 @@ classdef KinematicsCalculator
             rollAngle = atan(obj.lateralAcceleration * obj.h_CoG / g);
             
             % Debug: Display the calculated roll angle
-            fprintf('Calculated Roll Angle: %.4f rad (%.2f degrees)\n', rollAngle, rad2deg(rollAngle));
+            debugLog('Calculated Roll Angle: %.4f rad (%.2f degrees)\n', rollAngle, rad2deg(rollAngle));
         end
         
         %/**
@@ -591,7 +621,7 @@ classdef KinematicsCalculator
             % 3) Articulation angle = trailerYaw - tractorYaw
             hitchAngleRad = trailerYaw - tractorYaw;
     
-            fprintf('Tractor Yaw: %.4f rad, Trailer Yaw: %.4f rad, HitchAngle: %.4f rad\n', ...
+            debugLog('Tractor Yaw: %.4f rad, Trailer Yaw: %.4f rad, HitchAngle: %.4f rad\n', ...
                     tractorYaw, trailerYaw, hitchAngleRad);
         end
     end
