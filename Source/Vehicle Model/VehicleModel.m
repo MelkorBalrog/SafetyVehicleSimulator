@@ -15,9 +15,9 @@ classdef VehicleModel < handle
         guiManager
         filename
         simParams
-        speedController      % Instance of SpeedController
-        steeringController   % Instance of SteeringController
-        accelerationLimiter  % Instance of AccelerationLimiter
+        pid_SpeedController      % Instance of pid_SpeedController
+        limiter_LateralControl   % Instance of limiter_LateralControl
+        limiter_LongitudinalControl  % Instance of limiter_LongitudinalControl
         simulationName
         uiManager
     end
@@ -1659,7 +1659,7 @@ classdef VehicleModel < handle
         
                 % --- Instantiate the SpeedController ---
                 desiredSpeed = initialVelocity; % Assuming initialVelocity is the desired speed
-                obj.speedController = SpeedController( ...
+                obj.pid_SpeedController = pid_SpeedController( ...
                     desiredSpeed, ...
                     maxSpeed, ...
                     Kp, ...
@@ -1669,29 +1669,29 @@ classdef VehicleModel < handle
                     minDecelAtMaxSpeed, ...
                     'FilterType', 'sma', 'SMAWindowSize', 50 ...
                     ); % maxAccel and minAccel set to 2.0 and -2.0 m/s^2 respectively
-                logMessages{end+1} = 'SpeedController initialized successfully.';
+                logMessages{end+1} = 'pid_SpeedController initialized successfully.';
                 % --- End of SpeedController Initialization ---
 
                 % Set the waypoints
-                % obj.speedController.setWaypoints(simParams.waypoints);
+                % obj.pid_SpeedController.setWaypoints(simParams.waypoints);
         
-                % --- Instantiate the SteeringController ---
+                % --- Instantiate the limiter_LateralControl ---
                 maxAngleAtZeroSpeed = simParams.maxSteeringAngleAtZeroSpeed;
                 % minAngleAtMaxSpeed = simParams.minSteeringAngleAtMaxSpeed;
                 maxSpeedSteer = simParams.maxSteeringSpeed;
                 % maxRateAtZeroSpeed = 90;
                 % minRateAtMaxSpeed = 20;
 
-                obj.steeringController = SteeringController( ...
+                obj.limiter_LateralControl = limiter_LateralControl( ...
                     simParams.steeringCurveFilePath ...
                     );
-                logMessages{end+1} = 'SteeringController initialized successfully.';
-                % --- End of SteeringController Initialization ---
+                logMessages{end+1} = 'limiter_LateralControl initialized successfully.';
+                % --- End of limiter_LateralControl Initialization ---
         
-                % --- Instantiate the AccelerationLimiter ---
+                % --- Instantiate the limiter_LongitudinalControl ---
                 gaussianWindow = 11;  % Gaussian filter window size (must be odd)
                 gaussianStd = 1.0;     % Gaussian filter standard deviation
-                obj.accelerationLimiter = AccelerationLimiter( ...
+                obj.limiter_LongitudinalControl = limiter_LongitudinalControl( ...
                     accelCurve, ...
                     decelCurve, ...
                     maxSpeedForAccelLimiting, ...
@@ -1699,8 +1699,8 @@ classdef VehicleModel < handle
                     gaussianWindow, ... 
                     gaussianStd ...
                     );
-                logMessages{end+1} = 'AccelerationLimiter initialized successfully.';
-                % --- End of AccelerationLimiter Initialization ---
+                logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
+                % --- End of limiter_LongitudinalControl Initialization ---
         
                 time = timeProcessed; % Update time vector
                 steerAngles = -steerAngles;
@@ -2478,8 +2478,8 @@ classdef VehicleModel < handle
                          sin(rotationAngleRad),  cos(rotationAngleRad)];
                 end
 
-                % Create PathFollower object
-                pathFollower = PathFollower( ...
+                % Create purePursuit_PathFollower object
+                purePursuitPathFollower = purePursuit_PathFollower( ...
                     simParams.waypoints, ...
                     wheelBasetoUse, ...
                     lookaheadDistance, ...
@@ -2642,23 +2642,23 @@ classdef VehicleModel < handle
 
                     forceCalc.turnRadius = dynamicsUpdater.forceCalculator.turnRadius;
 
-                    % --- Update PathFollower with Current State ---
+                    % --- Update purePursuit_PathFollower with Current State ---
                     currentState = [x, y];
-                    pathFollower = pathFollower.updateState(currentState, theta, u);
+                    purePursuitPathFollower = purePursuitPathFollower.updateState(currentState, theta, u);
                 
-                    % --- Compute Control Commands from PathFollower ---
-                    [pathFollower, desiredSteeringAngleDeg] = pathFollower.computeSteering();
+                    % --- Compute Control Commands from purePursuit_PathFollower ---
+                    [purePursuitPathFollower, desiredSteeringAngleDeg] = purePursuitPathFollower.computeSteering();
 
                     % --- Apply Steering and Acceleration Commands ---
                     % Limit steering angle and acceleration based on simulation constraints
-                    limitedSteerAngleDeg = obj.steeringController.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
+                    limitedSteerAngleDeg = obj.limiter_LateralControl.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
                 
                     steeringAnglesSim(i) = deg2rad(limitedSteerAngleDeg); % Convert to radians
         
                     % --- Steering Control ---
                     desiredSteerAngleDeg = steerAngles(i); % In degrees
                     if ~steeringEnded(i)
-                        limitedSteerAngleDeg = obj.steeringController.computeSteeringAngle(desiredSteerAngleDeg, currentSpeed);
+                        limitedSteerAngleDeg = obj.limiter_LateralControl.computeSteeringAngle(desiredSteerAngleDeg, currentSpeed);
                     end
                     steerAngleRad = deg2rad(limitedSteerAngleDeg);
                     steerAngleRad = AckermannGeometry.enforceSteeringLimits(steerAngleRad);
@@ -2674,9 +2674,9 @@ classdef VehicleModel < handle
                         desired_acceleration_sim(i) = desired_acceleration;
                         logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
                     else
-                        desired_acceleration = obj.speedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
+                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
                         desired_acceleration_sim(i) = 0;
-                        logMessages{end+1} = sprintf('Step %d: Computed acceleration using SpeedController: %.4f m/s^2', i, desired_acceleration);
+                        logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
         
                     % --- Speed Limiter Integration ---
@@ -2686,7 +2686,7 @@ classdef VehicleModel < handle
                     end
         
                     % --- Apply Acceleration Limiter ---
-                    limited_acceleration = obj.accelerationLimiter.applyLimits(desired_acceleration, currentSpeed);
+                    limited_acceleration = obj.limiter_LongitudinalControl.applyLimits(desired_acceleration, currentSpeed);
                     limited_acceleration = movmean(limited_acceleration, floor(windowSize/dt));
                     limited_acceleration_sig(i) = limited_acceleration;
                     logMessages{end+1} = sprintf('Step %d: Limited acceleration: %.4f m/s^2', i, limited_acceleration);
@@ -2969,7 +2969,7 @@ classdef VehicleModel < handle
                     end
                     % --- End of Speed Correction ---
         
-                    % obj.speedController.updatePosition(x,y);
+                    % obj.pid_SpeedController.updatePosition(x,y);
                     % Store positions and angles for plotting
                     tractorX(i) = x;
                     tractorY(i) = y;
@@ -3134,10 +3134,10 @@ classdef VehicleModel < handle
                 end
         
                 % Plot acceleration limits
-                obj.accelerationLimiter.plotLimits();
+                obj.limiter_LongitudinalControl.plotLimits();
                 
                 % Plot Gaussian filter coefficients
-                %obj.accelerationLimiter.plotGaussianResponse();
+                %obj.limiter_LongitudinalControl.plotGaussianResponse();
 
                 % Generate unique filename for .mat file
                 matFilename = obj.getUniqueFilename(obj.simulationName, '.mat');
