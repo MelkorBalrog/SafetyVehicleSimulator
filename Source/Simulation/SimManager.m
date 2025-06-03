@@ -266,20 +266,8 @@ classdef SimManager < handle
                         T1       = length(v1.trailerX);
                         theta1   = v1.trailerTheta(:)';
                         % Prepare per-box orientations and compute absolute yaw for each box
-                        thetas1 = v1.trailerThetaBoxes;
-                        if isempty(thetas1) || size(thetas1,1) ~= nBoxes1
-                            thetas1 = repmat(theta1, nBoxes1, 1);
-                        end
-                        % Compute absolute orientation of each box relative to simulation world
-                        absThetas1 = zeros(nBoxes1, T1);
-                        % Absolute yaw of first trailer box = tractor yaw + its relative yaw
-                        absThetas1(1,:) = v1.tractorTheta(:)' + thetas1(1,:);
-                        % Cumulative yaw for subsequent boxes
-                        for bi = 2:nBoxes1
-                            absThetas1(bi,:) = absThetas1(bi-1,:) + thetas1(bi,:);
-                        end
-                        % Store absolute yaw of each box for global orientation
-                        v1.trailerThetaBoxes = absThetas1;
+                        % Use Box orientations from simulation (absolute yaw) for chaining
+                        absThetas1 = v1.trailerThetaBoxes;  % nBoxes1 x T1
                         % Preallocate box COM arrays
                         v1.trailerXBoxes = zeros(nBoxes1, T1);
                         v1.trailerYBoxes = zeros(nBoxes1, T1);
@@ -301,18 +289,8 @@ classdef SimManager < handle
                         T2       = length(v2.trailerX);
                         theta2   = v2.trailerTheta(:)';
                         % Prepare per-box orientations and compute absolute yaw for each box
-                        thetas2 = v2.trailerThetaBoxes;
-                        if isempty(thetas2) || size(thetas2,1) ~= nBoxes2
-                            thetas2 = repmat(theta2, nBoxes2, 1);
-                        end
-                        % Compute absolute orientation of each box relative to simulation world
-                        absThetas2 = zeros(nBoxes2, T2);
-                        absThetas2(1,:) = v2.tractorTheta(:)' + thetas2(1,:);
-                        for bi = 2:nBoxes2
-                            absThetas2(bi,:) = absThetas2(bi-1,:) + thetas2(bi,:);
-                        end
-                        % Store absolute yaw of each box for global orientation
-                        v2.trailerThetaBoxes = absThetas2;
+                        % Get absolute yaw for each box directly from simulation output
+                        absThetas2 = v2.trailerThetaBoxes;  % already nBoxes2 x T2
                         % Preallocate box COM arrays
                         v2.trailerXBoxes = zeros(nBoxes2, T2);
                         v2.trailerYBoxes = zeros(nBoxes2, T2);
