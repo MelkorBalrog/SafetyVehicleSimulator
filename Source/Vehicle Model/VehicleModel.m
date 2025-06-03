@@ -608,6 +608,34 @@ classdef VehicleModel < handle
             simParams.trailerAxleSpacing = obj.guiManager.trailerAxleSpacingField.Value;
             simParams.trailerHitchDistance = obj.guiManager.trailerHitchDistanceField.Value;
             simParams.tractorHitchDistance = obj.guiManager.tractorHitchDistanceField.Value;
+            % --- Multi-Trailer Configuration ---
+            simParams.trailerNumBoxes = obj.guiManager.trailerNumBoxesField.Value;
+            simParams.trailerAxlesPerBox = str2num(obj.guiManager.trailerAxlesPerBoxField.Value);
+            simParams.trailerBoxSpacing = obj.guiManager.trailerBoxSpacingField.Value;
+            % --- Spinner Configuration Parameters ---
+            nSpinners = max(simParams.trailerNumBoxes - 1, 0);
+            simParams.spinnerConfigs = cell(1, nSpinners);
+            if isprop(obj.guiManager, 'spinnerConfig') && nSpinners > 0
+                for iSpinner = 1:nSpinners
+                    stiffCfg = struct(...
+                        'x', obj.guiManager.spinnerConfig(iSpinner).stiffnessXField.Value, ...
+                        'y', obj.guiManager.spinnerConfig(iSpinner).stiffnessYField.Value, ...
+                        'z', obj.guiManager.spinnerConfig(iSpinner).stiffnessZField.Value, ...
+                        'roll', obj.guiManager.spinnerConfig(iSpinner).stiffnessRollField.Value, ...
+                        'pitch', obj.guiManager.spinnerConfig(iSpinner).stiffnessPitchField.Value, ...
+                        'yaw', obj.guiManager.spinnerConfig(iSpinner).stiffnessYawField.Value ...
+                    );
+                    dampCfg = struct(...
+                        'x', obj.guiManager.spinnerConfig(iSpinner).dampingXField.Value, ...
+                        'y', obj.guiManager.spinnerConfig(iSpinner).dampingYField.Value, ...
+                        'z', obj.guiManager.spinnerConfig(iSpinner).dampingZField.Value, ...
+                        'roll', obj.guiManager.spinnerConfig(iSpinner).dampingRollField.Value, ...
+                        'pitch', obj.guiManager.spinnerConfig(iSpinner).dampingPitchField.Value, ...
+                        'yaw', obj.guiManager.spinnerConfig(iSpinner).dampingYawField.Value ...
+                    );
+                    simParams.spinnerConfigs{iSpinner} = struct('stiffness', stiffCfg, 'damping', dampCfg);
+                end
+            end
 
             % --- Commands Parameters ---  % *** New Section ***
             if isprop(obj.guiManager, 'steeringCommandsBox') && ...
@@ -2228,9 +2256,23 @@ classdef VehicleModel < handle
                         'yaw', simParams.dampingYaw ...    % Yaw damping (N·m·s/rad)
                     );
         
-                    % Instantiate HitchModel with load distribution and time step
+                    % Instantiate HitchModel for tractor to first trailer box
                     dt_hitch = dt; % Use the same time step
                     hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch);
+                    % Instantiate Spinner HitchModels for additional trailer boxes
+                    spinnerModels = {};
+                    nSpinners = max(simParams.trailerNumBoxes - 1, 0);
+                    for iSpinner = 1:nSpinners
+                        spCfg = simParams.spinnerConfigs{iSpinner};
+                        stiff_sp = spCfg.stiffness;
+                        damp_sp = spCfg.damping;
+                        tractorHitchPoint_sp = [simParams.trailerBoxSpacing; 0; simParams.trailerCoGHeight];
+                        trailerKingpinPoint_sp = [0; 0; simParams.trailerCoGHeight];
+                        spinnerModels{iSpinner} = HitchModel(tractorHitchPoint_sp, trailerKingpinPoint_sp, stiff_sp, damp_sp, max_delta, simParams.trailerWheelbase, loadDistributionTrailer, dt_hitch);
+                    end
+                    % Preallocate per-box trailer orientations for multi-box articulation
+                    nBoxes = simParams.trailerNumBoxes;
+                    trailerThetaBoxes = zeros(nBoxes, numSteps);
         
                     % Define roll angle threshold (in radians)
                     rollThreshold = deg2rad(30); % 30 degrees in radians
@@ -2995,6 +3037,43 @@ classdef VehicleModel < handle
                         else
                             trailerTheta(i) = theta;
                         end
+                        % Store orientations for each trailer box
+                        % Store main trailer orientation
+                        trailerThetaBoxes(1, i) = trailerTheta(i);
+                        % Update and store orientations for each additional trailer box via spinner models
+                        for j = 1:nSpinners
+                            % Determine tractor state for this spinner
+                            if j == 1
+                                tractorState_sp = struct( ...
+                                    'position', [x_hitch; y_hitch; 0], ...
+                                    'orientation', [0; 0; psi_trailer], ...
+                                    'velocity', [u_trailer; v_trailer; 0], ...
+                                    'angularVelocity', [0; 0; r_trailer] ...
+                                );
+                            else
+                                prevPsi = trailerThetaBoxes(j, i);
+                                prevOmega = spinnerModels{j-1}.angularState.omega;
+                                tractorState_sp = struct( ...
+                                    'position', [0; 0; 0], ...
+                                    'orientation', [0; 0; prevPsi], ...
+                                    'velocity', [0; 0; 0], ...
+                                    'angularVelocity', [0; 0; prevOmega] ...
+                                );
+                            end
+                            % Build trailer state for this spinner
+                            currPsi = trailerThetaBoxes(j+1, i);
+                            currOmega = spinnerModels{j}.angularState.omega;
+                            trailerState_sp = struct( ...
+                                'position', [0; 0; 0], ...
+                                'orientation', [0; 0; currPsi], ...
+                                'velocity', [0; 0; 0], ...
+                                'angularVelocity', [0; 0; currOmega] ...
+                            );
+                            % Update spinner model dynamics
+                            [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
+                            % Store updated box orientation
+                            trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
+                        end
                     end
         
                     % Collect log messages
@@ -3131,6 +3210,8 @@ classdef VehicleModel < handle
                     simulationData.TrailerX = trailerX;
                     simulationData.TrailerY = trailerY;
                     simulationData.TrailerTheta = trailerTheta;
+                    % Export per-box trailer orientations for multi-box follow-the-lead
+                    simulationData.trailerThetaBoxes = trailerThetaBoxes;
                 end
         
                 % Plot acceleration limits
@@ -3160,6 +3241,12 @@ classdef VehicleModel < handle
                 end
         
                 fprintf('--- Simulation Data and Logs Saved ---\n');
+                % Auto-export all local simulation variables to output struct
+                vars = setdiff(who, {'obj','input','output','fn','k'});
+                for idx = 1:numel(vars)
+                    name = vars{idx};
+                    output.(name) = eval(name);
+                end
             catch ME
                 % Handle any errors and ensure logs are saved
                 %logMessages{end+1} = sprintf('Simulation Error: %s', ME.message);

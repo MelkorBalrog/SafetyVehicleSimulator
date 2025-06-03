@@ -248,30 +248,111 @@ classdef SimManager < handle
 
                     res1 = obj.vehicleSim1.closeSim(v1);
                     res2 = obj.vehicleSim2.closeSim(v2);
+                    % Ensure box orientation arrays exist even if not multi-box
+                    if ~isfield(v1, 'trailerXBoxes')
+                        v1.trailerXBoxes = [];
+                        v1.trailerYBoxes = [];
+                    end
+                    if ~isfield(v2, 'trailerXBoxes')
+                        v2.trailerXBoxes = [];
+                        v2.trailerYBoxes = [];
+                    end
 
-                    obj.sim1Results = struct(...
-                        'X', v1.tractorX, ...
-                        'Y', v1.tractorY, ...
-                        'Theta', v1.tractorTheta, ...
-                        'trailerX', v1.trailerX, ...
-                        'trailerY', v1.trailerY, ...
-                        'trailerTheta', v1.trailerTheta, ...
-                        'flags', v1.globalVehicleFlags, ...
-                        'steeringAngles', v1.steeringAnglesSim, ...
-                        'speedData', res1 ...
-                    );
+                    % Compute trailer box positions for multi-box configuration
+                    if obj.vehicleSim1.simParams.includeTrailer && isfield(obj.vehicleSim1.simParams, 'trailerNumBoxes')
+                        nBoxes1  = obj.vehicleSim1.simParams.trailerNumBoxes;
+                        spacing1 = obj.vehicleSim1.simParams.trailerBoxSpacing;
+                        boxLen1  = obj.vehicleSim1.simParams.trailerLength;
+                        T1       = length(v1.trailerX);
+                        theta1   = v1.trailerTheta(:)';
+                        % Prepare per-box orientations and compute absolute yaw for each box
+                        thetas1 = v1.trailerThetaBoxes;
+                        if isempty(thetas1) || size(thetas1,1) ~= nBoxes1
+                            thetas1 = repmat(theta1, nBoxes1, 1);
+                        end
+                        % Compute absolute orientation of each box relative to simulation world
+                        absThetas1 = zeros(nBoxes1, T1);
+                        % Absolute yaw of first trailer box = tractor yaw + its relative yaw
+                        absThetas1(1,:) = v1.tractorTheta(:)' + thetas1(1,:);
+                        % Cumulative yaw for subsequent boxes
+                        for bi = 2:nBoxes1
+                            absThetas1(bi,:) = absThetas1(bi-1,:) + thetas1(bi,:);
+                        end
+                        % Store absolute yaw of each box for global orientation
+                        v1.trailerThetaBoxes = absThetas1;
+                        % Preallocate box COM arrays
+                        v1.trailerXBoxes = zeros(nBoxes1, T1);
+                        v1.trailerYBoxes = zeros(nBoxes1, T1);
+                        % First box COM is the trailer hitch position
+                        v1.trailerXBoxes(1,:) = v1.trailerX(:)';
+                        v1.trailerYBoxes(1,:) = v1.trailerY(:)';
+                        % Distance between box centers: full box length + spacing
+                        offset = boxLen1 + spacing1;
+                        % Subsequent box COMs offset along absolute orientation of previous box
+                        for bi = 2:nBoxes1
+                            v1.trailerXBoxes(bi, :) = v1.trailerXBoxes(bi-1, :) - offset .* cos(absThetas1(bi-1, :));
+                            v1.trailerYBoxes(bi, :) = v1.trailerYBoxes(bi-1, :) - offset .* sin(absThetas1(bi-1, :));
+                        end
+                    end
+                    if obj.vehicleSim2.simParams.includeTrailer && isfield(obj.vehicleSim2.simParams, 'trailerNumBoxes')
+                        nBoxes2  = obj.vehicleSim2.simParams.trailerNumBoxes;
+                        spacing2 = obj.vehicleSim2.simParams.trailerBoxSpacing;
+                        boxLen2  = obj.vehicleSim2.simParams.trailerLength;
+                        T2       = length(v2.trailerX);
+                        theta2   = v2.trailerTheta(:)';
+                        % Prepare per-box orientations and compute absolute yaw for each box
+                        thetas2 = v2.trailerThetaBoxes;
+                        if isempty(thetas2) || size(thetas2,1) ~= nBoxes2
+                            thetas2 = repmat(theta2, nBoxes2, 1);
+                        end
+                        % Compute absolute orientation of each box relative to simulation world
+                        absThetas2 = zeros(nBoxes2, T2);
+                        absThetas2(1,:) = v2.tractorTheta(:)' + thetas2(1,:);
+                        for bi = 2:nBoxes2
+                            absThetas2(bi,:) = absThetas2(bi-1,:) + thetas2(bi,:);
+                        end
+                        % Store absolute yaw of each box for global orientation
+                        v2.trailerThetaBoxes = absThetas2;
+                        % Preallocate box COM arrays
+                        v2.trailerXBoxes = zeros(nBoxes2, T2);
+                        v2.trailerYBoxes = zeros(nBoxes2, T2);
+                        % First box COM is the trailer hitch position
+                        v2.trailerXBoxes(1,:) = v2.trailerX(:)';
+                        v2.trailerYBoxes(1,:) = v2.trailerY(:)';
+                        % Distance between box centers: full box length + spacing
+                        offset2 = boxLen2 + spacing2;
+                        % Subsequent box COMs offset along absolute orientation of previous box
+                        for bi = 2:nBoxes2
+                            v2.trailerXBoxes(bi, :) = v2.trailerXBoxes(bi-1, :) - offset2 .* cos(absThetas2(bi-1, :));
+                            v2.trailerYBoxes(bi, :) = v2.trailerYBoxes(bi-1, :) - offset2 .* sin(absThetas2(bi-1, :));
+                        end
+                    end
 
-                    obj.sim2Results = struct(...
-                        'X', v2.tractorX, ...
-                        'Y', v2.tractorY, ...
-                        'Theta', v2.tractorTheta, ...
-                        'trailerX', v2.trailerX, ...
-                        'trailerY', v2.trailerY, ...
-                        'trailerTheta', v2.trailerTheta, ...
-                        'flags', v2.globalVehicleFlags, ...
-                        'steeringAngles', v2.steeringAnglesSim, ...
-                        'speedData', res2 ...
-                    );
+                    % Ensure trailerThetaBoxes field is present to avoid missing field errors
+                    if ~isfield(v1, 'trailerThetaBoxes')
+                        v1.trailerThetaBoxes = [];
+                    end
+                    if ~isfield(v2, 'trailerThetaBoxes')
+                        v2.trailerThetaBoxes = [];
+                    end
+                    % Package simulation results for Vehicle 1
+                    fields1 = {'X','Y','Theta','trailerX','trailerY','trailerTheta','flags','steeringAngles','speedData'};
+                    vals1   = {v1.tractorX, v1.tractorY, v1.tractorTheta, v1.trailerX, v1.trailerY, v1.trailerTheta, v1.globalVehicleFlags, v1.steeringAnglesSim, res1};
+                    % Include per-box data if present
+                    if ~isempty(v1.trailerXBoxes)
+                        fields1 = [fields1 {'trailerXBoxes','trailerYBoxes','trailerThetaBoxes'}];
+                        vals1   = [vals1   {v1.trailerXBoxes, v1.trailerYBoxes, v1.trailerThetaBoxes}];
+                    end
+                    obj.sim1Results = cell2struct(vals1, fields1, 2);
+
+                    % Package simulation results for Vehicle 2
+                    fields2 = {'X','Y','Theta','trailerX','trailerY','trailerTheta','flags','steeringAngles','speedData'};
+                    vals2   = {v2.tractorX, v2.tractorY, v2.tractorTheta, v2.trailerX, v2.trailerY, v2.trailerTheta, v2.globalVehicleFlags, v2.steeringAnglesSim, res2};
+                    if ~isempty(v2.trailerXBoxes)
+                        fields2 = [fields2 {'trailerXBoxes','trailerYBoxes','trailerThetaBoxes'}];
+                        vals2   = [vals2   {v2.trailerXBoxes, v2.trailerYBoxes, v2.trailerThetaBoxes}];
+                    end
+                    obj.sim2Results = cell2struct(vals2, fields2, 2);
 
                     %% 9. Transfer Simulation Results
                     disp('Transferring simulation results to DataManager...');
@@ -295,6 +376,15 @@ classdef SimManager < handle
                     obj.dataManager.globalTrailer1Data.Y = extendData(obj.dataManager.globalTrailer1Data.Y, maxLength);
                     obj.dataManager.globalTrailer1Data.Theta = extendData(obj.dataManager.globalTrailer1Data.Theta, maxLength);
                     obj.dataManager.globalTrailer1Data.SteeringAngle = extendData(obj.dataManager.globalTrailer1Data.SteeringAngle, maxLength);
+                    % Extend each trailer box data to match the simulation length
+                    if isfield(obj.dataManager.globalTrailer1Data, 'Boxes') && ~isempty(obj.dataManager.globalTrailer1Data.Boxes)
+                        nBoxes1 = numel(obj.dataManager.globalTrailer1Data.Boxes);
+                        for bi = 1:nBoxes1
+                            obj.dataManager.globalTrailer1Data.Boxes(bi).X     = extendData(obj.dataManager.globalTrailer1Data.Boxes(bi).X, maxLength);
+                            obj.dataManager.globalTrailer1Data.Boxes(bi).Y     = extendData(obj.dataManager.globalTrailer1Data.Boxes(bi).Y, maxLength);
+                            obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = extendData(obj.dataManager.globalTrailer1Data.Boxes(bi).Theta, maxLength);
+                        end
+                    end
                 end
 
                 obj.dataManager.globalVehicle2Data.X = extendData(obj.dataManager.globalVehicle2Data.X, maxLength);
@@ -308,6 +398,15 @@ classdef SimManager < handle
                     obj.dataManager.globalTrailer2Data.Y = extendData(obj.dataManager.globalTrailer2Data.Y, maxLength);
                     obj.dataManager.globalTrailer2Data.Theta = extendData(obj.dataManager.globalTrailer2Data.Theta, maxLength);
                     obj.dataManager.globalTrailer2Data.SteeringAngle = extendData(obj.dataManager.globalTrailer2Data.SteeringAngle, maxLength);
+                    % Extend each trailer box data to match the simulation length
+                    if isfield(obj.dataManager.globalTrailer2Data, 'Boxes') && ~isempty(obj.dataManager.globalTrailer2Data.Boxes)
+                        nBoxes2 = numel(obj.dataManager.globalTrailer2Data.Boxes);
+                        for bi = 1:nBoxes2
+                            obj.dataManager.globalTrailer2Data.Boxes(bi).X     = extendData(obj.dataManager.globalTrailer2Data.Boxes(bi).X, maxLength);
+                            obj.dataManager.globalTrailer2Data.Boxes(bi).Y     = extendData(obj.dataManager.globalTrailer2Data.Boxes(bi).Y, maxLength);
+                            obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = extendData(obj.dataManager.globalTrailer2Data.Boxes(bi).Theta, maxLength);
+                        end
+                    end
                 end
 
                 % Apply initial offsets and rotations to trajectory coordinates
@@ -323,9 +422,22 @@ classdef SimManager < handle
                     obj.dataManager.globalVehicle1Data.X = pts1(1, :)' + ox1;
                     obj.dataManager.globalVehicle1Data.Y = pts1(2, :)' + oy1;
                     if obj.vehicleSim1.simParams.includeTrailer
+                        % Transform primary trailer path
                         t1 = R1 * [obj.dataManager.globalTrailer1Data.X(:)'; obj.dataManager.globalTrailer1Data.Y(:)'];
                         obj.dataManager.globalTrailer1Data.X = t1(1, :)' + ox1;
                         obj.dataManager.globalTrailer1Data.Y = t1(2, :)' + oy1;
+                        % Transform each additional trailer box
+                        if isfield(obj.dataManager.globalTrailer1Data, 'Boxes')
+                            for bi = 1:numel(obj.dataManager.globalTrailer1Data.Boxes)
+                                Bx = obj.dataManager.globalTrailer1Data.Boxes(bi).X;
+                                By = obj.dataManager.globalTrailer1Data.Boxes(bi).Y;
+                                Bt = obj.dataManager.globalTrailer1Data.Boxes(bi).Theta;
+                                Btrans = R1 * [Bx'; By'];
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).X     = Btrans(1, :)' + ox1;
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Y     = Btrans(2, :)' + oy1;
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = mod(Bt + ang1 + pi, 2*pi) - pi;
+                            end
+                        end
                     end
                 catch
                 end
@@ -340,9 +452,22 @@ classdef SimManager < handle
                     obj.dataManager.globalVehicle2Data.X = pts2(1, :)' + ox2;
                     obj.dataManager.globalVehicle2Data.Y = pts2(2, :)' + oy2;
                     if obj.vehicleSim2.simParams.includeTrailer
+                        % Transform primary trailer path
                         t2 = R2 * [obj.dataManager.globalTrailer2Data.X(:)'; obj.dataManager.globalTrailer2Data.Y(:)'];
                         obj.dataManager.globalTrailer2Data.X = t2(1, :)' + ox2;
                         obj.dataManager.globalTrailer2Data.Y = t2(2, :)' + oy2;
+                        % Transform each additional trailer box
+                        if isfield(obj.dataManager.globalTrailer2Data, 'Boxes')
+                            for bi = 1:numel(obj.dataManager.globalTrailer2Data.Boxes)
+                                Bx2 = obj.dataManager.globalTrailer2Data.Boxes(bi).X;
+                                By2 = obj.dataManager.globalTrailer2Data.Boxes(bi).Y;
+                                Bt2 = obj.dataManager.globalTrailer2Data.Boxes(bi).Theta;
+                                Btrans2 = R2 * [Bx2'; By2'];
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).X     = Btrans2(1, :)' + ox2;
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Y     = Btrans2(2, :)' + oy2;
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = mod(Bt2 + ang2 + pi, 2*pi) - pi;
+                            end
+                        end
                     end
                 catch
                 end
@@ -392,15 +517,28 @@ classdef SimManager < handle
                         mod(obj.dataManager.globalVehicle1Data.Theta + vehicle1rotationAngleRad + pi, 2*pi) - pi;
 
                     if obj.vehicleSim1.simParams.includeTrailer
+                        % Transform primary trailer path for rotation
                         X_trailer = obj.dataManager.globalTrailer1Data.X;
                         Y_trailer = obj.dataManager.globalTrailer1Data.Y;
                         positionsTrailer = [X_trailer, Y_trailer];
-                        rotatedPositionsTrailer = (R * positionsTrailer.').';
-                        rotatedPositionsTrailer = (rotatedPositionsTrailer + vehicle1offsetP)';
-                        obj.dataManager.globalTrailer1Data.X = rotatedPositionsTrailer(1, :)';
-                        obj.dataManager.globalTrailer1Data.Y = rotatedPositionsTrailer(2, :)';
-                        obj.dataManager.globalTrailer1Data.Theta = ...
-                            mod(obj.dataManager.globalTrailer1Data.Theta + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                        rotatedTrailer = (R * positionsTrailer.').';
+                        rotatedTrailer = (rotatedTrailer + vehicle1offsetP)';
+                        obj.dataManager.globalTrailer1Data.X = rotatedTrailer(1, :)';
+                        obj.dataManager.globalTrailer1Data.Y = rotatedTrailer(2, :)';
+                        obj.dataManager.globalTrailer1Data.Theta = mod(obj.dataManager.globalTrailer1Data.Theta + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                        % Transform each additional trailer box
+                        if isfield(obj.dataManager.globalTrailer1Data, 'Boxes')
+                            for bi = 1:numel(obj.dataManager.globalTrailer1Data.Boxes)
+                                Bx = obj.dataManager.globalTrailer1Data.Boxes(bi).X;
+                                By = obj.dataManager.globalTrailer1Data.Boxes(bi).Y;
+                                Bt = obj.dataManager.globalTrailer1Data.Boxes(bi).Theta;
+                                Btrans = (R * [Bx, By].').';
+                                Btrans = (Btrans + vehicle1offsetP)';
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).X     = Btrans(1, :)';
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Y     = Btrans(2, :)';
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = mod(Bt + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                            end
+                        end
                     end
                 else
                     % Compute shift based on Vehicle 1 initial position
@@ -412,6 +550,13 @@ classdef SimManager < handle
                     if obj.vehicleSim1.simParams.includeTrailer
                         obj.dataManager.globalTrailer1Data.X = obj.dataManager.globalTrailer1Data.X + shift1(1);
                         obj.dataManager.globalTrailer1Data.Y = obj.dataManager.globalTrailer1Data.Y + shift1(2);
+                        % Shift each additional trailer box
+                        if isfield(obj.dataManager.globalTrailer1Data, 'Boxes')
+                            for bi = 1:numel(obj.dataManager.globalTrailer1Data.Boxes)
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).X = obj.dataManager.globalTrailer1Data.Boxes(bi).X + shift1(1);
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Y = obj.dataManager.globalTrailer1Data.Boxes(bi).Y + shift1(2);
+                            end
+                        end
                     end
                 end
 
@@ -429,15 +574,28 @@ classdef SimManager < handle
                         mod(obj.dataManager.globalVehicle2Data.Theta + rotationAngleRad + pi, 2*pi) - pi;
 
                     if obj.vehicleSim2.simParams.includeTrailer
+                        % Transform primary trailer path for rotation
                         X_trailer = obj.dataManager.globalTrailer2Data.X;
                         Y_trailer = obj.dataManager.globalTrailer2Data.Y;
                         positionsTrailer = [X_trailer, Y_trailer];
-                        rotatedPositionsTrailer = (R * positionsTrailer.').';
-                        rotatedPositionsTrailer = (rotatedPositionsTrailer + offsetP)';
-                        obj.dataManager.globalTrailer2Data.X = rotatedPositionsTrailer(1, :)';
-                        obj.dataManager.globalTrailer2Data.Y = rotatedPositionsTrailer(2, :)';
-                        obj.dataManager.globalTrailer2Data.Theta = ...
-                            mod(obj.dataManager.globalTrailer2Data.Theta + rotationAngleRad + pi, 2*pi) - pi;
+                        rotatedTrailer = (R * positionsTrailer.').';
+                        rotatedTrailer = (rotatedTrailer + offsetP)';
+                        obj.dataManager.globalTrailer2Data.X = rotatedTrailer(1, :)';
+                        obj.dataManager.globalTrailer2Data.Y = rotatedTrailer(2, :)';
+                        obj.dataManager.globalTrailer2Data.Theta = mod(obj.dataManager.globalTrailer2Data.Theta + rotationAngleRad + pi, 2*pi) - pi;
+                        % Transform each additional trailer box
+                        if isfield(obj.dataManager.globalTrailer2Data, 'Boxes')
+                            for bi = 1:numel(obj.dataManager.globalTrailer2Data.Boxes)
+                                Bx2 = obj.dataManager.globalTrailer2Data.Boxes(bi).X;
+                                By2 = obj.dataManager.globalTrailer2Data.Boxes(bi).Y;
+                                Bt2 = obj.dataManager.globalTrailer2Data.Boxes(bi).Theta;
+                                Btrans2 = (R * [Bx2, By2].').';
+                                Btrans2 = (Btrans2 + offsetP)';
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).X     = Btrans2(1, :)';
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Y     = Btrans2(2, :)';
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = mod(Bt2 + rotationAngleRad + pi, 2*pi) - pi;
+                            end
+                        end
                     end
                 else
                     % Compute shift based on Vehicle 2 initial position
@@ -449,6 +607,13 @@ classdef SimManager < handle
                     if obj.vehicleSim2.simParams.includeTrailer
                         obj.dataManager.globalTrailer2Data.X = obj.dataManager.globalTrailer2Data.X + shift2(1);
                         obj.dataManager.globalTrailer2Data.Y = obj.dataManager.globalTrailer2Data.Y + shift2(2);
+                        % Shift each additional trailer box
+                        if isfield(obj.dataManager.globalTrailer2Data, 'Boxes')
+                            for bi = 1:numel(obj.dataManager.globalTrailer2Data.Boxes)
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).X = obj.dataManager.globalTrailer2Data.Boxes(bi).X + shift2(1);
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Y = obj.dataManager.globalTrailer2Data.Boxes(bi).Y + shift2(2);
+                            end
+                        end
                     end
                 end
                 end  % end fresh-run transform guard
@@ -737,24 +902,39 @@ classdef SimManager < handle
             end
 
             if obj.vehicleSim1.simParams.includeTrailer
-                if isfield(obj.sim1Results, 'trailerX') && isfield(obj.sim1Results, 'trailerY') && isfield(obj.sim1Results, 'trailerTheta')
-                    obj.dataManager.globalTrailer1Data.X = obj.sim1Results.trailerX(:);
-                    obj.dataManager.globalTrailer1Data.Y = obj.sim1Results.trailerY(:);
-                    obj.dataManager.globalTrailer1Data.Theta = obj.sim1Results.trailerTheta(:);
-                    if isfield(obj.sim1Results, 'trailerSteeringAngles') && ~isempty(obj.sim1Results.trailerSteeringAngles)
-                        obj.dataManager.globalTrailer1Data.SteeringAngle = obj.sim1Results.trailerSteeringAngles(:);
-                    else
-                        obj.dataManager.globalTrailer1Data.SteeringAngle = zeros(length(obj.dataManager.globalTrailer1Data.X), 1);
-                        warning('No trailerSteeringAngles in sim1Results. Assigning zeros.');
+                % Multi-box trailer: use Boxes if available
+                if isfield(obj.sim1Results, 'trailerXBoxes') && isfield(obj.sim1Results, 'trailerYBoxes') && isfield(obj.sim1Results, 'trailerThetaBoxes')
+                    nBoxes1 = size(obj.sim1Results.trailerXBoxes, 1);
+                    Boxes1 = struct('X', cell(1,nBoxes1), 'Y', cell(1,nBoxes1), 'Theta', cell(1,nBoxes1));
+                    for bi = 1:nBoxes1
+                        Boxes1(bi).X     = obj.sim1Results.trailerXBoxes(bi, :)';
+                        Boxes1(bi).Y     = obj.sim1Results.trailerYBoxes(bi, :)';
+                        Boxes1(bi).Theta = obj.sim1Results.trailerThetaBoxes(bi, :)';
                     end
+                    obj.dataManager.globalTrailer1Data.Boxes = Boxes1;
+                    % Primary trailer path is first box
+                    obj.dataManager.globalTrailer1Data.X     = Boxes1(1).X;
+                    obj.dataManager.globalTrailer1Data.Y     = Boxes1(1).Y;
+                    obj.dataManager.globalTrailer1Data.Theta = Boxes1(1).Theta;
+                elseif isfield(obj.sim1Results, 'trailerX') && isfield(obj.sim1Results, 'trailerY') && isfield(obj.sim1Results, 'trailerTheta')
+                    obj.dataManager.globalTrailer1Data.X     = obj.sim1Results.trailerX(:);
+                    obj.dataManager.globalTrailer1Data.Y     = obj.sim1Results.trailerY(:);
+                    obj.dataManager.globalTrailer1Data.Theta = obj.sim1Results.trailerTheta(:);
+                    obj.dataManager.globalTrailer1Data.Boxes = struct('X', obj.dataManager.globalTrailer1Data.X, ...
+                                                                     'Y', obj.dataManager.globalTrailer1Data.Y, ...
+                                                                     'Theta', obj.dataManager.globalTrailer1Data.Theta);
                 else
-                    error('sim1Results is missing trailer fields for Vehicle 1.');
+                    error('sim1Results missing trailer fields for Vehicle 1.');
+                end
+                % Steering angles for trailer
+                if isfield(obj.sim1Results, 'trailerSteeringAngles') && ~isempty(obj.sim1Results.trailerSteeringAngles)
+                    obj.dataManager.globalTrailer1Data.SteeringAngle = obj.sim1Results.trailerSteeringAngles(:);
+                else
+                    obj.dataManager.globalTrailer1Data.SteeringAngle = zeros(length(obj.dataManager.globalTrailer1Data.X), 1);
+                    warning('No trailerSteeringAngles in sim1Results. Assigning zeros.');
                 end
             else
-                obj.dataManager.globalTrailer1Data.X = [];
-                obj.dataManager.globalTrailer1Data.Y = [];
-                obj.dataManager.globalTrailer1Data.Theta = [];
-                obj.dataManager.globalTrailer1Data.SteeringAngle = [];
+                obj.dataManager.globalTrailer1Data = struct('X', [], 'Y', [], 'Theta', [], 'SteeringAngle', [], 'Boxes', []);
             end
 
             if isstruct(obj.sim2Results)
@@ -772,24 +952,38 @@ classdef SimManager < handle
             end
 
             if obj.vehicleSim2.simParams.includeTrailer
-                if isfield(obj.sim2Results, 'trailerX') && isfield(obj.sim2Results, 'trailerY') && isfield(obj.sim2Results, 'trailerTheta')
-                    obj.dataManager.globalTrailer2Data.X = obj.sim2Results.trailerX(:);
-                    obj.dataManager.globalTrailer2Data.Y = obj.sim2Results.trailerY(:);
-                    obj.dataManager.globalTrailer2Data.Theta = obj.sim2Results.trailerTheta(:);
-                    if isfield(obj.sim2Results, 'trailerSteeringAngles') && ~isempty(obj.sim2Results.trailerSteeringAngles)
-                        obj.dataManager.globalTrailer2Data.SteeringAngle = obj.sim2Results.trailerSteeringAngles(:);
-                    else
-                        obj.dataManager.globalTrailer2Data.SteeringAngle = zeros(length(obj.dataManager.globalTrailer2Data.X), 1);
-                        warning('No trailerSteeringAngles in sim2Results. Assigning zeros.');
+                % Multi-box trailer for Vehicle 2
+                if isfield(obj.sim2Results, 'trailerXBoxes') && isfield(obj.sim2Results, 'trailerYBoxes') && isfield(obj.sim2Results, 'trailerThetaBoxes')
+                    nBoxes2 = size(obj.sim2Results.trailerXBoxes, 1);
+                    Boxes2 = struct('X', cell(1,nBoxes2), 'Y', cell(1,nBoxes2), 'Theta', cell(1,nBoxes2));
+                    for bi = 1:nBoxes2
+                        Boxes2(bi).X     = obj.sim2Results.trailerXBoxes(bi, :)';
+                        Boxes2(bi).Y     = obj.sim2Results.trailerYBoxes(bi, :)';
+                        Boxes2(bi).Theta = obj.sim2Results.trailerThetaBoxes(bi, :)';
                     end
+                    obj.dataManager.globalTrailer2Data.Boxes = Boxes2;
+                    obj.dataManager.globalTrailer2Data.X     = Boxes2(1).X;
+                    obj.dataManager.globalTrailer2Data.Y     = Boxes2(1).Y;
+                    obj.dataManager.globalTrailer2Data.Theta = Boxes2(1).Theta;
+                elseif isfield(obj.sim2Results, 'trailerX') && isfield(obj.sim2Results, 'trailerY') && isfield(obj.sim2Results, 'trailerTheta')
+                    obj.dataManager.globalTrailer2Data.X     = obj.sim2Results.trailerX(:);
+                    obj.dataManager.globalTrailer2Data.Y     = obj.sim2Results.trailerY(:);
+                    obj.dataManager.globalTrailer2Data.Theta = obj.sim2Results.trailerTheta(:);
+                    obj.dataManager.globalTrailer2Data.Boxes = struct('X', obj.dataManager.globalTrailer2Data.X, ...
+                                                                     'Y', obj.dataManager.globalTrailer2Data.Y, ...
+                                                                     'Theta', obj.dataManager.globalTrailer2Data.Theta);
                 else
-                    error('sim2Results is missing trailer fields for Vehicle 2.');
+                    error('sim2Results missing trailer fields for Vehicle 2.');
+                end
+                % Steering angles
+                if isfield(obj.sim2Results, 'trailerSteeringAngles') && ~isempty(obj.sim2Results.trailerSteeringAngles)
+                    obj.dataManager.globalTrailer2Data.SteeringAngle = obj.sim2Results.trailerSteeringAngles(:);
+                else
+                    obj.dataManager.globalTrailer2Data.SteeringAngle = zeros(length(obj.dataManager.globalTrailer2Data.X), 1);
+                    warning('No trailerSteeringAngles in sim2Results. Assigning zeros.');
                 end
             else
-                obj.dataManager.globalTrailer2Data.X = [];
-                obj.dataManager.globalTrailer2Data.Y = [];
-                obj.dataManager.globalTrailer2Data.Theta = [];
-                obj.dataManager.globalTrailer2Data.SteeringAngle = [];
+                obj.dataManager.globalTrailer2Data = struct('X', [], 'Y', [], 'Theta', [], 'SteeringAngle', [], 'Boxes', []);
             end
         end
 
@@ -852,7 +1046,7 @@ classdef SimManager < handle
         function params = createTrailerParams(obj, simParams, wheelHeight, wheelWidth, trailerNumber)
             requiredFields = {'trailerLength', 'trailerWidth', 'trailerHeight', 'trailerCoGHeight', ...
                               'trailerWheelbase', 'trailerTrackWidth', 'trailerNumAxles', ...
-                              'trailerAxleSpacing', 'trailerMass', 'numTiresPerAxleTrailer', ...
+                              'trailerAxleSpacing', 'trailerMass', ...
                               'W_FrontLeft', 'W_FrontRight', 'W_RearLeft', 'W_RearRight'};
             for i = 1:length(requiredFields)
                 if ~isfield(simParams, requiredFields{i})
@@ -860,10 +1054,12 @@ classdef SimManager < handle
                 end
             end
 
-            numTiresPerAxle = simParams.numTiresPerAxleTrailer;
-            if isempty(numTiresPerAxle) || ~isnumeric(numTiresPerAxle) || numTiresPerAxle <= 0
-                numTiresPerAxle = 4;
-                warning('Invalid numTiresPerAxleTrailer. Using default: 4');
+            % Use configured number of tires per axle for trailer
+            if isfield(simParams, 'numTiresPerAxleTrailer') && ~isempty(simParams.numTiresPerAxleTrailer)
+                numTiresPerAxle = simParams.numTiresPerAxleTrailer;
+            else
+                numTiresPerAxle = 2; % default to single tires if not specified
+                warning('Missing numTiresPerAxleTrailer in simParams. Using default: %d', numTiresPerAxle);
             end
 
             numAxlesTractor   = simParams.tractorNumAxles;

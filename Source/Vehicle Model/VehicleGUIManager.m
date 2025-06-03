@@ -72,6 +72,10 @@ classdef VehicleGUIManager < handle
         tractorAxleSpacingField
         numTiresPerAxleTrailerDropDown
 
+        trailerNumBoxesField       % Number of trailer boxes
+        trailerAxlesPerBoxField    % Axles per trailer box
+        trailerBoxSpacingField     % Distance between trailer boxes (m)
+
         % New Tractor Tires per Axle Dropdown
         numTiresPerAxleTractorDropDown
 
@@ -253,13 +257,13 @@ classdef VehicleGUIManager < handle
         % --- End of Steering Curve File Properties ---
 
         tirePressureCommandsBox
-    end
 
-    properties (Access = private)
         figureHandle % Handle to the main figure
 
         % *** New Property for Gear Ratios Data ***
         gearRatiosData   % MATLAB table to store Gear Number and Ratio
+        spinnerTabs      % Cell array of uitab objects for spinner configurations
+        spinnerConfig    % Struct array holding handles for spinner stiffness & damping fields
         % *** End of New Property ***
     end
 
@@ -977,6 +981,21 @@ classdef VehicleGUIManager < handle
                 'Items', {'2', '4'}, ...
                 'Value', '4', ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
+            
+            % --- Multi-Trailer Configuration ---
+            uilabel(obj.trailerParamsTab, 'Position', [10, 70, 200, 20], 'Text', 'Num Trailer Boxes:');
+            obj.trailerNumBoxesField = uieditfield(obj.trailerParamsTab, 'numeric', ...
+                'Position', [220, 70, 100, 20], 'Value', 1, 'Limits', [1 Inf], ...
+                'RoundFractionalValues', true, 'ValueChangedFcn', @(src, event)obj.trailerNumBoxesChanged(src, event));
+            uilabel(obj.trailerParamsTab, 'Position', [10, 40, 200, 20], 'Text', 'Axles per Box (comma-separated):');
+            obj.trailerAxlesPerBoxField = uieditfield(obj.trailerParamsTab, 'text', ...
+                'Position', [220, 40, 100, 20], 'Value', '2', ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+            % Distance between trailer boxes
+            uilabel(obj.trailerParamsTab, 'Position', [10, 10, 200, 20], 'Text', 'Box Spacing (m):');
+            obj.trailerBoxSpacingField = uieditfield(obj.trailerParamsTab, 'numeric', ...
+                'Position', [220, 10, 100, 20], 'Value', 1.310, 'Limits', [0.5, Inf], ...
+                'RoundFractionalValues', false, 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             %% Tires Configuration Tab (Existing)
             % --- Tractor Tires Configuration ---
@@ -1590,20 +1609,37 @@ classdef VehicleGUIManager < handle
         % Callback when the Include Trailer checkbox value changes.
         function includeTrailerChanged(obj, src, event)
             if src.Value
-                % Trailer is included
+                % Trailer is included: enable trailer configuration fields
                 obj.trailerMassField.Enable = 'on';
-                obj.numTiresPerAxleTrailerDropDown.Enable = 'on'; % Enable the dropdown
-
-                % Explicitly reset the Items and Value
+                obj.numTiresPerAxleTrailerDropDown.Enable = 'on';
                 obj.numTiresPerAxleTrailerDropDown.Items = {'2', '4'};
                 obj.numTiresPerAxleTrailerDropDown.Value = obj.numTiresPerAxleTrailerDropDown.Items{1};
+                if isprop(obj, 'trailerNumBoxesField')
+                    obj.trailerNumBoxesField.Enable = 'on';
+                end
+                if isprop(obj, 'trailerAxlesPerBoxField')
+                    obj.trailerAxlesPerBoxField.Enable = 'on';
+                end
+                if isprop(obj, 'trailerBoxSpacingField')
+                    obj.trailerBoxSpacingField.Enable = 'on';
+                end
+                obj.setTrailerTabVisibility(true);
             else
-                % Trailer is excluded
+                % Trailer is excluded: disable trailer configuration fields
                 obj.trailerMassField.Enable = 'off';
-                obj.numTiresPerAxleTrailerDropDown.Items = {'0'}; % Set Items to '0'
-                obj.numTiresPerAxleTrailerDropDown.Value = '0';    % Set Value to '0'
-                obj.numTiresPerAxleTrailerDropDown.Enable = 'off'; % Disable the dropdown
-                obj.setTrailerTabEnable(false);
+                obj.numTiresPerAxleTrailerDropDown.Items = {'0'};
+                obj.numTiresPerAxleTrailerDropDown.Value = '0';
+                obj.numTiresPerAxleTrailerDropDown.Enable = 'off';
+                if isprop(obj, 'trailerNumBoxesField')
+                    obj.trailerNumBoxesField.Enable = 'off';
+                end
+                if isprop(obj, 'trailerAxlesPerBoxField')
+                    obj.trailerAxlesPerBoxField.Enable = 'off';
+                end
+                if isprop(obj, 'trailerBoxSpacingField')
+                    obj.trailerBoxSpacingField.Enable = 'off';
+                end
+                obj.setTrailerTabVisibility(false);
             end
             obj.updatePressureMatrices();  % Update pressure matrices when trailer inclusion changes
         end
@@ -2152,6 +2188,76 @@ classdef VehicleGUIManager < handle
             obj.removeWaypointButton = uibutton(obj.pathFollowerTab, 'Text', 'Remove Selected Waypoint', ...
                 'Position', [120, 10, 150, 30], ...
                 'ButtonPushedFcn', @(src,event) obj.removeWaypoint());
+        end
+        
+        % Callback when number of trailer boxes changes
+        function trailerNumBoxesChanged(obj, src, ~)
+            nBoxes = src.Value;
+            obj.updateSpinnerTabs(nBoxes);
+            obj.configurationChanged();
+        end
+        
+        % Update spinner configuration tabs based on number of trailer boxes
+        function updateSpinnerTabs(obj, nBoxes)
+            % Remove existing spinner tabs
+            if isprop(obj, 'spinnerTabs') && ~isempty(obj.spinnerTabs)
+                for idx = 1:numel(obj.spinnerTabs)
+                    if isvalid(obj.spinnerTabs{idx})
+                        delete(obj.spinnerTabs{idx});
+                    end
+                end
+                obj.spinnerTabs = {};
+                obj.spinnerConfig = struct();
+            end
+            % Only create spinner tabs if more than one box and trailer included
+            if obj.includeTrailerCheckbox.Value && nBoxes > 1
+                nSpinners = nBoxes - 1;
+                for i = 1:nSpinners
+                    tabTitle = sprintf('Spinner %d Stiffness & Damping', i);
+                    tab = uitab(obj.configTabGroup, 'Title', tabTitle);
+                    obj.spinnerTabs{end+1} = tab;
+                    % --- Stiffness Parameters ---
+                    uicontrol(tab, 'Style', 'text', 'Position', [10, 420, 220, 20], ...
+                        'String', '--- Stiffness Parameters ---', 'FontWeight', 'bold', 'FontSize', 10);
+                    stiffFields = {'X','Y','Z','Roll','Pitch','Yaw'};
+                    stiffDefaults = [1e4,1e4,1e4,5e3,1e3,2e3];
+                    for j = 1:numel(stiffFields)
+                        yPos = 420 - 30*j;
+                        field = stiffFields{j};
+                        j_4='N·m/rad';
+                        if j<4
+                            j_4='N/m';
+                        end
+                        labelText = sprintf('Stiffness %s (%s):', field, j_4);
+                        uilabel(tab, 'Position', [10, yPos, 150, 20], 'Text', labelText);
+                        editField = uieditfield(tab, 'numeric', 'Position', [170, yPos, 100, 20], ...
+                            'Value', stiffDefaults(j), 'ValueChangedFcn', @(src,evt)obj.configurationChanged());
+                        obj.spinnerConfig(i).(['stiffness' field 'Field']) = editField;
+                    end
+                    % --- Damping Parameters ---
+                    uicontrol(tab, 'Style', 'text', 'Position', [300, 420, 220, 20], ...
+                        'String', '--- Damping Parameters ---', 'FontWeight', 'bold', 'FontSize', 10);
+                    dampDefaults = [1e5,1e5,5e4,4e5,4e5,8e5];
+                    for j = 1:numel(stiffFields)
+                        yPos = 420 - 30*j;
+                        field = stiffFields{j};
+                        j_4='N·m·s/rad';
+                        if j<4
+                            j_4='N·s/m';
+                        end
+                        labelText = sprintf('Damping %s (%s):', field, j_4);
+                        j_4=180;
+                        if j<4
+                            j_4=160;
+                        end
+                        lblWidth = j_4;
+                        uilabel(tab, 'Position', [300, yPos, lblWidth, 20], 'Text', labelText);
+                        editField = uieditfield(tab, 'numeric', 'Position', [470, yPos, 100, 20], ...
+                            'Value', dampDefaults(j), 'ValueChangedFcn', @(src,evt)obj.configurationChanged());
+                        obj.spinnerConfig(i).(['damping' field 'Field']) = editField;
+                    end
+                end
+            end
         end
 
         %% Create Commands Tab

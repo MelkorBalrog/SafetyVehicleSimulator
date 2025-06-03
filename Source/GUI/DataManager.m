@@ -42,7 +42,7 @@ classdef DataManager < handle
         % *
         % * Contains arrays for X and Y positions, orientation (Theta), speed, and steering angle over time.
         % */
-        globalTrailer1Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], 'SteeringAngle', []);
+        globalTrailer1Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], 'SteeringAngle', [], 'Boxes', []);
 
         %/**
         % * @property globalVehicle2Data
@@ -58,7 +58,7 @@ classdef DataManager < handle
         % *
         % * Contains arrays for X and Y positions, orientation (Theta), speed, and steering angle over time.
         % */
-        globalTrailer2Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], 'SteeringAngle', []);
+        globalTrailer2Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], 'SteeringAngle', [], 'Boxes', []);
 
         %/**
         % * @property manualControlData
@@ -199,7 +199,7 @@ classdef DataManager < handle
             % Check for existence of required fields in simParams
             requiredFields = {'trailerLength', 'trailerWidth', 'trailerHeight', 'trailerCoGHeight', ...
                               'trailerWheelbase', 'trailerTrackWidth', 'trailerNumAxles', ...
-                              'trailerAxleSpacing', 'trailerHitchDistance', 'trailerMass', 'numTiresPerAxleTrailer', 'W_FrontLeft', 'W_FrontRight', 'W_RearLeft', 'W_RearRight'};
+                              'trailerAxleSpacing', 'trailerHitchDistance', 'trailerMass', 'W_FrontLeft', 'W_FrontRight', 'W_RearLeft', 'W_RearRight'};
 
             for i = 1:length(requiredFields)
                 if ~isfield(simParams, requiredFields{i})
@@ -207,12 +207,8 @@ classdef DataManager < handle
                 end
             end
 
-            % Check for 'numTiresPerAxleTrailer'
-            numTiresPerAxle = simParams.numTiresPerAxleTrailer;
-            if isempty(numTiresPerAxle) || ~isnumeric(numTiresPerAxle) || numTiresPerAxle <= 0
-                numTiresPerAxle = 4; % Default value
-                warning('Invalid or missing "numTiresPerAxleTrailer" in simParams. Using default value: %d', numTiresPerAxle);
-            end
+            % Use number of axles per box as tires-per-axle (remove separate tires-per-axle setting)
+            numTiresPerAxle = simParams.trailerNumAxles;
 
             trailerParams = struct(...
                 'isTractor', false, ...

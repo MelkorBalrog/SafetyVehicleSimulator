@@ -20,12 +20,20 @@ classdef PlotManager < handle
         veh2Line
         trl2Line
         trl2RearLine
+        trl1BoxLines      % Handles for additional trailer 1 box trajectories
+        trl2BoxLines      % Handles for additional trailer 2 box trajectories
 
         % Handles to vehicle outlines for animation
         veh1Outline
         trl1Outline
         veh2Outline
         trl2Outline
+        trl1BoxOutlines      % Handles for outlines of additional trailer 1 boxes
+        trl2BoxOutlines      % Handles for outlines of additional trailer 2 boxes
+        trl1BoxWheelPatches  % Handles for wheel patches of additional trailer 1 boxes
+        trl2BoxWheelPatches  % Handles for wheel patches of additional trailer 2 boxes
+        trl1BoxAxleLines     % Handles for axle lines of additional trailer 1 boxes
+        trl2BoxAxleLines     % Handles for axle lines of additional trailer 2 boxes
 
         % Handles to full vehicle graphics (body and wheels)
         veh1Graphics
@@ -120,6 +128,17 @@ classdef PlotManager < handle
             obj.trl1Graphics = gobjects(0);
             obj.veh2Graphics = gobjects(0);
             obj.trl2Graphics = gobjects(0);
+            % Initialize additional trailer box line handles
+            obj.trl1BoxLines = gobjects(0);
+            obj.trl2BoxLines = gobjects(0);
+            % Initialize additional trailer box outlines
+            obj.trl1BoxOutlines = gobjects(0);
+            obj.trl2BoxOutlines = gobjects(0);
+            % Initialize additional trailer box wheel patches and axle lines
+            obj.trl1BoxWheelPatches = {};
+            obj.trl2BoxWheelPatches = {};
+            obj.trl1BoxAxleLines = {};
+            obj.trl2BoxAxleLines = {};
 
             % Initialize full vehicle graphic handles
             obj.veh1Graphics = gobjects(0);
@@ -141,6 +160,37 @@ classdef PlotManager < handle
             obj.trl2AxleLines = gobjects(0);
 
             obj.clearVehicleGraphics();
+            % Reset additional trailer box line handles
+            delete(obj.trl1BoxLines); obj.trl1BoxLines = gobjects(0);
+            delete(obj.trl2BoxLines); obj.trl2BoxLines = gobjects(0);
+            % Reset additional trailer box outlines
+            delete(obj.trl1BoxOutlines); obj.trl1BoxOutlines = gobjects(0);
+            delete(obj.trl2BoxOutlines); obj.trl2BoxOutlines = gobjects(0);
+            % Reset wheel patches and axle lines for additional trailer boxes
+            if ~isempty(obj.trl1BoxWheelPatches)
+                for bi = 1:numel(obj.trl1BoxWheelPatches)
+                    delete(obj.trl1BoxWheelPatches{bi});
+                end
+                obj.trl1BoxWheelPatches = {};
+            end
+            if ~isempty(obj.trl2BoxWheelPatches)
+                for bi = 1:numel(obj.trl2BoxWheelPatches)
+                    delete(obj.trl2BoxWheelPatches{bi});
+                end
+                obj.trl2BoxWheelPatches = {};
+            end
+            if ~isempty(obj.trl1BoxAxleLines)
+                for bi = 1:numel(obj.trl1BoxAxleLines)
+                    delete(obj.trl1BoxAxleLines{bi});
+                end
+                obj.trl1BoxAxleLines = {};
+            end
+            if ~isempty(obj.trl2BoxAxleLines)
+                for bi = 1:numel(obj.trl2BoxAxleLines)
+                    delete(obj.trl2BoxAxleLines{bi});
+                end
+                obj.trl2BoxAxleLines = {};
+            end
 
             % Re-init lines so we don't create duplicates
             obj.veh1Line = plot(obj.sharedAx, NaN, NaN, 'r-', 'LineWidth', 1.5);
@@ -203,6 +253,22 @@ classdef PlotManager < handle
                 rearX_Trailer1 = Xtrl1 - (simParams1.trailerLength/2).*cos(dataManager.globalTrailer1Data.Theta(1:iStep));
                 rearY_Trailer1 = Ytrl1 - (simParams1.trailerLength/2).*sin(dataManager.globalTrailer1Data.Theta(1:iStep));
                 set(obj.trl1RearLine, 'XData', rearX_Trailer1, 'YData', rearY_Trailer1);
+                % Additional trailer boxes trajectories
+                if isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) > 1
+                    nBoxes1 = numel(dataManager.globalTrailer1Data.Boxes);
+                    % Create line handles for extra boxes if needed
+                    if numel(obj.trl1BoxLines) < nBoxes1-1
+                        for k = (numel(obj.trl1BoxLines)+1):(nBoxes1-1)
+                            obj.trl1BoxLines(k) = plot(obj.sharedAx, NaN, NaN, 'b-', 'LineWidth', 1);
+                        end
+                    end
+                    % Update trajectories for each additional box
+                    for bi = 2:nBoxes1
+                        Xi = dataManager.globalTrailer1Data.Boxes(bi).X(1:iStep);
+                        Yi = dataManager.globalTrailer1Data.Boxes(bi).Y(1:iStep);
+                        set(obj.trl1BoxLines(bi-1), 'XData', Xi, 'YData', Yi);
+                    end
+                end
             else
                 % If no trailer, set them NaN to keep them hidden
                 set(obj.trl1Line, 'XData', NaN, 'YData', NaN);
@@ -223,6 +289,22 @@ classdef PlotManager < handle
                 rearX_Trailer2 = Xtrl2 - (simParams2.trailerLength/2).*cos(dataManager.globalTrailer2Data.Theta(1:iStep));
                 rearY_Trailer2 = Ytrl2 - (simParams2.trailerLength/2).*sin(dataManager.globalTrailer2Data.Theta(1:iStep));
                 set(obj.trl2RearLine, 'XData', rearX_Trailer2, 'YData', rearY_Trailer2);
+                % Additional trailer boxes trajectories
+                if isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) > 1
+                    nBoxes2 = numel(dataManager.globalTrailer2Data.Boxes);
+                    % Create line handles for extra boxes if needed
+                    if numel(obj.trl2BoxLines) < nBoxes2-1
+                        for k = (numel(obj.trl2BoxLines)+1):(nBoxes2-1)
+                            obj.trl2BoxLines(k) = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 1);
+                        end
+                    end
+                    % Update trajectories for each additional box
+                    for bi = 2:nBoxes2
+                        Xi = dataManager.globalTrailer2Data.Boxes(bi).X(1:iStep);
+                        Yi = dataManager.globalTrailer2Data.Boxes(bi).Y(1:iStep);
+                        set(obj.trl2BoxLines(bi-1), 'XData', Xi, 'YData', Yi);
+                    end
+                end
             else
                 % If no trailer, set them NaN to keep them hidden
                 set(obj.trl2Line, 'XData', NaN, 'YData', NaN);
@@ -265,17 +347,36 @@ classdef PlotManager < handle
             outline1 = [corners1; corners1(1,:)]; % close polygon
             set(obj.veh1Outline, 'XData', outline1(:,1), 'YData', outline1(:,2));
 
-            % Trailer 1: plot using simulated hitch positions
-            if ~isempty(trailerParams1)
-                hitchX1 = dataManager.globalTrailer1Data.X(iStep);
-                hitchY1 = dataManager.globalTrailer1Data.Y(iStep);
-                tTh1 = dataManager.globalTrailer1Data.Theta(iStep);
+            % Trailer 1: plot using first entry in Boxes for multi-box configuration
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) >= 1
+                Xi = dataManager.globalTrailer1Data.Boxes(1).X(iStep);
+                Yi = dataManager.globalTrailer1Data.Boxes(1).Y(iStep);
+                absT1 = dataManager.globalTrailer1Data.Boxes(1).Theta(iStep);
                 cornersT1 = VehiclePlotter.getVehicleCorners(...
-                    hitchX1, hitchY1, tTh1, trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
+                    Xi, Yi, absT1, trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
                 outlineT1 = [cornersT1; cornersT1(1,:)];
                 set(obj.trl1Outline, 'XData', outlineT1(:,1), 'YData', outlineT1(:,2));
             else
                 set(obj.trl1Outline, 'XData', NaN, 'YData', NaN);
+            end
+            % Additional trailer 1 box outlines (absolute orientation)
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) > 1
+                nBoxes1 = numel(dataManager.globalTrailer1Data.Boxes);
+                % Create outline handles for extra boxes if needed
+                if numel(obj.trl1BoxOutlines) < nBoxes1-1
+                    for k = (numel(obj.trl1BoxOutlines)+1):(nBoxes1-1)
+                        obj.trl1BoxOutlines(k) = plot(obj.sharedAx, NaN, NaN, 'b-', 'LineWidth', 2);
+                    end
+                end
+                % Update outlines for each additional box using Boxes data
+                for bi = 2:nBoxes1
+                    Xi = dataManager.globalTrailer1Data.Boxes(bi).X(iStep);
+                    Yi = dataManager.globalTrailer1Data.Boxes(bi).Y(iStep);
+                    absTi = dataManager.globalTrailer1Data.Boxes(bi).Theta(iStep);
+                    cornersBi = VehiclePlotter.getVehicleCorners(Xi, Yi, absTi, trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
+                    outlineBi = [cornersBi; cornersBi(1,:)];
+                    set(obj.trl1BoxOutlines(bi-1), 'XData', outlineBi(:,1), 'YData', outlineBi(:,2));
+                end
             end
 
             % Vehicle 2 (tractor)
@@ -287,17 +388,36 @@ classdef PlotManager < handle
             outline2 = [corners2; corners2(1,:)];
             set(obj.veh2Outline, 'XData', outline2(:,1), 'YData', outline2(:,2));
 
-            % Trailer 2: plot using simulated hitch positions
-            if ~isempty(trailerParams2)
-                hitchX2 = dataManager.globalTrailer2Data.X(iStep);
-                hitchY2 = dataManager.globalTrailer2Data.Y(iStep);
-                tTh2 = dataManager.globalTrailer2Data.Theta(iStep);
+            % Trailer 2: plot using first entry in Boxes for multi-box configuration
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) >= 1
+                Xi2 = dataManager.globalTrailer2Data.Boxes(1).X(iStep);
+                Yi2 = dataManager.globalTrailer2Data.Boxes(1).Y(iStep);
+                absT2 = dataManager.globalTrailer2Data.Boxes(1).Theta(iStep);
                 cornersT2 = VehiclePlotter.getVehicleCorners(...
-                    hitchX2, hitchY2, tTh2, trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
+                    Xi2, Yi2, absT2, trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
                 outlineT2 = [cornersT2; cornersT2(1,:)];
                 set(obj.trl2Outline, 'XData', outlineT2(:,1), 'YData', outlineT2(:,2));
             else
                 set(obj.trl2Outline, 'XData', NaN, 'YData', NaN);
+            end
+            % Additional trailer 2 box outlines (absolute orientation)
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) > 1
+                nBoxes2 = numel(dataManager.globalTrailer2Data.Boxes);
+                % Create outline handles for extra boxes if needed
+                if numel(obj.trl2BoxOutlines) < nBoxes2-1
+                    for k = (numel(obj.trl2BoxOutlines)+1):(nBoxes2-1)
+                        obj.trl2BoxOutlines(k) = plot(obj.sharedAx, NaN, NaN, 'c-', 'LineWidth', 2);
+                    end
+                end
+                % Update outlines for each additional box using Boxes data
+                for bi = 2:nBoxes2
+                    Xi = dataManager.globalTrailer2Data.Boxes(bi).X(iStep);
+                    Yi = dataManager.globalTrailer2Data.Boxes(bi).Y(iStep);
+                    absTi2 = dataManager.globalTrailer2Data.Boxes(bi).Theta(iStep);
+                    cornersBi = VehiclePlotter.getVehicleCorners(Xi, Yi, absTi2, trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
+                    outlineBi = [cornersBi; cornersBi(1,:)];
+                    set(obj.trl2BoxOutlines(bi-1), 'XData', outlineBi(:,1), 'YData', outlineBi(:,2));
+                end
             end
             % Update wheel patches (rectangles)
             % Vehicle 1 tires
@@ -309,12 +429,12 @@ classdef PlotManager < handle
             for k = 1:numel(shX1)
                 set(obj.veh1WheelPatches(k), 'XData', shX1{k}, 'YData', shY1{k});
             end
-            % Trailer 1 tires
-            if ~isempty(trailerParams1)
-                [shT1X, shT1Y] = obj.computeAllWheelShapes( ...
-                    hitchX1, ...
-                    hitchY1, ...
-                    tTh1, trailerParams1, 0);
+            % Trailer 1 tires (use first Box data for absolute orientation)
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) >= 1
+                Xi = dataManager.globalTrailer1Data.Boxes(1).X(iStep);
+                Yi = dataManager.globalTrailer1Data.Boxes(1).Y(iStep);
+                Ti = dataManager.globalTrailer1Data.Boxes(1).Theta(iStep);
+                [shT1X, shT1Y] = obj.computeAllWheelShapes(Xi, Yi, Ti, trailerParams1, 0);
                 for k = 1:numel(shT1X)
                     set(obj.trl1WheelPatches(k), 'XData', shT1X{k}, 'YData', shT1Y{k});
                 end
@@ -328,12 +448,12 @@ classdef PlotManager < handle
             for k = 1:numel(shX2)
                 set(obj.veh2WheelPatches(k), 'XData', shX2{k}, 'YData', shY2{k});
             end
-            % Trailer 2 tires
-            if ~isempty(trailerParams2)
-                [shT2X, shT2Y] = obj.computeAllWheelShapes( ...
-                    hitchX2, ...
-                    hitchY2, ...
-                    tTh2, trailerParams2, 0);
+            % Trailer 2 tires (use first Box data for absolute orientation)
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) >= 1
+                Xi2 = dataManager.globalTrailer2Data.Boxes(1).X(iStep);
+                Yi2 = dataManager.globalTrailer2Data.Boxes(1).Y(iStep);
+                Ti2 = dataManager.globalTrailer2Data.Boxes(1).Theta(iStep);
+                [shT2X, shT2Y] = obj.computeAllWheelShapes(Xi2, Yi2, Ti2, trailerParams2, 0);
                 for k = 1:numel(shT2X)
                     set(obj.trl2WheelPatches(k), 'XData', shT2X{k}, 'YData', shT2Y{k});
                 end
@@ -351,18 +471,16 @@ classdef PlotManager < handle
                     'XData', [xC1(idx), xC1(idx+1)], ...
                     'YData', [yC1(idx), yC1(idx+1)]);
             end
-            % Trailer 1 axles
-            if ~isempty(trailerParams1)
-                hitchX1 = dataManager.globalTrailer1Data.X(iStep);
-                hitchY1 = dataManager.globalTrailer1Data.Y(iStep);
-                tTh1 = dataManager.globalTrailer1Data.Theta(iStep);
-                [xC1T, yC1T] = obj.computeWheelCenters(hitchX1, hitchY1, tTh1, trailerParams1);
+            % Trailer 1 axles (absolute orientation from Boxes data)
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) >= 1
+                Xi = dataManager.globalTrailer1Data.Boxes(1).X(iStep);
+                Yi = dataManager.globalTrailer1Data.Boxes(1).Y(iStep);
+                Ti = dataManager.globalTrailer1Data.Boxes(1).Theta(iStep);
+                [xC1T, yC1T] = obj.computeWheelCenters(Xi, Yi, Ti, trailerParams1);
                 nPairsT1 = numel(xC1T) / 2;
                 for ai = 1:nPairsT1
                     idx = (ai-1)*2 + 1;
-                    set(obj.trl1AxleLines(ai), ...
-                        'XData', [xC1T(idx),   xC1T(idx+1)], ...
-                        'YData', [yC1T(idx),   yC1T(idx+1)]);
+                    set(obj.trl1AxleLines(ai), 'XData', [xC1T(idx), xC1T(idx+1)], 'YData', [yC1T(idx), yC1T(idx+1)]);
                 end
             end
             % Vehicle 2 axles
@@ -377,18 +495,59 @@ classdef PlotManager < handle
                     'XData', [xC2(idx), xC2(idx+1)], ...
                     'YData', [yC2(idx), yC2(idx+1)]);
             end
-            % Trailer 2 axles
-            if ~isempty(trailerParams2)
-                hitchX2 = dataManager.globalTrailer2Data.X(iStep);
-                hitchY2 = dataManager.globalTrailer2Data.Y(iStep);
-                tTh2 = dataManager.globalTrailer2Data.Theta(iStep);
-                [xC2T, yC2T] = obj.computeWheelCenters(hitchX2, hitchY2, tTh2, trailerParams2);
+            % Trailer 2 axles (absolute orientation from Boxes data)
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) >= 1
+                Xi2 = dataManager.globalTrailer2Data.Boxes(1).X(iStep);
+                Yi2 = dataManager.globalTrailer2Data.Boxes(1).Y(iStep);
+                Ti2 = dataManager.globalTrailer2Data.Boxes(1).Theta(iStep);
+                [xC2T, yC2T] = obj.computeWheelCenters(Xi2, Yi2, Ti2, trailerParams2);
                 nPairsT2 = numel(xC2T) / 2;
                 for ai = 1:nPairsT2
                     idx = (ai-1)*2 + 1;
-                    set(obj.trl2AxleLines(ai), ...
-                        'XData', [xC2T(idx),   xC2T(idx+1)], ...
-                        'YData', [yC2T(idx),   yC2T(idx+1)]);
+                    set(obj.trl2AxleLines(ai), 'XData', [xC2T(idx), xC2T(idx+1)], 'YData', [yC2T(idx), yC2T(idx+1)]);
+                end
+            end
+            % Update wheel patches and axle lines for additional trailer boxes
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes')
+                nBoxes1 = numel(dataManager.globalTrailer1Data.Boxes);
+                for bi = 2:nBoxes1
+                    Xi = dataManager.globalTrailer1Data.Boxes(bi).X(iStep);
+                    Yi = dataManager.globalTrailer1Data.Boxes(bi).Y(iStep);
+                    Ti = dataManager.globalTrailer1Data.Boxes(bi).Theta(iStep);
+                    % Wheel patches
+                    [shXb, shYb] = obj.computeAllWheelShapes(Xi, Yi, Ti, trailerParams1, 0);
+                    for k = 1:numel(shXb)
+                        set(obj.trl1BoxWheelPatches{bi-1}(k), 'XData', shXb{k}, 'YData', shYb{k});
+                    end
+                    % Axle lines
+                    [xCb, yCb] = obj.computeWheelCenters(Xi, Yi, Ti, trailerParams1);
+                    for ai = 1:(numel(xCb)/2)
+                        idx = (ai-1)*2 + 1;
+                        set(obj.trl1BoxAxleLines{bi-1}(ai), ...
+                            'XData', [xCb(idx), xCb(idx+1)], ...
+                            'YData', [yCb(idx), yCb(idx+1)]);
+                    end
+                end
+            end
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes')
+                nBoxes2 = numel(dataManager.globalTrailer2Data.Boxes);
+                for bi = 2:nBoxes2
+                    Xi = dataManager.globalTrailer2Data.Boxes(bi).X(iStep);
+                    Yi = dataManager.globalTrailer2Data.Boxes(bi).Y(iStep);
+                    Ti = dataManager.globalTrailer2Data.Boxes(bi).Theta(iStep);
+                    % Wheel patches
+                    [shXb, shYb] = obj.computeAllWheelShapes(Xi, Yi, Ti, trailerParams2, 0);
+                    for k = 1:numel(shXb)
+                        set(obj.trl2BoxWheelPatches{bi-1}(k), 'XData', shXb{k}, 'YData', shYb{k});
+                    end
+                    % Axle lines
+                    [xCb, yCb] = obj.computeWheelCenters(Xi, Yi, Ti, trailerParams2);
+                    for ai = 1:(numel(xCb)/2)
+                        idx = (ai-1)*2 + 1;
+                        set(obj.trl2BoxAxleLines{bi-1}(ai), ...
+                            'XData', [xCb(idx), xCb(idx+1)], ...
+                            'YData', [yCb(idx), yCb(idx+1)]);
+                    end
                 end
             end
         end
@@ -407,17 +566,12 @@ classdef PlotManager < handle
                 obj.veh1WheelPatches(k) = fill(shX1{k}, shY1{k}, 'k', 'Parent', obj.sharedAx);
             end
             % Trailer 1 tires
-            if ~isempty(trailerParams1)
-                tX0 = dataManager.globalTrailer1Data.X(i0);
-                tY0 = dataManager.globalTrailer1Data.Y(i0);
-                tTh0 = dataManager.globalTrailer1Data.Theta(i0);
-                % Use trailer hitch point directly; computeWheelCenters applies baseOffset
-                hitchX0 = tX0;
-                hitchY0 = tY0;
-                [shT1X, shT1Y] = obj.computeAllWheelShapes( ...
-                    hitchX0, ...
-                    hitchY0, ...
-                    tTh0, trailerParams1, 0);
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) >= 1
+                tX0 = dataManager.globalTrailer1Data.Boxes(1).X(i0);
+                tY0 = dataManager.globalTrailer1Data.Boxes(1).Y(i0);
+                tTh0 = dataManager.globalTrailer1Data.Boxes(1).Theta(i0);
+                % Compute shapes for first trailer box using its absolute orientation
+                [shT1X, shT1Y] = obj.computeAllWheelShapes(tX0, tY0, tTh0, trailerParams1, 0);
                 obj.trl1WheelPatches = gobjects(1, numel(shT1X));
                 for k = 1:numel(shT1X)
                     obj.trl1WheelPatches(k) = fill(shT1X{k}, shT1Y{k}, 'k', 'Parent', obj.sharedAx);
@@ -436,16 +590,12 @@ classdef PlotManager < handle
                 obj.veh2WheelPatches(k) = fill(shX2{k}, shY2{k}, 'k', 'Parent', obj.sharedAx);
             end
             % Trailer 2 tires
-            if ~isempty(trailerParams2)
-                tX20 = dataManager.globalTrailer2Data.X(i0);
-                tY20 = dataManager.globalTrailer2Data.Y(i0);
-                tTh20 = dataManager.globalTrailer2Data.Theta(i0);
-                hitchX20 = tX20;
-                hitchY20 = tY20;
-                [shT2X, shT2Y] = obj.computeAllWheelShapes( ...
-                    hitchX20, ...
-                    hitchY20, ...
-                    tTh20, trailerParams2, 0);
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) >= 1
+                tX20 = dataManager.globalTrailer2Data.Boxes(1).X(i0);
+                tY20 = dataManager.globalTrailer2Data.Boxes(1).Y(i0);
+                tTh20 = dataManager.globalTrailer2Data.Boxes(1).Theta(i0);
+                % Compute shapes for first trailer box using its absolute orientation
+                [shT2X, shT2Y] = obj.computeAllWheelShapes(tX20, tY20, tTh20, trailerParams2, 0);
                 obj.trl2WheelPatches = gobjects(1, numel(shT2X));
                 for k = 1:numel(shT2X)
                     obj.trl2WheelPatches(k) = fill(shT2X{k}, shT2Y{k}, 'k', 'Parent', obj.sharedAx);
@@ -470,10 +620,10 @@ classdef PlotManager < handle
                     'k-', 'LineWidth', 2);
             end
             % Trailer 1 axles
-            if ~isempty(trailerParams1)
-                tX0  = dataManager.globalTrailer1Data.X(i0);
-                tY0  = dataManager.globalTrailer1Data.Y(i0);
-                tTh0 = dataManager.globalTrailer1Data.Theta(i0);
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) >= 1
+                tX0  = dataManager.globalTrailer1Data.Boxes(1).X(i0);
+                tY0  = dataManager.globalTrailer1Data.Boxes(1).Y(i0);
+                tTh0 = dataManager.globalTrailer1Data.Boxes(1).Theta(i0);
                 [xCT1, yCT1] = obj.computeWheelCenters(tX0, tY0, tTh0, trailerParams1);
                 nPairsT1 = numel(xCT1) / 2;
                 obj.trl1AxleLines = gobjects(1, nPairsT1);
@@ -487,6 +637,7 @@ classdef PlotManager < handle
             else
                 obj.trl1AxleLines = gobjects(0);
             end
+            % Vehicle 2 axles
             % Vehicle 2 axles
             [xC2, yC2] = obj.computeWheelCenters( ...
                 dataManager.globalVehicle2Data.X(i0), ...
@@ -502,10 +653,10 @@ classdef PlotManager < handle
                     'k-', 'LineWidth', 2);
             end
             % Trailer 2 axles
-            if ~isempty(trailerParams2)
-                tX0  = dataManager.globalTrailer2Data.X(i0);
-                tY0  = dataManager.globalTrailer2Data.Y(i0);
-                tTh0 = dataManager.globalTrailer2Data.Theta(i0);
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) >= 1
+                tX0  = dataManager.globalTrailer2Data.Boxes(1).X(i0);
+                tY0  = dataManager.globalTrailer2Data.Boxes(1).Y(i0);
+                tTh0 = dataManager.globalTrailer2Data.Boxes(1).Theta(i0);
                 [xCT2, yCT2] = obj.computeWheelCenters(tX0, tY0, tTh0, trailerParams2);
                 nPairsT2 = numel(xCT2) / 2;
                 obj.trl2AxleLines = gobjects(1, nPairsT2);
@@ -519,11 +670,77 @@ classdef PlotManager < handle
             else
                 obj.trl2AxleLines = gobjects(0);
             end
+            % Additional trailer 1 boxes: wheel patches and axle lines
+            if ~isempty(trailerParams1) && isfield(dataManager.globalTrailer1Data, 'Boxes')
+                nBoxes1 = numel(dataManager.globalTrailer1Data.Boxes);
+                if nBoxes1 > 1
+                    obj.trl1BoxWheelPatches = cell(1, nBoxes1-1);
+                    obj.trl1BoxAxleLines    = cell(1, nBoxes1-1);
+                    for bi = 2:nBoxes1
+                        tX0 = dataManager.globalTrailer1Data.Boxes(bi).X(i0);
+                        tY0 = dataManager.globalTrailer1Data.Boxes(bi).Y(i0);
+                        absTh0 = dataManager.globalTrailer1Data.Boxes(bi).Theta(i0);
+                        [shXb, shYb] = obj.computeAllWheelShapes(tX0, tY0, absTh0, trailerParams1, 0);
+                        np = numel(shXb);
+                        obj.trl1BoxWheelPatches{bi-1} = gobjects(1, np);
+                        for k = 1:np
+                            obj.trl1BoxWheelPatches{bi-1}(k) = fill(shXb{k}, shYb{k}, 'k', 'Parent', obj.sharedAx);
+                        end
+                        [xCb, yCb] = obj.computeWheelCenters(tX0, tY0, absTh0, trailerParams1);
+                        nAx = numel(xCb)/2;
+                        obj.trl1BoxAxleLines{bi-1} = gobjects(1, nAx);
+                        for ai = 1:nAx
+                            idx = (ai-1)*2 + 1;
+                            obj.trl1BoxAxleLines{bi-1}(ai) = plot(obj.sharedAx, [xCb(idx), xCb(idx+1)], [yCb(idx), yCb(idx+1)], 'k-', 'LineWidth', 2);
+                        end
+                    end
+                else
+                    obj.trl1BoxWheelPatches = {};
+                    obj.trl1BoxAxleLines    = {};
+                end
+            end
+            % Additional trailer 2 boxes: wheel patches and axle lines
+            if ~isempty(trailerParams2) && isfield(dataManager.globalTrailer2Data, 'Boxes')
+                nBoxes2 = numel(dataManager.globalTrailer2Data.Boxes);
+                if nBoxes2 > 1
+                    obj.trl2BoxWheelPatches = cell(1, nBoxes2-1);
+                    obj.trl2BoxAxleLines    = cell(1, nBoxes2-1);
+                    for bi = 2:nBoxes2
+                        tX0 = dataManager.globalTrailer2Data.Boxes(bi).X(i0);
+                        tY0 = dataManager.globalTrailer2Data.Boxes(bi).Y(i0);
+                        absTh20 = dataManager.globalTrailer2Data.Boxes(bi).Theta(i0);
+                        [shXb, shYb] = obj.computeAllWheelShapes(tX0, tY0, absTh20, trailerParams2, 0);
+                        np = numel(shXb);
+                        obj.trl2BoxWheelPatches{bi-1} = gobjects(1, np);
+                        for k = 1:np
+                            obj.trl2BoxWheelPatches{bi-1}(k) = fill(shXb{k}, shYb{k}, 'k', 'Parent', obj.sharedAx);
+                        end
+                        [xCb, yCb] = obj.computeWheelCenters(tX0, tY0, absTh20, trailerParams2);
+                        nAx = numel(xCb)/2;
+                        obj.trl2BoxAxleLines{bi-1} = gobjects(1, nAx);
+                        for ai = 1:nAx
+                            idx = (ai-1)*2 + 1;
+                            obj.trl2BoxAxleLines{bi-1}(ai) = plot(obj.sharedAx, [xCb(idx), xCb(idx+1)], [yCb(idx), yCb(idx+1)], 'k-', 'LineWidth', 2);
+                        end
+                    end
+                else
+                    obj.trl2BoxWheelPatches = {};
+                    obj.trl2BoxAxleLines    = {};
+                end
+            end
             % Ensure vehicles are on top of other graphics
             try
-                uistack([obj.veh1Outline, obj.trl1Outline, obj.veh2Outline, obj.trl2Outline, ...
-                         obj.veh1WheelPatches, obj.trl1WheelPatches, obj.veh2WheelPatches, obj.trl2WheelPatches, ...
-                         obj.veh1AxleLines, obj.trl1AxleLines, obj.veh2AxleLines, obj.trl2AxleLines], 'top');
+                topObjs = [obj.veh1Outline, obj.trl1Outline, obj.veh2Outline, obj.trl2Outline, ...
+                           obj.veh1WheelPatches, obj.trl1WheelPatches, obj.veh2WheelPatches, obj.trl2WheelPatches, ...
+                           obj.veh1AxleLines, obj.trl1AxleLines, obj.veh2AxleLines, obj.trl2AxleLines];
+                % Include additional boxes
+                for bi = 1:numel(obj.trl1BoxWheelPatches)
+                    topObjs = [topObjs, obj.trl1BoxWheelPatches{bi}, obj.trl1BoxAxleLines{bi}];
+                end
+                for bi = 1:numel(obj.trl2BoxWheelPatches)
+                    topObjs = [topObjs, obj.trl2BoxWheelPatches{bi}, obj.trl2BoxAxleLines{bi}];
+                end
+                uistack(topObjs, 'top');
             catch
             end
         end
@@ -735,19 +952,25 @@ classdef PlotManager < handle
                 % adjust to mid-point between middle and rear axle
                 hitchX = hitchX - (vehicleParams1.axleSpacing/2) * cos(th1);
                 hitchY = hitchY - (vehicleParams1.axleSpacing/2) * sin(th1);
-                % trailer orientation
-                tTh = dataManager.globalTrailer1Data.Theta(plotStep);
+                % trailer orientation: absolute = tractor orientation + trailer relative yaw
+                relTheta1 = dataManager.globalTrailer1Data.Theta(plotStep);
+                absTheta1 = dataManager.globalVehicle1Data.Theta(plotStep) + relTheta1;
+                % plot primary trailer box
                 obj.trl1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
-                    hitchX, ...
-                    hitchY, ...
-                    tTh, ...
-                    trailerParams1, ...
-                    'b', ...
-                    false, ...
-                    false, ...
-                    0, ...
-                    trailerParams1.numTiresPerAxle, ...
-                    trailerParams1.numAxles);
+                    hitchX, hitchY, absTheta1, trailerParams1, 'b', false, false, 0, trailerParams1.numTiresPerAxle, trailerParams1.numAxles);
+                % plot additional trailer boxes sequentially
+                if isfield(dataManager.globalTrailer1Data, 'Boxes') && numel(dataManager.globalTrailer1Data.Boxes) > 1
+                    nBoxes1 = numel(dataManager.globalTrailer1Data.Boxes);
+                    for bi = 2:nBoxes1
+                        Xi = dataManager.globalTrailer1Data.Boxes(bi).X(plotStep);
+                        Yi = dataManager.globalTrailer1Data.Boxes(bi).Y(plotStep);
+                        relTi = dataManager.globalTrailer1Data.Boxes(bi).Theta(plotStep);
+                        absTi = dataManager.globalVehicle1Data.Theta(plotStep) + relTi;
+                        hBox = VehiclePlotter.plotVehicle(obj.sharedAx, ...
+                            Xi, Yi, absTi, trailerParams1, 'b', false, false, 0, trailerParams1.numTiresPerAxle, trailerParams1.numAxles);
+                        obj.trl1Graphics = [obj.trl1Graphics, hBox];
+                    end
+                end
             end
             if ~isempty(dataManager.globalTrailer2Data.X)
                 % compute world position of tractor 2 middle axle for alignment
@@ -771,19 +994,25 @@ classdef PlotManager < handle
                 % adjust to mid-point between middle and rear axle of tractor2
                 hitchX2 = hitchX2 - (vehicleParams2.axleSpacing/2) * cos(th2);
                 hitchY2 = hitchY2 - (vehicleParams2.axleSpacing/2) * sin(th2);
-                % trailer2 orientation
-                tTh2 = dataManager.globalTrailer2Data.Theta(plotStep);
+                % trailer2 orientation: absolute = tractor2 orientation + trailer2 relative yaw
+                relTheta2 = dataManager.globalTrailer2Data.Theta(plotStep);
+                absTheta2 = dataManager.globalVehicle2Data.Theta(plotStep) + relTheta2;
+                % plot primary trailer2 box
                 obj.trl2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
-                    hitchX2, ...
-                    hitchY2, ...
-                    tTh2, ...
-                    trailerParams2, ...
-                    'c', ...
-                    false, ...
-                    false, ...
-                    0, ...
-                    trailerParams2.numTiresPerAxle, ...
-                    trailerParams2.numAxles);
+                    hitchX2, hitchY2, absTheta2, trailerParams2, 'c', false, false, 0, trailerParams2.numTiresPerAxle, trailerParams2.numAxles);
+                % plot additional trailer2 boxes sequentially
+                if isfield(dataManager.globalTrailer2Data, 'Boxes') && numel(dataManager.globalTrailer2Data.Boxes) > 1
+                    nBoxes2 = numel(dataManager.globalTrailer2Data.Boxes);
+                    for bi = 2:nBoxes2
+                        Xi = dataManager.globalTrailer2Data.Boxes(bi).X(plotStep);
+                        Yi = dataManager.globalTrailer2Data.Boxes(bi).Y(plotStep);
+                        relTi2 = dataManager.globalTrailer2Data.Boxes(bi).Theta(plotStep);
+                        absTi2 = dataManager.globalVehicle2Data.Theta(plotStep) + relTi2;
+                        hBox2 = VehiclePlotter.plotVehicle(obj.sharedAx, ...
+                            Xi, Yi, absTi2, trailerParams2, 'c', false, false, 0, trailerParams2.numTiresPerAxle, trailerParams2.numAxles);
+                        obj.trl2Graphics = [obj.trl2Graphics, hBox2];
+                    end
+                end
             end
 
             % Then plot the tractors
