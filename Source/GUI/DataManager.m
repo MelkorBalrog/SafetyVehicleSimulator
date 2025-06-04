@@ -42,7 +42,9 @@ classdef DataManager < handle
         % *
         % * Contains arrays for X and Y positions, orientation (Theta), speed, and steering angle over time.
         % */
-        globalTrailer1Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], 'SteeringAngle', [], 'Boxes', []);
+        globalTrailer1Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], ...
+                                    'SteeringAngle', [], 'Boxes', [], ...
+                                    'XBoxes', [], 'YBoxes', [], 'ThetaBoxes', []);
 
         %/**
         % * @property globalVehicle2Data
@@ -58,7 +60,9 @@ classdef DataManager < handle
         % *
         % * Contains arrays for X and Y positions, orientation (Theta), speed, and steering angle over time.
         % */
-        globalTrailer2Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], 'SteeringAngle', [], 'Boxes', []);
+        globalTrailer2Data = struct('X', [], 'Y', [], 'Theta', [], 'Speed', [], ...
+                                    'SteeringAngle', [], 'Boxes', [], ...
+                                    'XBoxes', [], 'YBoxes', [], 'ThetaBoxes', []);
 
         %/**
         % * @property manualControlData
