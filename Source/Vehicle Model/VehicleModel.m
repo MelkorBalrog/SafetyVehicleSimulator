@@ -2907,7 +2907,8 @@ classdef VehicleModel < handle
                         % Calculate Hitch Forces and Moments
                         [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
                         % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
-                        dynamicsUpdater.forceCalculator.calculatedForces.momentZ = M_hitch;
+                        dynamicsUpdater.forceCalculator.calculatedForces.hitchMomentZ = M_hitch;
+                        dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
         
                         % Update trailer's orientation and yaw rate from HitchModel
                         psi_trailer = hitchModel.angularState.psi;

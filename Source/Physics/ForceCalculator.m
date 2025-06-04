@@ -205,8 +205,8 @@ classdef ForceCalculator
             obj.wheelbase           = wheelbase;
             obj.gravity             = 9.81;         % m/s²
             % Initialize calculated forces struct with zero values
-            forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',... 
-                         'momentZ_wind','traction','traction_force','M_z','momentZ',...  
+            forceKeys = {'hitch','hitchLateralForce','hitchMomentZ','F_drag_global','F_side_global',...
+                         'momentZ_wind','traction','traction_force','M_z','momentZ',...
                          'F_y_total','momentRoll','totalForce','F_y_trailer','momentZ_trailer',...   
                          'F_total_trailer_local','F_total_trailer_global','yawMoment_trailer',...  
                          'momentRoll_trailer','trailerPsi','trailerOmega','rolloverRiskIndex',...  
@@ -599,6 +599,9 @@ classdef ForceCalculator
 
                     [~,M_susp] = obj.suspensionModel.calculateForcesAndMoments(vehicleState);
                     M_z = M_z + M_susp;
+                    if isfield(obj.calculatedForces,'hitchMomentZ')
+                        M_z = M_z + obj.calculatedForces.hitchMomentZ;
+                    end
 
                     obj.calculatedForces.momentZ = M_z;
                     obj.calculatedForces.F_y_total = F_y_total;
@@ -782,6 +785,9 @@ classdef ForceCalculator
                     end
                     [~,M_susp] = obj.suspensionModel.calculateForcesAndMoments(vehicleState);
                     M_z = M_z + M_susp;
+                    if isfield(obj.calculatedForces,'hitchMomentZ')
+                        M_z = M_z + obj.calculatedForces.hitchMomentZ;
+                    end
 
                     obj.calculatedForces.momentZ   = M_z;
                     obj.calculatedForces.F_y_total = F_y_total;
