@@ -612,6 +612,12 @@ classdef VehicleModel < handle
             simParams.trailerNumBoxes = obj.guiManager.trailerNumBoxesField.Value;
             simParams.trailerAxlesPerBox = str2num(obj.guiManager.trailerAxlesPerBoxField.Value);
             simParams.trailerBoxSpacing = obj.guiManager.trailerBoxSpacingField.Value;
+            % If multiple trailer boxes are configured, compute the total number of
+            % axles as the sum across boxes. This ensures tire pressure and load
+            % calculations account for every box.
+            if simParams.trailerNumBoxes > 1 && ~isempty(simParams.trailerAxlesPerBox)
+                simParams.trailerNumAxles = sum(simParams.trailerAxlesPerBox);
+            end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
             simParams.spinnerConfigs = cell(1, nSpinners);
@@ -1274,7 +1280,13 @@ classdef VehicleModel < handle
                 % Assign parameters to variables for easier access
                 tractorMass = simParams.tractorMass;
                 if simParams.includeTrailer
-                    trailerMass = simParams.trailerMass + simParams.W_FrontLeft + simParams.W_FrontRight + simParams.W_RearLeft + simParams.W_RearRight;
+                    if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
+                        % Compute the mass of each trailer box from its load distribution
+                        boxMasses = cellfun(@(ld) sum(ld(:,4)) / 9.81, simParams.trailerBoxWeightDistributions);
+                        trailerMass = sum(boxMasses);
+                    else
+                        trailerMass = simParams.trailerMass;
+                    end
                     trailerWheelbase = simParams.trailerWheelbase; % Defined when trailer is included
                 else
                     trailerMass = 0;
@@ -1455,7 +1467,13 @@ classdef VehicleModel < handle
                 % Compute per-tire loads (assuming equal distribution for simplicity)
                 perTireLoadTractor = (tractorMass * 9.81) / totalTiresTractor; % N
                 if simParams.includeTrailer
-                    perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer; % N
+                    if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
+                        % Individual loads are provided per tire in the weight distributions
+                        trailerLoadsPerTire = vertcat(simParams.trailerBoxWeightDistributions{:});
+                        perTireLoadTrailer = trailerLoadsPerTire(:,4);
+                    else
+                        perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
+                    end
                 end
         
                 % Compute per-tire contact areas
@@ -1473,7 +1491,7 @@ classdef VehicleModel < handle
                     trailerContactAreas = zeros(size(trailerTirePressures));
                     for i = 1:length(trailerTirePressures)
                         if trailerTirePressures(i) > 0
-                            trailerContactAreas(i) = perTireLoadTrailer / trailerTirePressures(i); % m^2
+                            trailerContactAreas(i) = perTireLoadTrailer(i) / trailerTirePressures(i); % m^2
                         else
                             trailerContactAreas(i) = 0; % Flat tire
                         end
@@ -1797,10 +1815,15 @@ classdef VehicleModel < handle
                 %% Trailer Tire Pressures and Contact Areas (if trailer included)
                 if simParams.includeTrailer
                     % Calculate total load for trailer
-                    totalLoadTrailer = (trailerMass + W_FrontLeft + W_FrontRight + W_RearLeft + W_RearRight) * 9.81;  % Total weight in Newtons
-        
-                    % Compute per-tire loads (assuming equal distribution for simplicity)
-                    perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer; % N
+                    totalLoadTrailer = trailerMass * 9.81;  % Total weight in Newtons
+
+                    % Compute per-tire loads
+                    if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
+                        perTireLoadTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
+                        perTireLoadTrailer = perTireLoadTrailer(:,4); % already in Newtons
+                    else
+                        perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
+                    end
         
                     % Create VehicleParameters instance for trailer with computed contact area
                     trailerParams = VehicleParameters( ...
@@ -2046,63 +2069,69 @@ classdef VehicleModel < handle
         
                 %% Initialize load distribution and center of gravity for the trailer
                 if simParams.includeTrailer
-                    numAxlesTrailer = trailerParams.numAxles;
-                    numTiresPerAxleTrailer = simParams.numTiresPerAxleTrailer;
-                    numTiresTrailer = numAxlesTrailer * numTiresPerAxleTrailer;
-                    axlePositionsTrailer = linspace(-trailerParams.wheelbase / 2, trailerParams.wheelbase / 2, numAxlesTrailer);
-                    loadDistributionTrailer = zeros(numTiresTrailer, 5); % [x, y, z, load, contact_area]
-                    weightPerTireTrailer = (trailerParams.mass * 9.81) / numTiresTrailer;
-        
-                    % Calculate the contact area per trailer tire
-                    % Assuming uniform contact area distribution
-                    contactAreaPerTire = repmat(trailerTireWidth * trailerTireHeight, numTiresTrailer, 1); % m²
-                    totalContactArea = sum(contactAreaPerTire);
-        
-                    % Store tire information for logging
-                    tireInfo = cell(numTiresTrailer, 1); % For logging purposes
-        
-                    for i_axle = 1:numAxlesTrailer
-                        axlePos = axlePositionsTrailer(i_axle);
-                        tireIndexStart = (i_axle-1)*numTiresPerAxleTrailer + 1;
-                        % Compute lateral positions
-                        y_positions_trailer = linspace(-trailerParams.trackWidth / 2, trailerParams.trackWidth / 2, numTiresPerAxleTrailer);
-                        for j_tire = 1:numTiresPerAxleTrailer
-                            tireIndex = tireIndexStart + j_tire - 1;
-                            y_pos = y_positions_trailer(j_tire);
-                            loadDistributionTrailer(tireIndex, :) = [axlePos, y_pos, trailerParams.h_CoG, weightPerTireTrailer, trailerContactAreas(j_tire)];
-        
-                            % Store tire information for logging
-                            tireInfo{tireIndex} = sprintf('Trailer Tire %d: Position (%.2f, %.2f), Load %.2f N', ...
-                                tireIndex, axlePos, y_pos, weightPerTireTrailer);
+                    if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
+                        % Load distribution is directly provided per trailer box
+                        loadDistributionTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
+                        % Append computed contact areas to the distribution
+                        loadDistributionTrailer(:,5) = trailerContactAreas(:);
+
+                        % Adjust vertical loads for road roughness
+                        loadDistributionTrailer(:,4) = loadDistributionTrailer(:,4) .* (1 - 0.3 * roadRoughness);
+
+                        % Compute center of gravity
+                        loadsTrailer = loadDistributionTrailer(:,4);
+                        positionsTrailer = loadDistributionTrailer(:,1:3);
+                        centerOfGravityTrailer = KinematicsCalculator.calculateCenterOfGravity(loadsTrailer, positionsTrailer);
+                    else
+                        numAxlesTrailer = trailerParams.numAxles;
+                        numTiresPerAxleTrailer = simParams.numTiresPerAxleTrailer;
+                        numTiresTrailer = numAxlesTrailer * numTiresPerAxleTrailer;
+                        axlePositionsTrailer = linspace(-trailerParams.wheelbase / 2, trailerParams.wheelbase / 2, numAxlesTrailer);
+                        loadDistributionTrailer = zeros(numTiresTrailer, 5); % [x, y, z, load, contact_area]
+                        weightPerTireTrailer = (trailerParams.mass * 9.81) / numTiresTrailer;
+
+                        % Calculate the contact area per trailer tire
+                        contactAreaPerTire = repmat(trailerTireWidth * trailerTireHeight, numTiresTrailer, 1); % m²
+                        totalContactArea = sum(contactAreaPerTire);
+
+                        % Store tire information for logging
+                        tireInfo = cell(numTiresTrailer, 1); % For logging purposes
+
+                        for i_axle = 1:numAxlesTrailer
+                            axlePos = axlePositionsTrailer(i_axle);
+                            tireIndexStart = (i_axle-1)*numTiresPerAxleTrailer + 1;
+                            y_positions_trailer = linspace(-trailerParams.trackWidth / 2, trailerParams.trackWidth / 2, numTiresPerAxleTrailer);
+                            for j_tire = 1:numTiresPerAxleTrailer
+                                tireIndex = tireIndexStart + j_tire - 1;
+                                y_pos = y_positions_trailer(j_tire);
+                                loadDistributionTrailer(tireIndex, :) = [axlePos, y_pos, trailerParams.h_CoG, weightPerTireTrailer, trailerContactAreas(j_tire)];
+                                tireInfo{tireIndex} = sprintf('Trailer Tire %d: Position (%.2f, %.2f), Load %.2f N', ...
+                                    tireIndex, axlePos, y_pos, weightPerTireTrailer);
+                            end
                         end
-                    end
-        
-                    % Log trailer tire positions and initial loads
-                    logMessages{end+1} = 'Trailer Tire Positions and Initial Loads:';
-                    logMessages = [logMessages(:); tireInfo(:)]; % Ensure both are column cell arrays to avoid dimension mismatch
-        
-                    % --- Compute Contact Area Based on Tire Pressure for Trailer ---
-                    for i = 1:size(loadDistributionTrailer,1)
-                        if trailerTirePressures(i) > 0
-                            loadDistributionTrailer(i,5) = loadDistributionTrailer(i,4) / trailerTirePressures(i); % contact area in m²
-                        else
-                            loadDistributionTrailer(i,5) = 0; % Flat tire or invalid pressure
-                            logMessages{end+1} = sprintf('Warning: Trailer Tire %d has zero or invalid pressure (%.2f Pa). Setting contact area to 0.', i, trailerTirePressures(i));
+
+                        logMessages{end+1} = 'Trailer Tire Positions and Initial Loads:';
+                        logMessages = [logMessages(:); tireInfo(:)];
+
+                        for i = 1:size(loadDistributionTrailer,1)
+                            if trailerTirePressures(i) > 0
+                                loadDistributionTrailer(i,5) = loadDistributionTrailer(i,4) / trailerTirePressures(i);
+                            else
+                                loadDistributionTrailer(i,5) = 0;
+                                logMessages{end+1} = sprintf('Warning: Trailer Tire %d has zero or invalid pressure (%.2f Pa). Setting contact area to 0.', i, trailerTirePressures(i));
+                            end
                         end
+
+                        totalContactAreaTrailer = sum(loadDistributionTrailer(:,5));
+                        logMessages{end+1} = sprintf('Total Trailer Contact Area: %.4f m²', totalContactAreaTrailer);
+
+                        loadDistributionTrailer(:,4) = loadDistributionTrailer(:,4) .* (1 - 0.3 * roadRoughness);
+                        logMessages{end+1} = 'Adjusted trailer vertical loads based on road roughness.';
+
+                        loadsTrailer = loadDistributionTrailer(:,4);
+                        positionsTrailer = loadDistributionTrailer(:,1:3);
+                        centerOfGravityTrailer = KinematicsCalculator.calculateCenterOfGravity(loadsTrailer, positionsTrailer);
                     end
-        
-                    % Log the total contact area
-                    totalContactAreaTrailer = sum(loadDistributionTrailer(:,5));
-                    logMessages{end+1} = sprintf('Total Trailer Contact Area: %.4f m²', totalContactAreaTrailer);
-        
-                    % Adjust vertical loads for trailer based on road roughness
-                    loadDistributionTrailer(:,4) = loadDistributionTrailer(:,4) .* (1 - 0.3 * roadRoughness);
-                    logMessages{end+1} = 'Adjusted trailer vertical loads based on road roughness.';
-        
-                    % --- Center of Gravity Calculation for Trailer ---
-                    loadsTrailer = loadDistributionTrailer(:,4);
-                    positionsTrailer = loadDistributionTrailer(:,1:3);
-                    centerOfGravityTrailer = KinematicsCalculator.calculateCenterOfGravity(loadsTrailer, positionsTrailer);
                 else
                     % If trailer is not included, use the tractor's load distribution
                     % No additional action needed here
@@ -2652,7 +2681,12 @@ classdef VehicleModel < handle
                     % Compute per-tire loads (assuming equal distribution for simplicity)
                     perTireLoadTractor = (tractorMass * 9.81) / totalTiresTractor; % N
                     if simParams.includeTrailer
-                        perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer; % N
+                        if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
+                            perTireLoadTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
+                            perTireLoadTrailer = perTireLoadTrailer(:,4); % in Newtons
+                        else
+                            perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
+                        end
                     end
 
                     % Compute per-tire contact areas
@@ -2670,7 +2704,7 @@ classdef VehicleModel < handle
                         trailerContactAreas = zeros(size(trailerTirePressures));
                         for n = 1:length(trailerTirePressures)
                             if trailerTirePressures(n) > 0
-                                trailerContactAreas(n) = perTireLoadTrailer / trailerTirePressures(n); % m^2
+                                trailerContactAreas(n) = perTireLoadTrailer(n) / trailerTirePressures(n); % m^2
                             else
                                 trailerContactAreas(n) = 0; % Flat tire
                             end
