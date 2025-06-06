@@ -14,7 +14,7 @@
 % Module Interface
 % Constructor:
 %   obj = ForceCalculator(vehicleType, mass, friction, velocity, dragCoeff, airDensity, frontalArea, sideArea, sideForceCoeff, ...
-%                          turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, dt, trailerMass, trailerWheelbase, numTrailerTires, tireModelFlag, highFidelityTireModel, windVector, brakeSystem, [wheelSpeeds, wheelRadius, wheelInertia])
+%                          turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, tireModelFlag, highFidelityTireModel, windVector, brakeSystem, [wheelSpeeds, wheelRadius, wheelInertia])
 % Public Methods:
 %   calculateForces(vehicleState): computes forces and moments, updates internal containers
 %   getFilteredForces(): returns filtered force map
@@ -105,6 +105,7 @@ classdef ForceCalculator
         trailerMass
         trailerWheelbase
         numTrailerTires
+        trailerBoxMasses
 
         % --- Adjusted Tire Parameters ---
         mu_tires                 % Adjusted friction coefficients per tractor tire
@@ -172,7 +173,7 @@ classdef ForceCalculator
                 dragCoeff, airDensity, frontalArea, sideArea, sideForceCoeff, ...
                 turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, ...
                 trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, ...
-                dt, trailerMass, trailerWheelbase, numTrailerTires, ...
+                dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, ...
                 tireModelFlag, highFidelityTireModel, windVector, brakeSystem, varargin)
             % Constructor for ForceCalculator
             %
@@ -257,6 +258,11 @@ classdef ForceCalculator
                     obj.trailerMass       = trailerMass;
                     obj.trailerWheelbase  = trailerWheelbase;
                     obj.numTrailerTires   = numTrailerTires;
+                    if nargin >= 26
+                        obj.trailerBoxMasses = trailerBoxMasses;
+                    else
+                        obj.trailerBoxMasses = [];
+                    end
                 else
                     error('Must provide trailer mass, wheelbase, and tire count for tractor-trailer.');
                 end
@@ -269,6 +275,7 @@ classdef ForceCalculator
                 obj.trailerMass      = [];
                 obj.trailerWheelbase = [];
                 obj.numTrailerTires  = [];
+                obj.trailerBoxMasses = [];
                 if strcmp(vehicleType, 'passenger')
                     obj.jointForce = [0; 0; 0];
                 end
@@ -701,7 +708,12 @@ classdef ForceCalculator
                             F_lateral_trailer = F_y_trailer_total + F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
 
-                            F_rr_tr = obj.rollingResistanceCoefficients(1)*(obj.trailerMass*obj.gravity);
+                            if ~isempty(obj.trailerBoxMasses)
+                                totalTrMass = sum(obj.trailerBoxMasses);
+                            else
+                                totalTrMass = obj.trailerMass;
+                            end
+                            F_rr_tr = obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity);
                             F_rr_tr_local = -F_rr_tr*[1;0;0];
 
                             F_total_tr_local = [F_longitudinal_tr; F_lateral_trailer;0] + ...
@@ -867,7 +879,12 @@ classdef ForceCalculator
                             F_lateral_trailer= F_y_trailer_total+ F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
 
-                            F_rr_tr= obj.rollingResistanceCoefficients(1)*(obj.trailerMass*obj.gravity);
+                            if ~isempty(obj.trailerBoxMasses)
+                                totalTrMass = sum(obj.trailerBoxMasses);
+                            else
+                                totalTrMass = obj.trailerMass;
+                            end
+                            F_rr_tr= obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity);
                             F_rr_tr_local= -F_rr_tr*[1;0;0];
                             F_total_tr_local= [F_longitudinal_tr;F_lateral_trailer;0] + ...
                                               F_side_tr_local+ F_rr_tr_local;

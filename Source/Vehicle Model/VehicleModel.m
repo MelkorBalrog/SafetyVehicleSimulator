@@ -1297,6 +1297,7 @@ classdef VehicleModel < handle
         
                 % Assign parameters to variables for easier access
                 tractorMass = simParams.tractorMass;
+                boxMasses = [];
                 if simParams.includeTrailer
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         % Compute the mass of each trailer box from its load distribution
@@ -1869,6 +1870,7 @@ classdef VehicleModel < handle
                         );
                     trailerParams.mass = trailerMass;
                     trailerParams.boxNumAxles = simParams.trailerAxlesPerBox;
+                    trailerParams.boxMasses  = boxMasses;
         
                     % Set trailer tire dimensions
                     trailerParams.updateTireDimensions('trailer', trailerTireHeight, trailerTireWidth);
@@ -2382,6 +2384,7 @@ classdef VehicleModel < handle
                     trailerMassVal, ...                   % trailerMass (0 if no trailer)
                     trailerWheelbaseVal, ...              % trailerWheelbase (0 if no trailer)
                     numTrailerTiresVal, ...               % numTrailerTires (0 if no trailer)
+                    boxMasses, ...                        % trailer box masses
                     'highFidelity', ...                   % simulation fidelity
                     highFidelityTireModel, ...            % high-fidelity tire model
                     windVector, ...                       % wind speed and direction as a vector in 3D
