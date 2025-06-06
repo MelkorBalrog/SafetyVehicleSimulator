@@ -610,8 +610,12 @@ classdef PlotManager < handle
                 tX0 = dataManager.globalTrailer1Data.Boxes(1).X(i0);
                 tY0 = dataManager.globalTrailer1Data.Boxes(1).Y(i0);
                 tTh0 = dataManager.globalTrailer1Data.Boxes(1).Theta(i0);
+                pBox = trailerParams1;
+                if isfield(trailerParams1,'boxNumAxles') && ~isempty(trailerParams1.boxNumAxles)
+                    pBox.numAxles = trailerParams1.boxNumAxles(1);
+                end
                 % Compute shapes for first trailer box using its absolute orientation
-                [shT1X, shT1Y] = obj.computeAllWheelShapes(tX0, tY0, tTh0, trailerParams1, 0);
+                [shT1X, shT1Y] = obj.computeAllWheelShapes(tX0, tY0, tTh0, pBox, 0);
                 obj.trl1WheelPatches = gobjects(1, numel(shT1X));
                 for k = 1:numel(shT1X)
                     obj.trl1WheelPatches(k) = fill(shT1X{k}, shT1Y{k}, 'k', 'Parent', obj.sharedAx);
@@ -634,8 +638,12 @@ classdef PlotManager < handle
                 tX20 = dataManager.globalTrailer2Data.Boxes(1).X(i0);
                 tY20 = dataManager.globalTrailer2Data.Boxes(1).Y(i0);
                 tTh20 = dataManager.globalTrailer2Data.Boxes(1).Theta(i0);
+                pBox2 = trailerParams2;
+                if isfield(trailerParams2,'boxNumAxles') && ~isempty(trailerParams2.boxNumAxles)
+                    pBox2.numAxles = trailerParams2.boxNumAxles(1);
+                end
                 % Compute shapes for first trailer box using its absolute orientation
-                [shT2X, shT2Y] = obj.computeAllWheelShapes(tX20, tY20, tTh20, trailerParams2, 0);
+                [shT2X, shT2Y] = obj.computeAllWheelShapes(tX20, tY20, tTh20, pBox2, 0);
                 obj.trl2WheelPatches = gobjects(1, numel(shT2X));
                 for k = 1:numel(shT2X)
                     obj.trl2WheelPatches(k) = fill(shT2X{k}, shT2Y{k}, 'k', 'Parent', obj.sharedAx);
@@ -664,7 +672,11 @@ classdef PlotManager < handle
                 tX0  = dataManager.globalTrailer1Data.Boxes(1).X(i0);
                 tY0  = dataManager.globalTrailer1Data.Boxes(1).Y(i0);
                 tTh0 = dataManager.globalTrailer1Data.Boxes(1).Theta(i0);
-                [xCT1, yCT1] = obj.computeWheelCenters(tX0, tY0, tTh0, trailerParams1);
+                pBox = trailerParams1;
+                if isfield(trailerParams1,'boxNumAxles') && ~isempty(trailerParams1.boxNumAxles)
+                    pBox.numAxles = trailerParams1.boxNumAxles(1);
+                end
+                [xCT1, yCT1] = obj.computeWheelCenters(tX0, tY0, tTh0, pBox);
                 nPairsT1 = numel(xCT1) / 2;
                 obj.trl1AxleLines = gobjects(1, nPairsT1);
                 for ai = 1:nPairsT1
@@ -697,7 +709,11 @@ classdef PlotManager < handle
                 tX0  = dataManager.globalTrailer2Data.Boxes(1).X(i0);
                 tY0  = dataManager.globalTrailer2Data.Boxes(1).Y(i0);
                 tTh0 = dataManager.globalTrailer2Data.Boxes(1).Theta(i0);
-                [xCT2, yCT2] = obj.computeWheelCenters(tX0, tY0, tTh0, trailerParams2);
+                pBox2 = trailerParams2;
+                if isfield(trailerParams2,'boxNumAxles') && ~isempty(trailerParams2.boxNumAxles)
+                    pBox2.numAxles = trailerParams2.boxNumAxles(1);
+                end
+                [xCT2, yCT2] = obj.computeWheelCenters(tX0, tY0, tTh0, pBox2);
                 nPairsT2 = numel(xCT2) / 2;
                 obj.trl2AxleLines = gobjects(1, nPairsT2);
                 for ai = 1:nPairsT2
@@ -720,13 +736,17 @@ classdef PlotManager < handle
                         tX0 = dataManager.globalTrailer1Data.Boxes(bi).X(i0);
                         tY0 = dataManager.globalTrailer1Data.Boxes(bi).Y(i0);
                         absTh0 = dataManager.globalTrailer1Data.Boxes(bi).Theta(i0);
-                        [shXb, shYb] = obj.computeAllWheelShapes(tX0, tY0, absTh0, trailerParams1, 0);
+                        pBox = trailerParams1;
+                        if isfield(trailerParams1,'boxNumAxles') && numel(trailerParams1.boxNumAxles) >= bi
+                            pBox.numAxles = trailerParams1.boxNumAxles(bi);
+                        end
+                        [shXb, shYb] = obj.computeAllWheelShapes(tX0, tY0, absTh0, pBox, 0);
                         np = numel(shXb);
                         obj.trl1BoxWheelPatches{bi-1} = gobjects(1, np);
                         for k = 1:np
                             obj.trl1BoxWheelPatches{bi-1}(k) = fill(shXb{k}, shYb{k}, 'k', 'Parent', obj.sharedAx);
                         end
-                        [xCb, yCb] = obj.computeWheelCenters(tX0, tY0, absTh0, trailerParams1);
+                        [xCb, yCb] = obj.computeWheelCenters(tX0, tY0, absTh0, pBox);
                         nAx = numel(xCb)/2;
                         obj.trl1BoxAxleLines{bi-1} = gobjects(1, nAx);
                         for ai = 1:nAx
@@ -749,13 +769,17 @@ classdef PlotManager < handle
                         tX0 = dataManager.globalTrailer2Data.Boxes(bi).X(i0);
                         tY0 = dataManager.globalTrailer2Data.Boxes(bi).Y(i0);
                         absTh20 = dataManager.globalTrailer2Data.Boxes(bi).Theta(i0);
-                        [shXb, shYb] = obj.computeAllWheelShapes(tX0, tY0, absTh20, trailerParams2, 0);
+                        pBox2 = trailerParams2;
+                        if isfield(trailerParams2,'boxNumAxles') && numel(trailerParams2.boxNumAxles) >= bi
+                            pBox2.numAxles = trailerParams2.boxNumAxles(bi);
+                        end
+                        [shXb, shYb] = obj.computeAllWheelShapes(tX0, tY0, absTh20, pBox2, 0);
                         np = numel(shXb);
                         obj.trl2BoxWheelPatches{bi-1} = gobjects(1, np);
                         for k = 1:np
                             obj.trl2BoxWheelPatches{bi-1}(k) = fill(shXb{k}, shYb{k}, 'k', 'Parent', obj.sharedAx);
                         end
-                        [xCb, yCb] = obj.computeWheelCenters(tX0, tY0, absTh20, trailerParams2);
+                        [xCb, yCb] = obj.computeWheelCenters(tX0, tY0, absTh20, pBox2);
                         nAx = numel(xCb)/2;
                         obj.trl2BoxAxleLines{bi-1} = gobjects(1, nAx);
                         for ai = 1:nAx
