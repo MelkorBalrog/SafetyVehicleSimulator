@@ -623,18 +623,22 @@ classdef VehicleModel < handle
                     for j = 1:4
                         weightsKg(j) = obj.guiManager.trailerBoxWeightFields{b,j}.Value;
                     end
+                    extraKgPerCorner = 6000/4;
+                    weightsKgWithExtra = weightsKg + extraKgPerCorner;
                     positions = [ ...
                         -wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                         -wheelbase/2,  track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2,  track/2, simParams.trailerCoGHeight];
-                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKg*9.81];
+                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKgWithExtra*9.81];
                     if b == 1
                         totalMass = 0;
                     end
-                    totalMass = totalMass + sum(weightsKg);
+                    boxMass = sum(weightsKgWithExtra);
+                    totalMass = totalMass + boxMass;
                 end
                 simParams.trailerMass = totalMass;
+                fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -1306,6 +1310,7 @@ classdef VehicleModel < handle
                     else
                         trailerMass = simParams.trailerMass;
                     end
+                    fprintf('Total vehicle mass updated: %.2f kg\n', tractorMass + trailerMass);
                     trailerWheelbase = simParams.trailerWheelbase; % Defined when trailer is included
                 else
                     trailerMass = 0;
