@@ -120,14 +120,15 @@ classdef Pacejka96TireModel
             K_y = F_z * (obj.pKy1(idx) + obj.pKy2(idx) * F_z) * sin(2 * atan(F_z / obj.pKy3(idx)));
             E_y = (obj.pEy1(idx) + obj.pEy2(idx) * F_z + obj.pEy3(idx) * F_z^2) * (1 - obj.pEy4(idx) * sign(alpha));
 
-            % Avoid division by zero in B_y computation
-            if C_y == 0 || D_y == 0
-                warning('C_y or D_y is zero for tire %d, setting F_y to zero.', idx);
+            % Avoid division by zero or invalid values in B_y computation
+            denom = C_y * D_y;
+            if ~isfinite(denom) || abs(denom) < eps
+                warning('C_y*D_y is invalid or near zero for tire %d, setting F_y to zero.', idx);
                 F_y = 0;
                 return;
             end
 
-            B_y = K_y / (C_y * D_y);
+            B_y = K_y / denom;
             
             % Handle potential invalid values
             if isnan(K_y) || isinf(K_y)
