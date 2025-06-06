@@ -46,7 +46,7 @@ classdef VehicleModel < handle
             end
 
             if createUI
-                obj.guiManager = VehicleGUIManager(parent);
+                obj.guiManager = VehicleGUIManager(parent, obj);
             else
                 obj.initializeDefaultParameters();
             end
