@@ -2130,10 +2130,26 @@ classdef VehicleModel < handle
                         positionsTrailer = loadDistributionTrailer(:,1:3);
                         centerOfGravityTrailer = KinematicsCalculator.calculateCenterOfGravity(loadsTrailer, positionsTrailer);
                     else
-                        numAxlesTrailer = trailerParams.numAxles;
+                        % Determine axle positions for each trailer box
+                        numAxlesTrailerVec = trailerParams.boxNumAxles;
+                        if isempty(numAxlesTrailerVec)
+                            % Fallback to total axles if per-box info not available
+                            numAxlesTrailerVec = trailerParams.numAxles;
+                        end
+                        numAxlesTrailer = sum(numAxlesTrailerVec);
                         numTiresPerAxleTrailer = simParams.numTiresPerAxleTrailer;
                         numTiresTrailer = numAxlesTrailer * numTiresPerAxleTrailer;
-                        axlePositionsTrailer = linspace(-trailerParams.wheelbase / 2, trailerParams.wheelbase / 2, numAxlesTrailer);
+
+                        axlePositionsTrailer = zeros(1, numAxlesTrailer);
+                        nextIdx = 1;
+                        offset = 0;
+                        for b = 1:numel(numAxlesTrailerVec)
+                            nAx = numAxlesTrailerVec(b);
+                            positionsBox = linspace(-trailerParams.wheelbase/2, trailerParams.wheelbase/2, nAx) - offset;
+                            axlePositionsTrailer(nextIdx:nextIdx+nAx-1) = positionsBox;
+                            nextIdx = nextIdx + nAx;
+                            offset = offset + trailerParams.wheelbase + simParams.trailerBoxSpacing;
+                        end
                         loadDistributionTrailer = zeros(numTiresTrailer, 5); % [x, y, z, load, contact_area]
                         weightPerTireTrailer = (trailerParams.mass * 9.81) / numTiresTrailer;
 
@@ -2151,7 +2167,7 @@ classdef VehicleModel < handle
                             for j_tire = 1:numTiresPerAxleTrailer
                                 tireIndex = tireIndexStart + j_tire - 1;
                                 y_pos = y_positions_trailer(j_tire);
-                                loadDistributionTrailer(tireIndex, :) = [axlePos, y_pos, trailerParams.h_CoG, weightPerTireTrailer, trailerContactAreas(j_tire)];
+                                loadDistributionTrailer(tireIndex, :) = [axlePos, y_pos, trailerParams.h_CoG, weightPerTireTrailer, trailerContactAreas(tireIndex)];
                                 tireInfo{tireIndex} = sprintf('Trailer Tire %d: Position (%.2f, %.2f), Load %.2f N', ...
                                     tireIndex, axlePos, y_pos, weightPerTireTrailer);
                             end
