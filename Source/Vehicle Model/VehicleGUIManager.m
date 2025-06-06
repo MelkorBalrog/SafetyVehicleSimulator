@@ -45,14 +45,11 @@ classdef VehicleGUIManager < handle
 
         % Basic Configuration Fields
         tractorMassField
-        trailerMassField
+        trailerBoxWeightFields    % Cell array of weight fields per trailer box
         includeTrailerCheckbox   % Checkbox to include/remove trailer
         enableLoggingCheckbox    % Checkbox to enable/disable log messages
         velocityField
-        frontLeftWeightField
-        frontRightWeightField
-        rearLeftWeightField
-        rearRightWeightField
+        totalTruckMassField      % Displays the computed total mass of the truck
         vehicleTypeDropdown      % *** New Vehicle Type Dropdown ***
 
         % Advanced Configuration Fields
@@ -268,6 +265,10 @@ classdef VehicleGUIManager < handle
         % *** End of New Property ***
     end
 
+    properties (Constant)
+        BaseTrailerBoxMass = 6350; % kg base mass of each trailer box
+    end
+
     methods (Access = public)
         % Constructor
         function obj = VehicleGUIManager(parent, vehicleModel)
@@ -275,11 +276,16 @@ classdef VehicleGUIManager < handle
                 vehicleModel = [];
             end
             obj.vehicleModel = vehicleModel;
-            obj.figureHandle = parent; % Store the figure handle
+            % Store the actual figure handle even if a child component is passed
+            obj.figureHandle = ancestor(parent, 'figure');
             obj.initializePressureMatrices();  % Initialize pressure matrices first
             obj.initializeGearRatiosData();    % Initialize Gear Ratios Data
             obj.initializeDefaultWaypoints();
             obj.createGUI(parent);
+            % Create default trailer weight fields based on initial number of boxes
+            if isprop(obj, 'trailerNumBoxesField')
+                obj.createTrailerWeightFields(obj.trailerNumBoxesField.Value);
+            end
         end
 
         % Initialize default waypoints for Path Follower
@@ -579,6 +585,9 @@ classdef VehicleGUIManager < handle
                 818000; % Tire 19 (Rear Left 9)
                 818000  % Tire 20 (Rear Right 9)
             ];
+
+            % Pressure matrix for 34 tires (2 frontal + 32 rear)
+            obj.pressureMatrices.Tires34 = 800000 * ones(34,1);
         end
 
         % Initializes the Gear Ratios Data as a MATLAB table
@@ -660,12 +669,6 @@ classdef VehicleGUIManager < handle
                 'Position', [170, 400, 100, 20], 'Value', 9070, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Trailer Mass
-            uilabel(obj.basicConfigTab, 'Position', [10, 360, 150, 20], 'Text', 'Trailer Mass (kg):');
-            obj.trailerMassField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 360, 100, 20], 'Value', 7000, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
-
             % Checkbox to include/remove the trailer
             obj.includeTrailerCheckbox = uicheckbox(obj.basicConfigTab, 'Position', [10, 320, 260, 20], ...
                 'Text', 'Include Trailer', 'Value', true, ...
@@ -681,29 +684,12 @@ classdef VehicleGUIManager < handle
                 'Position', [170, 240, 100, 20], 'Value', 10, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Front Left Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 200, 200, 20], 'Text', 'Front Left Weight (kg):');
-            obj.frontLeftWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 200, 100, 20], 'Value', 669, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+            % Display total truck mass (tractor + trailer boxes + bases)
+            uilabel(obj.basicConfigTab, 'Position', [10, 160, 150, 20], 'Text', 'Total Truck Mass (kg):');
+            obj.totalTruckMassField = uieditfield(obj.basicConfigTab, 'numeric', ...
+                'Position', [170, 160, 100, 20], 'Editable', 'off', 'Value', 0);
 
-            % Front Right Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 160, 200, 20], 'Text', 'Front Right Weight (kg):');
-            obj.frontRightWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 160, 100, 20], 'Value', 669, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Rear Left Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 120, 200, 20], 'Text', 'Rear Left Weight (kg):');
-            obj.rearLeftWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 120, 100, 20], 'Value', 446, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
-
-            % Rear Right Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 80, 200, 20], 'Text', 'Rear Right Weight (kg):');
-            obj.rearRightWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 80, 100, 20], 'Value', 446, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             %% Advanced Configuration Panel
             % Trailer Inertia Multiplier
@@ -1615,7 +1601,6 @@ classdef VehicleGUIManager < handle
         function includeTrailerChanged(obj, src, event)
             if src.Value
                 % Trailer is included: enable trailer configuration fields
-                obj.trailerMassField.Enable = 'on';
                 obj.numTiresPerAxleTrailerDropDown.Enable = 'on';
                 obj.numTiresPerAxleTrailerDropDown.Items = {'2', '4'};
                 obj.numTiresPerAxleTrailerDropDown.Value = obj.numTiresPerAxleTrailerDropDown.Items{1};
@@ -1631,7 +1616,6 @@ classdef VehicleGUIManager < handle
                 obj.setTrailerTabVisibility(true);
             else
                 % Trailer is excluded: disable trailer configuration fields
-                obj.trailerMassField.Enable = 'off';
                 obj.numTiresPerAxleTrailerDropDown.Items = {'0'};
                 obj.numTiresPerAxleTrailerDropDown.Value = '0';
                 obj.numTiresPerAxleTrailerDropDown.Enable = 'off';
@@ -1737,6 +1721,19 @@ classdef VehicleGUIManager < handle
                 obj.vehicleModel.simParams = obj.vehicleModel.getSimulationParameters();
             end
 
+            % Update displayed total truck mass
+            totalMass = obj.tractorMassField.Value;
+            if obj.includeTrailerCheckbox.Value && ~isempty(obj.trailerBoxWeightFields)
+                nBoxes = size(obj.trailerBoxWeightFields,1);
+                for b = 1:nBoxes
+                    for j = 1:4
+                        totalMass = totalMass + obj.trailerBoxWeightFields{b,j}.Value;
+                    end
+                end
+                totalMass = totalMass + nBoxes * obj.BaseTrailerBoxMass;
+            end
+            obj.totalTruckMassField.Value = totalMass;
+
             % Update pressure matrices if necessary
             obj.updatePressureMatrices();
             % Validate that acceleration and deceleration curves are loaded
@@ -1763,7 +1760,7 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                trailerAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+                trailerAxles = obj.getTrailerNumAxles();
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -1873,7 +1870,7 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                trailerAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+                trailerAxles = obj.getTrailerNumAxles();
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -2225,6 +2222,7 @@ classdef VehicleGUIManager < handle
         % Callback when number of trailer boxes changes
         function trailerNumBoxesChanged(obj, src, ~)
             nBoxes = src.Value;
+            obj.createTrailerWeightFields(nBoxes);
             obj.updateSpinnerTabs(nBoxes);
             obj.configurationChanged();
         end
@@ -2289,6 +2287,49 @@ classdef VehicleGUIManager < handle
                         obj.spinnerConfig(i).(['damping' field 'Field']) = editField;
                     end
                 end
+            end
+        end
+
+        % Create or update trailer box weight fields in the Basic Configuration tab
+        function createTrailerWeightFields(obj, nBoxes)
+            % Delete existing fields
+            if ~isempty(obj.trailerBoxWeightFields)
+                for i = 1:numel(obj.trailerBoxWeightFields)
+                    if isvalid(obj.trailerBoxWeightFields{i})
+                        delete(obj.trailerBoxWeightFields{i});
+                    end
+                end
+            end
+            obj.trailerBoxWeightFields = cell(nBoxes,4);
+            yStart = 260; % position below initial velocity field
+            for b = 1:nBoxes
+                baseY = yStart - (b-1)*60;
+                uilabel(obj.basicConfigTab, 'Position',[10, baseY+20,150,20], ...
+                    'Text', sprintf('Trailer Box %d Weights (kg):', b));
+                labels = {'FL','FR','RL','RR'};
+                for j = 1:4
+                    xPos = 10 + (j-1)*110;
+                    obj.trailerBoxWeightFields{b,j} = uieditfield(obj.basicConfigTab,'numeric', ...
+                        'Position',[xPos, baseY, 100,20],'Value',1000, ...
+                        'ValueChangedFcn',@(src,evt)obj.configurationChanged());
+                    obj.trailerBoxWeightFields{b,j}.Placeholder = labels{j};
+                end
+            end
+        end
+
+        % Helper to obtain the total number of trailer axles
+        function nAxles = getTrailerNumAxles(obj)
+            if isprop(obj, 'trailerNumAxlesDropdown') && ~isempty(obj.trailerNumAxlesDropdown)
+                nAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+            elseif isprop(obj, 'trailerAxlesPerBoxField') && ~isempty(obj.trailerAxlesPerBoxField)
+                vals = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
+                if isempty(vals)
+                    nAxles = 0;
+                else
+                    nAxles = sum(vals);
+                end
+            else
+                nAxles = 0;
             end
         end
 
