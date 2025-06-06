@@ -632,9 +632,11 @@ classdef VehicleModel < handle
                     if b == 1
                         totalMass = 0;
                     end
-                    totalMass = totalMass + sum(weightsKg);
+                    boxMass = sum(weightsKg) + 6000;
+                    totalMass = totalMass + boxMass;
                 end
                 simParams.trailerMass = totalMass;
+                fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -1301,11 +1303,12 @@ classdef VehicleModel < handle
                 if simParams.includeTrailer
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         % Compute the mass of each trailer box from its load distribution
-                        boxMasses = cellfun(@(ld) sum(ld(:,4)) / 9.81, simParams.trailerBoxWeightDistributions);
+                        boxMasses = cellfun(@(ld) sum(ld(:,4)) / 9.81 + 6000, simParams.trailerBoxWeightDistributions);
                         trailerMass = sum(boxMasses);
                     else
                         trailerMass = simParams.trailerMass;
                     end
+                    fprintf('Total vehicle mass updated: %.2f kg\n', tractorMass + trailerMass);
                     trailerWheelbase = simParams.trailerWheelbase; % Defined when trailer is included
                 else
                     trailerMass = 0;
