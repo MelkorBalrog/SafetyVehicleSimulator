@@ -270,7 +270,11 @@ classdef VehicleGUIManager < handle
                 vehicleModel = [];
             end
             obj.vehicleModel = vehicleModel;
-            obj.figureHandle = parent; % Store the figure handle
+            fig = ancestor(parent, 'figure');
+            if isempty(fig)
+                fig = parent;
+            end
+            obj.figureHandle = fig; % Store the top-level figure handle
             obj.initializePressureMatrices();  % Initialize pressure matrices first
             obj.initializeGearRatiosData();    % Initialize Gear Ratios Data
             obj.initializeDefaultWaypoints();
