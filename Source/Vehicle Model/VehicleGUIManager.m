@@ -45,7 +45,7 @@ classdef VehicleGUIManager < handle
 
         % Basic Configuration Fields
         tractorMassField
-        trailerMassField
+        trailerBoxWeightFields    % Cell array of weight fields per trailer box
         includeTrailerCheckbox   % Checkbox to include/remove trailer
         enableLoggingCheckbox    % Checkbox to enable/disable log messages
         velocityField
@@ -280,6 +280,10 @@ classdef VehicleGUIManager < handle
             obj.initializeGearRatiosData();    % Initialize Gear Ratios Data
             obj.initializeDefaultWaypoints();
             obj.createGUI(parent);
+            % Create default trailer weight fields based on initial number of boxes
+            if isprop(obj, 'trailerNumBoxesField')
+                obj.createTrailerWeightFields(obj.trailerNumBoxesField.Value);
+            end
         end
 
         % Initialize default waypoints for Path Follower
@@ -658,12 +662,6 @@ classdef VehicleGUIManager < handle
             uilabel(obj.basicConfigTab, 'Position', [10, 400, 150, 20], 'Text', 'Tractor Mass (kg):');
             obj.tractorMassField = uieditfield(obj.basicConfigTab, 'numeric', ...
                 'Position', [170, 400, 100, 20], 'Value', 9070, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
-
-            % Trailer Mass
-            uilabel(obj.basicConfigTab, 'Position', [10, 360, 150, 20], 'Text', 'Trailer Mass (kg):');
-            obj.trailerMassField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 360, 100, 20], 'Value', 7000, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             % Checkbox to include/remove the trailer
@@ -1615,7 +1613,6 @@ classdef VehicleGUIManager < handle
         function includeTrailerChanged(obj, src, event)
             if src.Value
                 % Trailer is included: enable trailer configuration fields
-                obj.trailerMassField.Enable = 'on';
                 obj.numTiresPerAxleTrailerDropDown.Enable = 'on';
                 obj.numTiresPerAxleTrailerDropDown.Items = {'2', '4'};
                 obj.numTiresPerAxleTrailerDropDown.Value = obj.numTiresPerAxleTrailerDropDown.Items{1};
@@ -1631,7 +1628,6 @@ classdef VehicleGUIManager < handle
                 obj.setTrailerTabVisibility(true);
             else
                 % Trailer is excluded: disable trailer configuration fields
-                obj.trailerMassField.Enable = 'off';
                 obj.numTiresPerAxleTrailerDropDown.Items = {'0'};
                 obj.numTiresPerAxleTrailerDropDown.Value = '0';
                 obj.numTiresPerAxleTrailerDropDown.Enable = 'off';
@@ -2225,6 +2221,7 @@ classdef VehicleGUIManager < handle
         % Callback when number of trailer boxes changes
         function trailerNumBoxesChanged(obj, src, ~)
             nBoxes = src.Value;
+            obj.createTrailerWeightFields(nBoxes);
             obj.updateSpinnerTabs(nBoxes);
             obj.configurationChanged();
         end
@@ -2288,6 +2285,33 @@ classdef VehicleGUIManager < handle
                             'Value', dampDefaults(j), 'ValueChangedFcn', @(src,evt)obj.configurationChanged());
                         obj.spinnerConfig(i).(['damping' field 'Field']) = editField;
                     end
+                end
+            end
+        end
+
+        % Create or update trailer box weight fields in the Basic Configuration tab
+        function createTrailerWeightFields(obj, nBoxes)
+            % Delete existing fields
+            if ~isempty(obj.trailerBoxWeightFields)
+                for i = 1:numel(obj.trailerBoxWeightFields)
+                    if isvalid(obj.trailerBoxWeightFields{i})
+                        delete(obj.trailerBoxWeightFields{i});
+                    end
+                end
+            end
+            obj.trailerBoxWeightFields = cell(nBoxes,4);
+            yStart = 50; % position below tractor weight fields
+            for b = 1:nBoxes
+                baseY = yStart - (b-1)*60;
+                uilabel(obj.basicConfigTab, 'Position',[10, baseY+20,150,20], ...
+                    'Text', sprintf('Trailer Box %d Weights (kg):', b));
+                labels = {'FL','FR','RL','RR'};
+                for j = 1:4
+                    xPos = 10 + (j-1)*110;
+                    obj.trailerBoxWeightFields{b,j} = uieditfield(obj.basicConfigTab,'numeric', ...
+                        'Position',[xPos, baseY, 100,20],'Value',1000, ...
+                        'ValueChangedFcn',@(src,evt)obj.configurationChanged());
+                    obj.trailerBoxWeightFields{b,j}.Placeholder = labels{j};
                 end
             end
         end
