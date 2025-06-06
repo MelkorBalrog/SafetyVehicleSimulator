@@ -2826,7 +2826,7 @@ classdef VehicleModel < handle
                     %    Then brakeTorque = F_brake * radius
                     %    We already have wheelRadius=0.5 => so:
                     brakeTorque = F_brake * forceCalc.wheelRadius; 
-                    % If wheelRadius is a scalar, that’s easy. If it's per-wheel array, you might distribute brake force differently.
+                    % If wheelRadius is a scalar, that's easy. If it's per-wheel array, you might distribute brake force differently.
 
                     % ---------------------------------------------------------------
                     % %%% NEW LINES %%%: Integrate wheel speeds

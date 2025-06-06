@@ -220,10 +220,7 @@ classdef HitchModel
             %% Calculate forces using spring-damper model
             stiff = obj.stiffnessCoefficients;
             damp  = obj.dampingCoefficients;
-
-            F_spring = -[stiff.x;   stiff.y;   stiff.z]   .* deltaPos;
-            F_damp   = -[damp.x;    damp.y;    damp.z]    .* deltaVel;
-            F_total  = F_spring + F_damp;
+            F_total = [0;0;0];
 
             %% Calculate torques around all axes
             M_roll  = -stiff.roll  * deltaAngles(1) - damp.roll  * deltaOmega(1);
