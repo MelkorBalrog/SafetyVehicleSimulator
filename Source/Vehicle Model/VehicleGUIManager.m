@@ -270,11 +270,8 @@ classdef VehicleGUIManager < handle
                 vehicleModel = [];
             end
             obj.vehicleModel = vehicleModel;
-            fig = ancestor(parent, 'figure');
-            if isempty(fig)
-                fig = parent;
-            end
-            obj.figureHandle = fig; % Store the top-level figure handle
+            % Store the actual figure handle even if a child component is passed
+            obj.figureHandle = ancestor(parent, 'figure');
             obj.initializePressureMatrices();  % Initialize pressure matrices first
             obj.initializeGearRatiosData();    % Initialize Gear Ratios Data
             obj.initializeDefaultWaypoints();
@@ -677,8 +674,6 @@ classdef VehicleGUIManager < handle
             obj.velocityField = uieditfield(obj.basicConfigTab, 'numeric', ...
                 'Position', [170, 240, 100, 20], 'Value', 10, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
-
-
 
             %% Advanced Configuration Panel
             % Trailer Inertia Multiplier
@@ -2257,6 +2252,33 @@ classdef VehicleGUIManager < handle
                             'Value', dampDefaults(j), 'ValueChangedFcn', @(src,evt)obj.configurationChanged());
                         obj.spinnerConfig(i).(['damping' field 'Field']) = editField;
                     end
+                end
+            end
+        end
+
+        % Create or update trailer box weight fields in the Basic Configuration tab
+        function createTrailerWeightFields(obj, nBoxes)
+            % Delete existing fields
+            if ~isempty(obj.trailerBoxWeightFields)
+                for i = 1:numel(obj.trailerBoxWeightFields)
+                    if isvalid(obj.trailerBoxWeightFields{i})
+                        delete(obj.trailerBoxWeightFields{i});
+                    end
+                end
+            end
+            obj.trailerBoxWeightFields = cell(nBoxes,4);
+            yStart = 200; % position below initial velocity field
+            for b = 1:nBoxes
+                baseY = yStart - (b-1)*60;
+                uilabel(obj.basicConfigTab, 'Position',[10, baseY+20,150,20], ...
+                    'Text', sprintf('Trailer Box %d Weights (kg):', b));
+                labels = {'FL','FR','RL','RR'};
+                for j = 1:4
+                    xPos = 10 + (j-1)*110;
+                    obj.trailerBoxWeightFields{b,j} = uieditfield(obj.basicConfigTab,'numeric', ...
+                        'Position',[xPos, baseY, 100,20],'Value',1000, ...
+                        'ValueChangedFcn',@(src,evt)obj.configurationChanged());
+                    obj.trailerBoxWeightFields{b,j}.Placeholder = labels{j};
                 end
             end
         end

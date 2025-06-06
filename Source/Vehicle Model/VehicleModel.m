@@ -591,15 +591,44 @@ classdef VehicleModel < handle
             simParams.trailerCoGHeight = obj.guiManager.trailerCoGHeightField.Value;
             simParams.trailerWheelbase = obj.guiManager.trailerWheelbaseField.Value;
             simParams.trailerTrackWidth = obj.guiManager.trailerTrackWidthField.Value;
-            axlesVec = str2num(obj.guiManager.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
-            simParams.trailerAxlesPerBox = axlesVec;
-            simParams.trailerNumAxles = sum(axlesVec);
+            simParams.trailerNumAxles = str2double(obj.guiManager.trailerNumAxlesDropdown.Value);
             simParams.trailerAxleSpacing = obj.guiManager.trailerAxleSpacingField.Value;
             simParams.trailerHitchDistance = obj.guiManager.trailerHitchDistanceField.Value;
             simParams.tractorHitchDistance = obj.guiManager.tractorHitchDistanceField.Value;
             % --- Multi-Trailer Configuration ---
             simParams.trailerNumBoxes = obj.guiManager.trailerNumBoxesField.Value;
+            simParams.trailerAxlesPerBox = str2num(obj.guiManager.trailerAxlesPerBoxField.Value);
             simParams.trailerBoxSpacing = obj.guiManager.trailerBoxSpacingField.Value;
+            % If multiple trailer boxes are configured, compute the total number of
+            % axles as the sum across boxes. This ensures tire pressure and load
+            % calculations account for every box.
+            if simParams.trailerNumBoxes > 1 && ~isempty(simParams.trailerAxlesPerBox)
+                simParams.trailerNumAxles = sum(simParams.trailerAxlesPerBox);
+            end
+            % Gather per-box weight distributions
+            if isprop(obj.guiManager, 'trailerBoxWeightFields') && ~isempty(obj.guiManager.trailerBoxWeightFields)
+                nBoxes = size(obj.guiManager.trailerBoxWeightFields,1);
+                simParams.trailerBoxWeightDistributions = cell(1,nBoxes);
+                track = simParams.trailerTrackWidth;
+                wheelbase = simParams.trailerWheelbase;
+                for b = 1:nBoxes
+                    weightsKg = zeros(4,1);
+                    for j = 1:4
+                        weightsKg(j) = obj.guiManager.trailerBoxWeightFields{b,j}.Value;
+                    end
+                    positions = [ ...
+                        -wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
+                        -wheelbase/2,  track/2, simParams.trailerCoGHeight; ...
+                         wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
+                         wheelbase/2,  track/2, simParams.trailerCoGHeight];
+                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKg*9.81];
+                    if b == 1
+                        totalMass = 0;
+                    end
+                    totalMass = totalMass + sum(weightsKg);
+                end
+                simParams.trailerMass = totalMass;
+            end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
             simParams.spinnerConfigs = cell(1, nSpinners);
