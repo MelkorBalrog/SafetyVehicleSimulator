@@ -61,10 +61,6 @@ classdef VehicleModel < handle
             obj.simParams.tractorMass = 8000; % kg (empty tractor mass)
             obj.simParams.trailerMass = 7000; % kg
             obj.simParams.initialVelocity = 10; % m/s
-            obj.simParams.W_FrontLeft = 2000; % kg
-            obj.simParams.W_FrontRight = 2000; % kg
-            obj.simParams.W_RearLeft = 2000; % kg
-            obj.simParams.W_RearRight = 2000; % kg
             obj.simParams.I_trailerMultiplier = 1; % Multiplier for inertia
             obj.simParams.maxDeltaDeg = 70; % degrees
             obj.simParams.dtMultiplier = 0.5; % Time step multiplier
@@ -289,10 +285,6 @@ classdef VehicleModel < handle
                 obj.guiManager.includeTrailerCheckbox.Value = simParams.includeTrailer;
                 obj.guiManager.tractorMassField.Value = simParams.tractorMass;
                 obj.guiManager.velocityField.Value = simParams.initialVelocity;
-                obj.guiManager.frontLeftWeightField.Value = simParams.W_FrontLeft;
-                obj.guiManager.frontRightWeightField.Value = simParams.W_FrontRight;
-                obj.guiManager.rearLeftWeightField.Value = simParams.W_RearLeft;
-                obj.guiManager.rearRightWeightField.Value = simParams.W_RearRight;
 
                 % If simParams contains Nx2 numeric waypoints, populate UITABLE using a loop
                 if isfield(simParams, 'waypoints') && ~isempty(simParams.waypoints)
@@ -564,10 +556,6 @@ classdef VehicleModel < handle
             simParams.includeTrailer = obj.guiManager.includeTrailerCheckbox.Value;
             simParams.tractorMass = obj.guiManager.tractorMassField.Value;
             simParams.initialVelocity = obj.guiManager.velocityField.Value;
-            simParams.W_FrontLeft = obj.guiManager.frontLeftWeightField.Value;
-            simParams.W_FrontRight = obj.guiManager.frontRightWeightField.Value;
-            simParams.W_RearLeft = obj.guiManager.rearLeftWeightField.Value;
-            simParams.W_RearRight = obj.guiManager.rearRightWeightField.Value;
             
             % Update simParams.waypoints to the final Nx2 numeric array
             simParams.waypoints = obj.guiManager.waypointsTable.Data;
@@ -1316,10 +1304,6 @@ classdef VehicleModel < handle
                     trailerWheelbase = 0; % Set to 0 when trailer is not included
                 end
                 initialVelocity = simParams.initialVelocity;
-                W_FrontLeft = simParams.W_FrontLeft;
-                W_FrontRight = simParams.W_FrontRight;
-                W_RearLeft = simParams.W_RearLeft;
-                W_RearRight = simParams.W_RearRight;
                 I_trailerMultiplier = simParams.I_trailerMultiplier;
                 maxDeltaDeg = simParams.maxDeltaDeg;
                 dtMultiplier = simParams.dtMultiplier;

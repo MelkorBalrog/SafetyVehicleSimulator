@@ -49,10 +49,6 @@ classdef VehicleGUIManager < handle
         includeTrailerCheckbox   % Checkbox to include/remove trailer
         enableLoggingCheckbox    % Checkbox to enable/disable log messages
         velocityField
-        frontLeftWeightField
-        frontRightWeightField
-        rearLeftWeightField
-        rearRightWeightField
         vehicleTypeDropdown      % *** New Vehicle Type Dropdown ***
 
         % Advanced Configuration Fields
@@ -678,29 +674,7 @@ classdef VehicleGUIManager < handle
                 'Position', [170, 240, 100, 20], 'Value', 10, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Front Left Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 200, 200, 20], 'Text', 'Front Left Weight (kg):');
-            obj.frontLeftWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 200, 100, 20], 'Value', 669, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Front Right Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 160, 200, 20], 'Text', 'Front Right Weight (kg):');
-            obj.frontRightWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 160, 100, 20], 'Value', 669, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
-
-            % Rear Left Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 120, 200, 20], 'Text', 'Rear Left Weight (kg):');
-            obj.rearLeftWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 120, 100, 20], 'Value', 446, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
-
-            % Rear Right Weight
-            uilabel(obj.basicConfigTab, 'Position', [10, 80, 200, 20], 'Text', 'Rear Right Weight (kg):');
-            obj.rearRightWeightField = uieditfield(obj.basicConfigTab, 'numeric', ...
-                'Position', [170, 80, 100, 20], 'Value', 446, ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             %% Advanced Configuration Panel
             % Trailer Inertia Multiplier
@@ -2294,7 +2268,7 @@ classdef VehicleGUIManager < handle
                 end
             end
             obj.trailerBoxWeightFields = cell(nBoxes,4);
-            yStart = 50; % position below tractor weight fields
+            yStart = 200; % position below initial velocity field
             for b = 1:nBoxes
                 baseY = yStart - (b-1)*60;
                 uilabel(obj.basicConfigTab, 'Position',[10, baseY+20,150,20], ...
