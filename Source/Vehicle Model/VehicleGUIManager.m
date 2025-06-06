@@ -1724,8 +1724,7 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                axlesVec = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
-                trailerAxles = sum(axlesVec);
+                trailerAxles = obj.getTrailerNumAxles();
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -1835,8 +1834,7 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                axlesVec = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
-                trailerAxles = sum(axlesVec);
+                trailerAxles = obj.getTrailerNumAxles();
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -2253,6 +2251,49 @@ classdef VehicleGUIManager < handle
                         obj.spinnerConfig(i).(['damping' field 'Field']) = editField;
                     end
                 end
+            end
+        end
+
+        % Create or update trailer box weight fields in the Basic Configuration tab
+        function createTrailerWeightFields(obj, nBoxes)
+            % Delete existing fields
+            if ~isempty(obj.trailerBoxWeightFields)
+                for i = 1:numel(obj.trailerBoxWeightFields)
+                    if isvalid(obj.trailerBoxWeightFields{i})
+                        delete(obj.trailerBoxWeightFields{i});
+                    end
+                end
+            end
+            obj.trailerBoxWeightFields = cell(nBoxes,4);
+            yStart = 200; % position below initial velocity field
+            for b = 1:nBoxes
+                baseY = yStart - (b-1)*60;
+                uilabel(obj.basicConfigTab, 'Position',[10, baseY+20,150,20], ...
+                    'Text', sprintf('Trailer Box %d Weights (kg):', b));
+                labels = {'FL','FR','RL','RR'};
+                for j = 1:4
+                    xPos = 10 + (j-1)*110;
+                    obj.trailerBoxWeightFields{b,j} = uieditfield(obj.basicConfigTab,'numeric', ...
+                        'Position',[xPos, baseY, 100,20],'Value',1000, ...
+                        'ValueChangedFcn',@(src,evt)obj.configurationChanged());
+                    obj.trailerBoxWeightFields{b,j}.Placeholder = labels{j};
+                end
+            end
+        end
+
+        % Helper to obtain the total number of trailer axles
+        function nAxles = getTrailerNumAxles(obj)
+            if isprop(obj, 'trailerNumAxlesDropdown') && ~isempty(obj.trailerNumAxlesDropdown)
+                nAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+            elseif isprop(obj, 'trailerAxlesPerBoxField') && ~isempty(obj.trailerAxlesPerBoxField)
+                vals = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
+                if isempty(vals)
+                    nAxles = 0;
+                else
+                    nAxles = sum(vals);
+                end
+            else
+                nAxles = 0;
             end
         end
 

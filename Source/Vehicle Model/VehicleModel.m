@@ -326,6 +326,9 @@ classdef VehicleModel < handle
                 obj.guiManager.trailerCoGHeightField.Value = simParams.trailerCoGHeight;
                 obj.guiManager.trailerWheelbaseField.Value = simParams.trailerWheelbase;
                 obj.guiManager.trailerTrackWidthField.Value = simParams.trailerTrackWidth;
+                if isprop(obj.guiManager, 'trailerNumAxlesDropdown')
+                    obj.guiManager.trailerNumAxlesDropdown.Value = num2str(simParams.trailerNumAxles);
+                end
                 obj.guiManager.trailerAxleSpacingField.Value = simParams.trailerAxleSpacing;
                 obj.guiManager.trailerHitchDistanceField.Value = simParams.trailerHitchDistance;
                 obj.guiManager.tractorHitchDistanceField.Value = simParams.tractorHitchDistance;
@@ -591,7 +594,11 @@ classdef VehicleModel < handle
             simParams.trailerCoGHeight = obj.guiManager.trailerCoGHeightField.Value;
             simParams.trailerWheelbase = obj.guiManager.trailerWheelbaseField.Value;
             simParams.trailerTrackWidth = obj.guiManager.trailerTrackWidthField.Value;
-            simParams.trailerNumAxles = str2double(obj.guiManager.trailerNumAxlesDropdown.Value);
+            if isprop(obj.guiManager, 'trailerNumAxlesDropdown')
+                simParams.trailerNumAxles = str2double(obj.guiManager.trailerNumAxlesDropdown.Value);
+            else
+                simParams.trailerNumAxles = 0;
+            end
             simParams.trailerAxleSpacing = obj.guiManager.trailerAxleSpacingField.Value;
             simParams.trailerHitchDistance = obj.guiManager.trailerHitchDistanceField.Value;
             simParams.tractorHitchDistance = obj.guiManager.tractorHitchDistanceField.Value;
@@ -602,7 +609,7 @@ classdef VehicleModel < handle
             % If multiple trailer boxes are configured, compute the total number of
             % axles as the sum across boxes. This ensures tire pressure and load
             % calculations account for every box.
-            if simParams.trailerNumBoxes > 1 && ~isempty(simParams.trailerAxlesPerBox)
+            if ~isempty(simParams.trailerAxlesPerBox)
                 simParams.trailerNumAxles = sum(simParams.trailerAxlesPerBox);
             end
             % Gather per-box weight distributions
