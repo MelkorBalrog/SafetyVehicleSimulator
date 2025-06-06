@@ -1486,6 +1486,13 @@ classdef VehicleModel < handle
                         % Individual loads are provided per tire in the weight distributions
                         trailerLoadsPerTire = vertcat(simParams.trailerBoxWeightDistributions{:});
                         perTireLoadTrailer = trailerLoadsPerTire(:,4);
+                        if length(perTireLoadTrailer) ~= length(trailerTirePressures)
+                            logMessages{end+1} = sprintf(['Warning: trailerBoxWeightDistributions length (%d) ' ...
+                                'does not match number of trailer tires (%d). Using uniform distribution.'], ...
+                                length(perTireLoadTrailer), length(trailerTirePressures));
+                            perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures) * ...
+                                ones(length(trailerTirePressures),1);
+                        end
                     else
                         perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                     end
@@ -1836,6 +1843,13 @@ classdef VehicleModel < handle
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         perTireLoadTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
                         perTireLoadTrailer = perTireLoadTrailer(:,4); % already in Newtons
+                        if length(perTireLoadTrailer) ~= length(trailerTirePressures)
+                            logMessages{end+1} = sprintf(['Warning: trailerBoxWeightDistributions length (%d) ' ...
+                                'does not match number of trailer tires (%d). Using uniform distribution.'], ...
+                                length(perTireLoadTrailer), length(trailerTirePressures));
+                            perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures) * ...
+                                ones(length(trailerTirePressures),1);
+                        end
                     else
                         perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                     end
@@ -2699,6 +2713,13 @@ classdef VehicleModel < handle
                         if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                             perTireLoadTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
                             perTireLoadTrailer = perTireLoadTrailer(:,4); % in Newtons
+                            if length(perTireLoadTrailer) ~= length(trailerTirePressures)
+                                logMessages{end+1} = sprintf(['Warning: trailerBoxWeightDistributions length (%d) ' ...
+                                    'does not match number of trailer tires (%d). Using uniform distribution.'], ...
+                                    length(perTireLoadTrailer), length(trailerTirePressures));
+                                perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures) * ...
+                                    ones(length(trailerTirePressures),1);
+                            end
                         else
                             perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                         end
