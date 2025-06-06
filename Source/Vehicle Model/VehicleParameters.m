@@ -35,6 +35,8 @@ classdef VehicleParameters < handle
         
         % --- Tire Contact Parameters (New) ---
         contactLength    % Contact length of the tire with the ground (meters)
+        boxNumAxles      % Vector with number of axles per trailer box (trailers only)
+        boxMasses        % Vector with mass of each trailer box (trailers only)
     end
     
     methods
@@ -97,6 +99,8 @@ classdef VehicleParameters < handle
             obj.numAxles = numAxles;
             obj.axleSpacing = axleSpacing;
             obj.contactLength = contactLength; % Assign contact length
+            obj.boxNumAxles = []; % Default empty until set for trailers
+            obj.boxMasses  = []; % Default empty until set for trailers
             
             % Initialize center of gravity position (assuming geometric center in x and y)
             obj.centerOfGravity = [0; 0; obj.h_CoG];
