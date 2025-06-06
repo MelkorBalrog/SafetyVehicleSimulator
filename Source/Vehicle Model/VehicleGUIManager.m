@@ -431,154 +431,22 @@ classdef VehicleGUIManager < handle
             ];
         end
 
-        % Initializes predefined pressure matrices with example values
+        % Initializes predefined pressure matrices using a loop
         function initializePressureMatrices(obj)
             % Initialize the structure to hold pressure matrices
             obj.pressureMatrices = struct();
 
-            % Pressure matrix for 4 tires (2 frontal + 2 rear)
-            obj.pressureMatrices.Tires4 = [
-                800000; % Tire 1 (Front Left)
-                800000; % Tire 2 (Front Right)
-                800000; % Tire 3 (Rear Left)
-                800000  % Tire 4 (Rear Right)
-            ];
+            % Default pressure matrices for even tire counts between 4 and 20
+            for nTires = 4:2:20
+                tag = sprintf('Tires%d', nTires);
+                obj.pressureMatrices.(tag) = obj.generatePressureMatrix(nTires);
+            end
+        end
 
-            % Pressure matrix for 6 tires (2 frontal + 4 rear)
-            obj.pressureMatrices.Tires6 = [
-                750000; % Tire 1 (Front Left)
-                750000; % Tire 2 (Front Right)
-                760000; % Tire 3 (Rear Left 1)
-                760000; % Tire 4 (Rear Right 1)
-                770000; % Tire 5 (Rear Left 2)
-                770000  % Tire 6 (Rear Right 2)
-            ];
-
-            % Pressure matrix for 8 tires (2 frontal + 6 rear)
-            obj.pressureMatrices.Tires8 = [
-                800000; % Tire 1 (Front Left)
-                800000; % Tire 2 (Front Right)
-                810000; % Tire 3 (Rear Left 1)
-                810000; % Tire 4 (Rear Right 1)
-                820000; % Tire 5 (Rear Left 2)
-                820000; % Tire 6 (Rear Right 2)
-                830000; % Tire 7 (Rear Left 3)
-                830000  % Tire 8 (Rear Right 3)
-            ];
-
-            % Pressure matrix for 10 tires (2 frontal + 8 rear)
-            obj.pressureMatrices.Tires10 = [
-                800000; % Tire 1 (Front Left)
-                800000; % Tire 2 (Front Right)
-                800000; % Tire 3 (Rear Left 1)
-                800000; % Tire 4 (Rear Right 1)
-                800000; % Tire 5 (Rear Left 2)
-                800000; % Tire 6 (Rear Right 2)
-                800000; % Tire 7 (Rear Left 3)
-                800000; % Tire 8 (Rear Right 3)
-                800000; % Tire 9 (Rear Left 4)
-                800000  % Tire 10 (Rear Right 4)
-            ];
-
-            % Pressure matrix for 12 tires (2 frontal + 10 rear)
-            obj.pressureMatrices.Tires12 = [
-                780000; % Tire 1 (Front Left)
-                780000; % Tire 2 (Front Right)
-                790000; % Tire 3 (Rear Left 1)
-                790000; % Tire 4 (Rear Right 1)
-                800000; % Tire 5 (Rear Left 2)
-                800000; % Tire 6 (Rear Right 2)
-                810000; % Tire 7 (Rear Left 3)
-                810000; % Tire 8 (Rear Right 3)
-                820000; % Tire 9 (Rear Left 4)
-                820000; % Tire 10 (Rear Right 4)
-                830000; % Tire 11 (Rear Left 5)
-                830000  % Tire 12 (Rear Right 5)
-            ];
-
-            % Pressure matrix for 14 tires (2 frontal + 12 rear)
-            obj.pressureMatrices.Tires14 = [
-                800000; % Tire 1 (Front Left)
-                800000; % Tire 2 (Front Right)
-                805000; % Tire 3 (Rear Left 1)
-                805000; % Tire 4 (Rear Right 1)
-                810000; % Tire 5 (Rear Left 2)
-                810000; % Tire 6 (Rear Right 2)
-                815000; % Tire 7 (Rear Left 3)
-                815000; % Tire 8 (Rear Right 3)
-                820000; % Tire 9 (Rear Left 4)
-                820000; % Tire 10 (Rear Right 4)
-                825000; % Tire 11 (Rear Left 5)
-                825000; % Tire 12 (Rear Right 5)
-                830000; % Tire 13 (Rear Left 6)
-                830000  % Tire 14 (Rear Right 6)
-            ];
-
-            % Pressure matrix for 16 tires (2 frontal + 14 rear)
-            obj.pressureMatrices.Tires16 = [
-                800000; % Tire 1 (Front Left)
-                800000; % Tire 2 (Front Right)
-                805000; % Tire 3 (Rear Left 1)
-                805000; % Tire 4 (Rear Right 1)
-                810000; % Tire 5 (Rear Left 2)
-                810000; % Tire 6 (Rear Right 2)
-                815000; % Tire 7 (Rear Left 3)
-                815000; % Tire 8 (Rear Right 3)
-                820000; % Tire 9 (Rear Left 4)
-                820000; % Tire 10 (Rear Right 4)
-                825000; % Tire 11 (Rear Left 5)
-                825000; % Tire 12 (Rear Right 5)
-                830000; % Tire 13 (Rear Left 6)
-                830000; % Tire 14 (Rear Right 6)
-                835000; % Tire 15 (Rear Left 7)
-                835000  % Tire 16 (Rear Right 7)
-            ];
-
-            % Pressure matrix for 18 tires (2 frontal + 16 rear)
-            obj.pressureMatrices.Tires18 = [
-                780000; % Tire 1 (Front Left)
-                780000; % Tire 2 (Front Right)
-                785000; % Tire 3 (Rear Left 1)
-                785000; % Tire 4 (Rear Right 1)
-                790000; % Tire 5 (Rear Left 2)
-                790000; % Tire 6 (Rear Right 2)
-                795000; % Tire 7 (Rear Left 3)
-                795000; % Tire 8 (Rear Right 3)
-                800000; % Tire 9 (Rear Left 4)
-                800000; % Tire 10 (Rear Right 4)
-                805000; % Tire 11 (Rear Left 5)
-                805000; % Tire 12 (Rear Right 5)
-                810000; % Tire 13 (Rear Left 6)
-                810000; % Tire 14 (Rear Right 6)
-                815000; % Tire 15 (Rear Left 7)
-                815000; % Tire 16 (Rear Right 7)
-                820000; % Tire 17 (Rear Left 8)
-                820000  % Tire 18 (Rear Right 8)
-            ];
-
-            % Pressure matrix for 20 tires (2 frontal + 18 rear)
-            obj.pressureMatrices.Tires20 = [
-                800000; % Tire 1 (Front Left)
-                800000; % Tire 2 (Front Right)
-                802000; % Tire 3 (Rear Left 1)
-                802000; % Tire 4 (Rear Right 1)
-                804000; % Tire 5 (Rear Left 2)
-                804000; % Tire 6 (Rear Right 2)
-                806000; % Tire 7 (Rear Left 3)
-                806000; % Tire 8 (Rear Right 3)
-                808000; % Tire 9 (Rear Left 4)
-                808000; % Tire 10 (Rear Right 4)
-                810000; % Tire 11 (Rear Left 5)
-                810000; % Tire 12 (Rear Right 5)
-                812000; % Tire 13 (Rear Left 6)
-                812000; % Tire 14 (Rear Right 6)
-                814000; % Tire 15 (Rear Left 7)
-                814000; % Tire 16 (Rear Right 7)
-                816000; % Tire 17 (Rear Left 8)
-                816000; % Tire 18 (Rear Right 8)
-                818000; % Tire 19 (Rear Left 9)
-                818000  % Tire 20 (Rear Right 9)
-            ];
+        % Generates a pressure matrix for the given number of tires
+        function pressures = generatePressureMatrix(obj, nTires)
+            basePressure = 800000; % Pa
+            pressures = repmat(basePressure, nTires, 1);
         end
 
         % Initializes the Gear Ratios Data as a MATLAB table
@@ -1750,14 +1618,9 @@ classdef VehicleGUIManager < handle
                 obj.pressureMatrixPanels.(currentTag).Visible = 'off';
             end
 
-            % Show the corresponding panel if it exists
+            % Show the corresponding panel
             if isfield(obj.pressureMatrixPanels, panelTag)
                 obj.pressureMatrixPanels.(panelTag).Visible = 'on';
-            else
-                % If no predefined pressure matrix exists, notify the user
-                uialert(obj.figureHandle, ... % Changed from obj.pressureMatricesTab to obj.figureHandle
-                    sprintf('No predefined pressure matrix for %d tires. Please add a custom pressure matrix.', totalTires), ...
-                    'Pressure Matrix Not Found', 'Icon', 'warning');
             end
         end
 
@@ -1853,53 +1716,49 @@ classdef VehicleGUIManager < handle
                 table = findobj(panel, 'Type', 'uitable');
                 if isempty(table)
                     warning('No table found for %s.', panelTag);
-                    pressureMatrices = struct(); % Return empty if no table found
+                    pressureMatrices = struct();
                     return;
                 end
                 data = table.Data;
                 pressures = cell2mat(data(:, 1));
-                pressureMatrices.(panelTag) = pressures;
             else
-                % If the panel does not exist, notify the user
-                uialert(obj.figureHandle, ...
-                    sprintf('Pressure matrix for %d tires not found.', totalTires), ...
-                    'Pressure Matrix Not Found', 'Icon', 'warning');
-                pressureMatrices = struct(); % Return empty if no panel found
+                % If the panel does not exist, generate default pressures
+                if ~isfield(obj.pressureMatrices, panelTag)
+                    obj.pressureMatrices.(panelTag) = obj.generatePressureMatrix(totalTires);
+                end
+                pressures = obj.pressureMatrices.(panelTag);
             end
+
+            pressureMatrices.(panelTag) = pressures;
         end
 
         % Creates a pressure matrix panel for a given number of tires
         function createPressureMatrixPanel(obj, totalTires)
             panelTag = sprintf('Tires%d', totalTires);
 
-            % Check if the panel already exists
+            % Ensure we have a pressure matrix for this tire count
+            if ~isfield(obj.pressureMatrices, panelTag)
+                obj.pressureMatrices.(panelTag) = obj.generatePressureMatrix(totalTires);
+            end
+
+            % Create the panel if it does not exist
             if ~isfield(obj.pressureMatrixPanels, panelTag)
-                % Check if a predefined pressure matrix exists for this total
-                if isfield(obj.pressureMatrices, panelTag)
-                    % Create the panel
-                    panel = uipanel(obj.pressureMatricesTab, ...
-                        'Title', sprintf('Pressures for %d Tires', totalTires), ...
-                        'Position', [10, 10, 460, 430], ...
-                        'Visible', 'off', ...
-                        'Tag', panelTag);
+                panel = uipanel(obj.pressureMatricesTab, ...
+                    'Title', sprintf('Pressures for %d Tires', totalTires), ...
+                    'Position', [10, 10, 460, 430], ...
+                    'Visible', 'off', ...
+                    'Tag', panelTag);
 
-                    % Create table for pressures with editable columns
-                    uitable(panel, 'Data', num2cell(obj.pressureMatrices.(panelTag)), ...
-                        'ColumnName', {'Pressure (Pa)'}, ...
-                        'RowName', arrayfun(@(x) sprintf('Tire %d', x), 1:totalTires, 'UniformOutput', false), ...
-                        'Position', [10, 10, 440, 410], 'Tag', sprintf('Table%d', totalTires), ...
-                        'ColumnEditable', true, ...  % Make the column editable
-                        'CellEditCallback', @(src, event)obj.pressureMatrixEdited(src, event));
+                % Create table for pressures with editable columns
+                uitable(panel, 'Data', num2cell(obj.pressureMatrices.(panelTag)), ...
+                    'ColumnName', {'Pressure (Pa)'}, ...
+                    'RowName', arrayfun(@(x) sprintf('Tire %d', x), 1:totalTires, 'UniformOutput', false), ...
+                    'Position', [10, 10, 440, 410], 'Tag', sprintf('Table%d', totalTires), ...
+                    'ColumnEditable', true, ...  % Make the column editable
+                    'CellEditCallback', @(src, event)obj.pressureMatrixEdited(src, event));
 
-                    % Store panel in struct
-                    obj.pressureMatrixPanels.(panelTag) = panel;
-                else
-                    % If no predefined pressure matrix exists, notify the user
-                    uialert(obj.figureHandle, ... % Changed from obj.pressureMatricesTab to obj.figureHandle
-                        sprintf('No predefined pressure matrix for %d tires. Please add a custom pressure matrix.', totalTires), ...
-                        'Pressure Matrix Not Found', 'Icon', 'warning');
-                    return;
-                end
+                % Store panel in struct
+                obj.pressureMatrixPanels.(panelTag) = panel;
             end
         end
 
