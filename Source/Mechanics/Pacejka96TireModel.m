@@ -107,9 +107,9 @@ classdef Pacejka96TireModel
                 error('Invalid tire index: %d', idx);
             end
 
-            % If normal load is non-positive, the tire generates no lateral force.
-            if F_z <= 0
-                warning('Normal load is non-positive for tire %d, setting F_y to zero.', idx);
+            % If normal load is invalid or non-positive, the tire generates no lateral force.
+            if ~isfinite(F_z) || F_z <= 0
+                warning('Normal load is invalid or non-positive for tire %d, setting F_y to zero.', idx);
                 F_y = 0;
                 return;
             end
@@ -119,6 +119,12 @@ classdef Pacejka96TireModel
             D_y = F_z * (obj.pDy1(idx) + obj.pDy2(idx) * F_z);
             K_y = F_z * (obj.pKy1(idx) + obj.pKy2(idx) * F_z) * sin(2 * atan(F_z / obj.pKy3(idx)));
             E_y = (obj.pEy1(idx) + obj.pEy2(idx) * F_z + obj.pEy3(idx) * F_z^2) * (1 - obj.pEy4(idx) * sign(alpha));
+
+            if any(~isfinite([C_y, D_y, K_y, E_y]))
+                warning('Lateral parameters produced invalid values for tire %d, setting F_y to zero.', idx);
+                F_y = 0;
+                return;
+            end
 
             % Avoid division by zero in B_y computation
             if C_y == 0 || D_y == 0
@@ -183,9 +189,9 @@ classdef Pacejka96TireModel
                 error('Invalid tire index: %d', idx);
             end
 
-            % If normal load is non-positive, the tire generates no longitudinal force.
-            if F_z <= 0
-                warning('Normal load is non-positive for tire %d, setting F_x to zero.', idx);
+            % If normal load is invalid or non-positive, the tire generates no longitudinal force.
+            if ~isfinite(F_z) || F_z <= 0
+                warning('Normal load is invalid or non-positive for tire %d, setting F_x to zero.', idx);
                 F_x = 0;
                 return;
             end
@@ -195,6 +201,12 @@ classdef Pacejka96TireModel
             D_x = F_z * (obj.pDx1(idx) + obj.pDx2(idx) * F_z);
             K_x = F_z * (obj.pKx1(idx) + obj.pKx2(idx) * F_z) * sin(2 * atan(F_z / obj.pKx3(idx)));
             E_x = (obj.pEx1(idx) + obj.pEx2(idx) * F_z + obj.pEx3(idx) * F_z^2) * (1 - obj.pEx4(idx) * sign(kappa));
+
+            if any(~isfinite([C_x, D_x, K_x, E_x]))
+                warning('Longitudinal parameters produced invalid values for tire %d, setting F_x to zero.', idx);
+                F_x = 0;
+                return;
+            end
 
             % Avoid division by zero in B_x computation
             if C_x == 0 || D_x == 0
