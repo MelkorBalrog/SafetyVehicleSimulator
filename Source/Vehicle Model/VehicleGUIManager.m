@@ -1868,9 +1868,13 @@ classdef VehicleGUIManager < handle
                 pressureMatrices.(panelTag) = pressures;
             else
                 % If the panel does not exist, notify the user
-                uialert(obj.figureHandle, ...
-                    sprintf('Pressure matrix for %d tires not found.', totalTires), ...
-                    'Pressure Matrix Not Found', 'Icon', 'warning');
+                if ~isempty(obj.figureHandle) && isvalid(obj.figureHandle)
+                    uialert(obj.figureHandle, ...
+                        sprintf('Pressure matrix for %d tires not found.', totalTires), ...
+                        'Pressure Matrix Not Found', 'Icon', 'warning');
+                else
+                    warning('Pressure matrix for %d tires not found.', totalTires);
+                end
                 pressureMatrices = struct(); % Return empty if no panel found
             end
         end
