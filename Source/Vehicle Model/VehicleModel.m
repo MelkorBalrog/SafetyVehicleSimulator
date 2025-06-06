@@ -1868,6 +1868,7 @@ classdef VehicleModel < handle
                         trailerContactAreas ...
                         );
                     trailerParams.mass = trailerMass;
+                    trailerParams.boxNumAxles = simParams.trailerAxlesPerBox;
         
                     % Set trailer tire dimensions
                     trailerParams.updateTireDimensions('trailer', trailerTireHeight, trailerTireWidth);
