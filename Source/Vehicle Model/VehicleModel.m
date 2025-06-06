@@ -22,10 +22,6 @@ classdef VehicleModel < handle
         uiManager
     end
 
-    properties (Constant)
-        BaseTrailerBoxMass = 6350; % kg base mass of each trailer box
-    end
-
     methods (Access = public)
         %% Constructor
         function obj = VehicleModel(parent, ~, createUI, simulationName, uiManager)
@@ -636,7 +632,7 @@ classdef VehicleModel < handle
                     if b == 1
                         totalMass = 0;
                     end
-                    totalMass = totalMass + sum(weightsKg) + obj.BaseTrailerBoxMass;
+                    totalMass = totalMass + sum(weightsKg);
                 end
                 simParams.trailerMass = totalMass;
             end
@@ -1201,9 +1197,6 @@ classdef VehicleModel < handle
                 836000; % Tire 19
                 838000  % Tire 20
             ];
-
-            % Pressure matrix for 34 tires
-            obj.simParams.pressureMatrices.Tires34 = 800000 * ones(34,1);
         end
 
         %% Generate Unique Filename
@@ -1304,12 +1297,12 @@ classdef VehicleModel < handle
         
                 % Assign parameters to variables for easier access
                 tractorMass = simParams.tractorMass;
+                boxMasses = [];
                 if simParams.includeTrailer
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         % Compute the mass of each trailer box from its load distribution
                         boxMasses = cellfun(@(ld) sum(ld(:,4)) / 9.81, simParams.trailerBoxWeightDistributions);
-                        baseMass = numel(simParams.trailerBoxWeightDistributions) * obj.BaseTrailerBoxMass;
-                        trailerMass = baseMass + sum(boxMasses);
+                        trailerMass = sum(boxMasses);
                     else
                         trailerMass = simParams.trailerMass;
                     end
@@ -1494,6 +1487,13 @@ classdef VehicleModel < handle
                         % Individual loads are provided per tire in the weight distributions
                         trailerLoadsPerTire = vertcat(simParams.trailerBoxWeightDistributions{:});
                         perTireLoadTrailer = trailerLoadsPerTire(:,4);
+                        if length(perTireLoadTrailer) ~= length(trailerTirePressures)
+                            logMessages{end+1} = sprintf(['Warning: trailerBoxWeightDistributions length (%d) ' ...
+                                'does not match number of trailer tires (%d). Using uniform distribution.'], ...
+                                length(perTireLoadTrailer), length(trailerTirePressures));
+                            perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures) * ...
+                                ones(length(trailerTirePressures),1);
+                        end
                     else
                         perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                     end
@@ -1844,6 +1844,13 @@ classdef VehicleModel < handle
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         perTireLoadTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
                         perTireLoadTrailer = perTireLoadTrailer(:,4); % already in Newtons
+                        if length(perTireLoadTrailer) ~= length(trailerTirePressures)
+                            logMessages{end+1} = sprintf(['Warning: trailerBoxWeightDistributions length (%d) ' ...
+                                'does not match number of trailer tires (%d). Using uniform distribution.'], ...
+                                length(perTireLoadTrailer), length(trailerTirePressures));
+                            perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures) * ...
+                                ones(length(trailerTirePressures),1);
+                        end
                     else
                         perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                     end
@@ -2098,7 +2105,22 @@ classdef VehicleModel < handle
                         % Load distribution is directly provided per trailer box
                         loadDistributionTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
                         % Append computed contact areas to the distribution
-                        loadDistributionTrailer(:,5) = trailerContactAreas(:);
+                        numRowsTrailer = size(loadDistributionTrailer,1);
+                        numAreasTrailer = length(trailerContactAreas);
+                        if numRowsTrailer ~= numAreasTrailer
+                            logMessages{end+1} = sprintf(['Warning: trailerContactAreas length (%d) ' ...
+                                'does not match trailerBoxWeightDistributions rows (%d). ' ...
+                                'Using averaged contact area.'], numAreasTrailer, numRowsTrailer);
+                            if numAreasTrailer > 0
+                                avgArea = mean(trailerContactAreas);
+                            else
+                                avgArea = trailerTireWidth * trailerTireHeight;
+                            end
+                            trailerContactAreasToUse = repmat(avgArea, numRowsTrailer, 1);
+                        else
+                            trailerContactAreasToUse = trailerContactAreas(:);
+                        end
+                        loadDistributionTrailer(:,5) = trailerContactAreasToUse;
 
                         % Adjust vertical loads for road roughness
                         loadDistributionTrailer(:,4) = loadDistributionTrailer(:,4) .* (1 - 0.3 * roadRoughness);
@@ -2108,10 +2130,26 @@ classdef VehicleModel < handle
                         positionsTrailer = loadDistributionTrailer(:,1:3);
                         centerOfGravityTrailer = KinematicsCalculator.calculateCenterOfGravity(loadsTrailer, positionsTrailer);
                     else
-                        numAxlesTrailer = trailerParams.numAxles;
+                        % Determine axle positions for each trailer box
+                        numAxlesTrailerVec = trailerParams.boxNumAxles;
+                        if isempty(numAxlesTrailerVec)
+                            % Fallback to total axles if per-box info not available
+                            numAxlesTrailerVec = trailerParams.numAxles;
+                        end
+                        numAxlesTrailer = sum(numAxlesTrailerVec);
                         numTiresPerAxleTrailer = simParams.numTiresPerAxleTrailer;
                         numTiresTrailer = numAxlesTrailer * numTiresPerAxleTrailer;
-                        axlePositionsTrailer = linspace(-trailerParams.wheelbase / 2, trailerParams.wheelbase / 2, numAxlesTrailer);
+
+                        axlePositionsTrailer = zeros(1, numAxlesTrailer);
+                        nextIdx = 1;
+                        offset = 0;
+                        for b = 1:numel(numAxlesTrailerVec)
+                            nAx = numAxlesTrailerVec(b);
+                            positionsBox = linspace(-trailerParams.wheelbase/2, trailerParams.wheelbase/2, nAx) - offset;
+                            axlePositionsTrailer(nextIdx:nextIdx+nAx-1) = positionsBox;
+                            nextIdx = nextIdx + nAx;
+                            offset = offset + trailerParams.wheelbase + simParams.trailerBoxSpacing;
+                        end
                         loadDistributionTrailer = zeros(numTiresTrailer, 5); % [x, y, z, load, contact_area]
                         weightPerTireTrailer = (trailerParams.mass * 9.81) / numTiresTrailer;
 
@@ -2129,7 +2167,7 @@ classdef VehicleModel < handle
                             for j_tire = 1:numTiresPerAxleTrailer
                                 tireIndex = tireIndexStart + j_tire - 1;
                                 y_pos = y_positions_trailer(j_tire);
-                                loadDistributionTrailer(tireIndex, :) = [axlePos, y_pos, trailerParams.h_CoG, weightPerTireTrailer, trailerContactAreas(j_tire)];
+                                loadDistributionTrailer(tireIndex, :) = [axlePos, y_pos, trailerParams.h_CoG, weightPerTireTrailer, trailerContactAreas(tireIndex)];
                                 tireInfo{tireIndex} = sprintf('Trailer Tire %d: Position (%.2f, %.2f), Load %.2f N', ...
                                     tireIndex, axlePos, y_pos, weightPerTireTrailer);
                             end
@@ -2710,6 +2748,13 @@ classdef VehicleModel < handle
                         if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                             perTireLoadTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
                             perTireLoadTrailer = perTireLoadTrailer(:,4); % in Newtons
+                            if length(perTireLoadTrailer) ~= length(trailerTirePressures)
+                                logMessages{end+1} = sprintf(['Warning: trailerBoxWeightDistributions length (%d) ' ...
+                                    'does not match number of trailer tires (%d). Using uniform distribution.'], ...
+                                    length(perTireLoadTrailer), length(trailerTirePressures));
+                                perTireLoadTrailer = (trailerMass * 9.81) / length(trailerTirePressures) * ...
+                                    ones(length(trailerTirePressures),1);
+                            end
                         else
                             perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                         end
