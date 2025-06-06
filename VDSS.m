@@ -1,7 +1,7 @@
 %/**
 % * @brief Sets up the UI, runs vehicle simulations, and plots results.
 % *
-% * The `VehicleTripleS` function initializes the simulation environment by creating the user interface,
+% * The `VDSS` function initializes the simulation environment by creating the user interface,
 % * loading vehicle configurations, and managing user interactions through callback functions.
 % * It leverages the `SimManager` class to execute simulations, detect collisions, and plot results.
 % *
@@ -9,8 +9,8 @@
 % * @version 2.1
 % * @date 2024-11-03
 % */
-function VehicleTripleS
-    % VehicleTripleS sets up the UI, runs vehicle simulations, and plots results.
+function VDSS
+    % VDSS sets up the UI, runs vehicle simulations, and plots results.
 
     %% Define Simulation Time Step
     dt = 0.005; % Time step in seconds (adjust as per your simulation)
