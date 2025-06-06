@@ -108,8 +108,9 @@ classdef ConfigurationManager < handle
             vehicle1Config = obj.removeTableFields(vehicle1Config, {'gearRatios'}); % Remove Excel data, keep gearRatios
 
             % Compute Total Tires and Active TiresN for Vehicle1
+            numTrailerAxles1 = sum(vehicle1Config.trailerAxlesPerBox);
             totalTires1 = (vehicle1Config.numTiresPerAxleTractor * vehicle1Config.tractorNumAxles) + ...
-                          (vehicle1Config.numTiresPerAxleTrailer * vehicle1Config.trailerNumAxles);
+                          (vehicle1Config.numTiresPerAxleTrailer * numTrailerAxles1);
             activeTiresN1 = sprintf('Tires%d', totalTires1);
 
             % Filter pressureMatrices for Vehicle1
@@ -139,8 +140,9 @@ classdef ConfigurationManager < handle
             vehicle2Config = obj.removeTableFields(vehicle2Config, {'gearRatios'});
 
             % Compute Total Tires and Active TiresN for Vehicle2
+            numTrailerAxles2 = sum(vehicle2Config.trailerAxlesPerBox);
             totalTires2 = (vehicle2Config.numTiresPerAxleTractor * vehicle2Config.tractorNumAxles) + ...
-                          (vehicle2Config.numTiresPerAxleTrailer * vehicle2Config.trailerNumAxles);
+                          (vehicle2Config.numTiresPerAxleTrailer * numTrailerAxles2);
             activeTiresN2 = sprintf('Tires%d', totalTires2);
 
             % Filter pressureMatrices for Vehicle2
