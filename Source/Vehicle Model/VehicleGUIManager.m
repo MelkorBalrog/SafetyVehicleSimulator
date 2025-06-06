@@ -86,7 +86,6 @@ classdef VehicleGUIManager < handle
         trailerCoGHeightField
         trailerWheelbaseField
         trailerTrackWidthField
-        trailerNumAxlesDropdown   % Dropdown for Number of Axles
         trailerAxleSpacingField
         trailerHitchDistanceField
         tractorHitchDistanceField
@@ -275,7 +274,11 @@ classdef VehicleGUIManager < handle
                 vehicleModel = [];
             end
             obj.vehicleModel = vehicleModel;
-            obj.figureHandle = parent; % Store the figure handle
+            fig = ancestor(parent, 'figure');
+            if isempty(fig)
+                fig = parent;
+            end
+            obj.figureHandle = fig; % Store the top-level figure handle
             obj.initializePressureMatrices();  % Initialize pressure matrices first
             obj.initializeGearRatiosData();    % Initialize Gear Ratios Data
             obj.initializeDefaultWaypoints();
@@ -953,13 +956,6 @@ classdef VehicleGUIManager < handle
                 'Position', [220, 250, 100, 20], 'Value', 2.1, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Number of Axles (1-5)
-            uilabel(obj.trailerParamsTab, 'Position', [10, 220, 200, 20], 'Text', 'Number of Axles (1-5):');
-            obj.trailerNumAxlesDropdown = uidropdown(obj.trailerParamsTab, ...
-                'Position', [220, 220, 100, 20], ...
-                'Items', {'1', '2', '3', '4', '5'}, ...
-                'Value', '2', ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             % Trailer Axle Spacing
             uilabel(obj.trailerParamsTab, 'Position', [10, 190, 200, 20], 'Text', 'Axle Spacing (m):');
@@ -1763,7 +1759,8 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                trailerAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+                axlesVec = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
+                trailerAxles = sum(axlesVec);
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -1873,7 +1870,8 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                trailerAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+                axlesVec = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
+                trailerAxles = sum(axlesVec);
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else

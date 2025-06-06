@@ -82,7 +82,9 @@ function VehicleTripleS
     SedanConfig.trailerCoGHeight = 1.5; % meters
     SedanConfig.trailerWheelbase = 8.0; % meters
     SedanConfig.trailerTrackWidth = 2.1; % meters
-    SedanConfig.trailerNumAxles = 2;
+    SedanConfig.trailerAxlesPerBox = [2];
+    SedanConfig.trailerNumAxles = sum(SedanConfig.trailerAxlesPerBox);
+    SedanConfig.trailerNumBoxes = numel(SedanConfig.trailerAxlesPerBox);
     SedanConfig.trailerAxleSpacing = 1.310; % meters
     SedanConfig.trailerHitchDistance = 1.310; % meters
     SedanConfig.tractorHitchDistance = 4.5; % meters
