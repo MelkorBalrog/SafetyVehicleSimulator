@@ -616,8 +616,17 @@ classdef ForceCalculator
                     F_lat_v = [0;F_y_total;0] + F_side_v;
 
                     % Rolling resistance
-                    F_rr = sum(obj.rollingResistanceCoefficients.*loads);
-                    F_rr_v = -F_rr*[1;0;0];
+                    % Rolling resistance for the tractor is computed from the
+                    % tractor mass only. Trailer rolling resistance is handled
+                    % separately to avoid double-counting.
+                    tractorMassOnly = obj.vehicleMass;
+                    if strcmp(obj.vehicleType,'tractor-trailer') && ...
+                            ~isempty(obj.trailerMass)
+                        tractorMassOnly = obj.vehicleMass - obj.trailerMass;
+                    end
+                    F_rr = obj.rollingResistanceCoefficients(1) * ...
+                        (tractorMassOnly * obj.gravity);
+                    F_rr_v = -F_rr * [1;0;0];
 
                     % Suspension
                     [F_susp_, ~] = obj.suspensionModel.calculateForcesAndMoments(vehicleState);
@@ -713,8 +722,9 @@ classdef ForceCalculator
                             else
                                 totalTrMass = obj.trailerMass;
                             end
-                            F_rr_tr = obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity);
-                            F_rr_tr_local = -F_rr_tr*[1;0;0];
+                            F_rr_tr = obj.rollingResistanceCoefficients(1) * ...
+                                (totalTrMass * obj.gravity);
+                            F_rr_tr_local = -F_rr_tr * [1;0;0];
 
                             F_total_tr_local = [F_longitudinal_tr; F_lateral_trailer;0] + ...
                                                F_side_tr_local + F_rr_tr_local;
@@ -799,9 +809,15 @@ classdef ForceCalculator
                     obj.calculatedForces.F_y_total = F_y_total;
                     obj.calculatedForces.M_z       = M_z;
 
-                    F_lat_v= [0;F_y_total;0] + F_side_v;
-                    F_rr = sum(obj.rollingResistanceCoefficients.*loads);
-                    F_rr_v= -F_rr*[1;0;0];
+                    F_lat_v = [0; F_y_total; 0] + F_side_v;
+                    tractorMassOnly = obj.vehicleMass;
+                    if strcmp(obj.vehicleType,'tractor-trailer') && ...
+                            ~isempty(obj.trailerMass)
+                        tractorMassOnly = obj.vehicleMass - obj.trailerMass;
+                    end
+                    F_rr = obj.rollingResistanceCoefficients(1) * ...
+                        (tractorMassOnly * obj.gravity);
+                    F_rr_v = -F_rr * [1;0;0];
                     [F_susp_, ~]= obj.suspensionModel.calculateForcesAndMoments(vehicleState);
                     F_susp_v= [0;0;F_susp_];
 
@@ -884,7 +900,8 @@ classdef ForceCalculator
                             else
                                 totalTrMass = obj.trailerMass;
                             end
-                            F_rr_tr= obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity);
+                            F_rr_tr= obj.rollingResistanceCoefficients(1) * ...
+                                (totalTrMass * obj.gravity);
                             F_rr_tr_local= -F_rr_tr*[1;0;0];
                             F_total_tr_local= [F_longitudinal_tr;F_lateral_trailer;0] + ...
                                               F_side_tr_local+ F_rr_tr_local;
