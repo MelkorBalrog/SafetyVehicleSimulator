@@ -264,12 +264,17 @@ classdef VehicleGUIManager < handle
         gearRatiosData   % MATLAB table to store Gear Number and Ratio
         spinnerTabs      % Cell array of uitab objects for spinner configurations
         spinnerConfig    % Struct array holding handles for spinner stiffness & damping fields
+        vehicleModel     % Reference to the associated VehicleModel
         % *** End of New Property ***
     end
 
     methods (Access = public)
         % Constructor
-        function obj = VehicleGUIManager(parent)
+        function obj = VehicleGUIManager(parent, vehicleModel)
+            if nargin < 2
+                vehicleModel = [];
+            end
+            obj.vehicleModel = vehicleModel;
             obj.figureHandle = parent; % Store the figure handle
             obj.initializePressureMatrices();  % Initialize pressure matrices first
             obj.initializeGearRatiosData();    % Initialize Gear Ratios Data
@@ -1704,9 +1709,36 @@ classdef VehicleGUIManager < handle
             
             % Retrieve brake type from GUI
             currentBrakeType = obj.brakeTypeDropdown.Value;
-            
+
+            % Update stored stiffness and damping for spinners
+            if isprop(obj, 'spinnerConfig') && ~isempty(obj.spinnerConfig)
+                for i = 1:numel(obj.spinnerConfig)
+                    sc = obj.spinnerConfig(i);
+                    obj.spinnerConfig(i).stiffness = struct( ...
+                        'x', sc.stiffnessXField.Value, ...
+                        'y', sc.stiffnessYField.Value, ...
+                        'z', sc.stiffnessZField.Value, ...
+                        'roll', sc.stiffnessRollField.Value, ...
+                        'pitch', sc.stiffnessPitchField.Value, ...
+                        'yaw', sc.stiffnessYawField.Value );
+
+                    obj.spinnerConfig(i).damping = struct( ...
+                        'x', sc.dampingXField.Value, ...
+                        'y', sc.dampingYField.Value, ...
+                        'z', sc.dampingZField.Value, ...
+                        'roll', sc.dampingRollField.Value, ...
+                        'pitch', sc.dampingPitchField.Value, ...
+                        'yaw', sc.dampingYawField.Value );
+                end
+            end
+
+            % Refresh parent vehicle model parameters
+            if ~isempty(obj.vehicleModel) && isa(obj.vehicleModel, 'VehicleModel')
+                obj.vehicleModel.simParams = obj.vehicleModel.getSimulationParameters();
+            end
+
             % Update pressure matrices if necessary
-            obj.updatePressureMatrices();  
+            obj.updatePressureMatrices();
             % Validate that acceleration and deceleration curves are loaded
             if isempty(obj.accelerationCurve) || isempty(obj.decelerationCurve)
                 % uialert(obj.figureHandle, ...
