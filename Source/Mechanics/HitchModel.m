@@ -193,17 +193,45 @@ classdef HitchModel
             %! and moments.
 
             %% Extract States
-            % Extract angular velocities
-            omega_tractor = tractorState.angularVelocity(3); % Yaw rate of tractor
-            omega_trailer = obj.angularState.omega;          % Current yaw rate of trailer
+            % Rotation matrices (assuming zero roll/pitch for simplicity)
+            R_tr  = [cos(tractorState.orientation(3)), -sin(tractorState.orientation(3)), 0;
+                     sin(tractorState.orientation(3)),  cos(tractorState.orientation(3)), 0;
+                     0,                                  0,                                 1];
+            R_trl = [cos(trailerState.orientation(3)), -sin(trailerState.orientation(3)), 0;
+                     sin(trailerState.orientation(3)),  cos(trailerState.orientation(3)), 0;
+                     0,                                  0,                                 1];
 
-            % Calculate relative yaw angle
-            deltaYaw = wrapToPi(trailerState.orientation(3) - tractorState.orientation(3));
+            %% Relative translations and velocities of hitch points
+            hitchPos   = tractorState.position + R_tr * obj.tractorHitchPoint;
+            kingpinPos = trailerState.position + R_trl * obj.trailerKingpinPoint;
+            deltaPos   = kingpinPos - hitchPos;
 
-            % Calculate torque due to hitch stiffness and damping
-            M_yaw_spring = -obj.fifthWheelStiffnessYaw * deltaYaw;
-            M_yaw_damping = -obj.fifthWheelDampingYaw * (omega_trailer - omega_tractor);
-            torque_hitch = M_yaw_spring + M_yaw_damping;
+            hitchVel   = tractorState.velocity + cross(tractorState.angularVelocity, R_tr * obj.tractorHitchPoint);
+            kingpinVel = trailerState.velocity + cross(trailerState.angularVelocity, R_trl * obj.trailerKingpinPoint);
+            deltaVel   = kingpinVel - hitchVel;
+
+            %% Relative orientations and angular rates
+            deltaAngles = wrapToPi(trailerState.orientation - tractorState.orientation);
+            deltaYaw    = deltaAngles(3);
+            deltaOmega  = trailerState.angularVelocity - tractorState.angularVelocity;
+            omega_trailer = obj.angularState.omega;
+            omega_tractor = tractorState.angularVelocity(3);
+
+            %% Calculate forces using spring-damper model
+            stiff = obj.stiffnessCoefficients;
+            damp  = obj.dampingCoefficients;
+
+            F_spring = -[stiff.x;   stiff.y;   stiff.z]   .* deltaPos;
+            F_damp   = -[damp.x;    damp.y;    damp.z]    .* deltaVel;
+            F_total  = F_spring + F_damp;
+
+            %% Calculate torques around all axes
+            M_roll  = -stiff.roll  * deltaAngles(1) - damp.roll  * deltaOmega(1);
+            M_pitch = -stiff.pitch * deltaAngles(2) - damp.pitch * deltaOmega(2);
+            M_yaw_spring  = -obj.fifthWheelStiffnessYaw * deltaYaw;
+            M_yaw_damping = -obj.fifthWheelDampingYaw   * (omega_trailer - omega_tractor);
+            torque_hitch  = M_yaw_spring + M_yaw_damping;
+            M_total = [M_roll; M_pitch; torque_hitch];
 
             % Angular acceleration
             alpha = torque_hitch / obj.trailerInertia;
@@ -248,9 +276,7 @@ classdef HitchModel
             trailerState.orientation(3) = psi_new;
 
             %% Calculate Forces and Moments at Hitch
-            % For simplicity, assume only torque around yaw axis is applied
-            M_total = [0; 0; torque_hitch];
-            F_total = [0; 0; 0]; % No translational forces
+            % F_total and M_total were computed above and returned
 
             % Return updated HitchModel object
         end
