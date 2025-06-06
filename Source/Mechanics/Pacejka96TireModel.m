@@ -106,27 +106,12 @@ classdef Pacejka96TireModel
             if idx < 1 || idx > length(obj.pKy1)
                 error('Invalid tire index: %d', idx);
             end
-
-            % If normal load is non-positive, the tire generates no lateral force.
-            if F_z <= 0
-                warning('Normal load is non-positive for tire %d, setting F_y to zero.', idx);
-                F_y = 0;
-                return;
-            end
-
+            
             % Extract per-tire parameters
             C_y = obj.pCy1(idx);
             D_y = F_z * (obj.pDy1(idx) + obj.pDy2(idx) * F_z);
             K_y = F_z * (obj.pKy1(idx) + obj.pKy2(idx) * F_z) * sin(2 * atan(F_z / obj.pKy3(idx)));
             E_y = (obj.pEy1(idx) + obj.pEy2(idx) * F_z + obj.pEy3(idx) * F_z^2) * (1 - obj.pEy4(idx) * sign(alpha));
-
-            % Avoid division by zero in B_y computation
-            if C_y == 0 || D_y == 0
-                warning('C_y or D_y is zero for tire %d, setting F_y to zero.', idx);
-                F_y = 0;
-                return;
-            end
-
             B_y = K_y / (C_y * D_y);
             
             % Handle potential invalid values
@@ -182,27 +167,12 @@ classdef Pacejka96TireModel
             if idx < 1 || idx > length(obj.pKx1)
                 error('Invalid tire index: %d', idx);
             end
-
-            % If normal load is non-positive, the tire generates no longitudinal force.
-            if F_z <= 0
-                warning('Normal load is non-positive for tire %d, setting F_x to zero.', idx);
-                F_x = 0;
-                return;
-            end
-
+            
             % Extract per-tire parameters
             C_x = obj.pCx1(idx);
             D_x = F_z * (obj.pDx1(idx) + obj.pDx2(idx) * F_z);
             K_x = F_z * (obj.pKx1(idx) + obj.pKx2(idx) * F_z) * sin(2 * atan(F_z / obj.pKx3(idx)));
             E_x = (obj.pEx1(idx) + obj.pEx2(idx) * F_z + obj.pEx3(idx) * F_z^2) * (1 - obj.pEx4(idx) * sign(kappa));
-
-            % Avoid division by zero in B_x computation
-            if C_x == 0 || D_x == 0
-                warning('C_x or D_x is zero for tire %d, setting F_x to zero.', idx);
-                F_x = 0;
-                return;
-            end
-
             B_x = K_x / (C_x * D_x);
             
             % Handle potential invalid values
