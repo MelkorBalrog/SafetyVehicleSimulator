@@ -82,7 +82,6 @@ classdef VehicleGUIManager < handle
         trailerCoGHeightField
         trailerWheelbaseField
         trailerTrackWidthField
-        trailerNumAxlesDropdown   % Dropdown for Number of Axles
         trailerAxleSpacingField
         trailerHitchDistanceField
         tractorHitchDistanceField
@@ -676,8 +675,6 @@ classdef VehicleGUIManager < handle
                 'Position', [170, 240, 100, 20], 'Value', 10, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-
-
             %% Advanced Configuration Panel
             % Trailer Inertia Multiplier
             uilabel(obj.advancedConfigTab, 'Position', [10, 280, 300, 20], 'Text', 'Trailer Inertia Multiplier:');
@@ -926,13 +923,6 @@ classdef VehicleGUIManager < handle
                 'Position', [220, 250, 100, 20], 'Value', 2.1, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            % Number of Axles (1-5)
-            uilabel(obj.trailerParamsTab, 'Position', [10, 220, 200, 20], 'Text', 'Number of Axles (1-5):');
-            obj.trailerNumAxlesDropdown = uidropdown(obj.trailerParamsTab, ...
-                'Position', [220, 220, 100, 20], ...
-                'Items', {'1', '2', '3', '4', '5'}, ...
-                'Value', '2', ...
-                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             % Trailer Axle Spacing
             uilabel(obj.trailerParamsTab, 'Position', [10, 190, 200, 20], 'Text', 'Axle Spacing (m):');
@@ -1734,7 +1724,8 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                trailerAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+                axlesVec = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
+                trailerAxles = sum(axlesVec);
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -1844,7 +1835,8 @@ classdef VehicleGUIManager < handle
 
             % Trailer configuration
             if obj.includeTrailerCheckbox.Value
-                trailerAxles = str2double(obj.trailerNumAxlesDropdown.Value);
+                axlesVec = str2num(obj.trailerAxlesPerBoxField.Value); %#ok<ST2NM>
+                trailerAxles = sum(axlesVec);
                 trailerTiresPerAxle = str2double(obj.numTiresPerAxleTrailerDropDown.Value);
                 trailerTotalTires = trailerAxles * trailerTiresPerAxle;
             else
@@ -2260,6 +2252,33 @@ classdef VehicleGUIManager < handle
                             'Value', dampDefaults(j), 'ValueChangedFcn', @(src,evt)obj.configurationChanged());
                         obj.spinnerConfig(i).(['damping' field 'Field']) = editField;
                     end
+                end
+            end
+        end
+
+        % Create or update trailer box weight fields in the Basic Configuration tab
+        function createTrailerWeightFields(obj, nBoxes)
+            % Delete existing fields
+            if ~isempty(obj.trailerBoxWeightFields)
+                for i = 1:numel(obj.trailerBoxWeightFields)
+                    if isvalid(obj.trailerBoxWeightFields{i})
+                        delete(obj.trailerBoxWeightFields{i});
+                    end
+                end
+            end
+            obj.trailerBoxWeightFields = cell(nBoxes,4);
+            yStart = 200; % position below initial velocity field
+            for b = 1:nBoxes
+                baseY = yStart - (b-1)*60;
+                uilabel(obj.basicConfigTab, 'Position',[10, baseY+20,150,20], ...
+                    'Text', sprintf('Trailer Box %d Weights (kg):', b));
+                labels = {'FL','FR','RL','RR'};
+                for j = 1:4
+                    xPos = 10 + (j-1)*110;
+                    obj.trailerBoxWeightFields{b,j} = uieditfield(obj.basicConfigTab,'numeric', ...
+                        'Position',[xPos, baseY, 100,20],'Value',1000, ...
+                        'ValueChangedFcn',@(src,evt)obj.configurationChanged());
+                    obj.trailerBoxWeightFields{b,j}.Placeholder = labels{j};
                 end
             end
         end
