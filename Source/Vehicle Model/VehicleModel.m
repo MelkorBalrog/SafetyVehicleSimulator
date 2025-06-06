@@ -90,7 +90,9 @@ classdef VehicleModel < handle
             obj.simParams.trailerCoGHeight = 1.5; % meters
             obj.simParams.trailerWheelbase = 8.0; % meters
             obj.simParams.trailerTrackWidth = 2.1; % meters
-            obj.simParams.trailerNumAxles = 2;
+            obj.simParams.trailerAxlesPerBox = [2];
+            obj.simParams.trailerNumAxles = sum(obj.simParams.trailerAxlesPerBox);
+            obj.simParams.trailerNumBoxes = numel(obj.simParams.trailerAxlesPerBox);
             obj.simParams.trailerAxleSpacing = 1.310; % meters
             obj.simParams.trailerHitchDistance = 1.310; % meters
             obj.simParams.tractorHitchDistance = 4.5; % meters
@@ -332,7 +334,6 @@ classdef VehicleModel < handle
                 obj.guiManager.trailerCoGHeightField.Value = simParams.trailerCoGHeight;
                 obj.guiManager.trailerWheelbaseField.Value = simParams.trailerWheelbase;
                 obj.guiManager.trailerTrackWidthField.Value = simParams.trailerTrackWidth;
-                obj.guiManager.trailerNumAxlesDropdown.Value = num2str(simParams.trailerNumAxles);
                 obj.guiManager.trailerAxleSpacingField.Value = simParams.trailerAxleSpacing;
                 obj.guiManager.trailerHitchDistanceField.Value = simParams.trailerHitchDistance;
                 obj.guiManager.tractorHitchDistanceField.Value = simParams.tractorHitchDistance;
@@ -1394,7 +1395,8 @@ classdef VehicleModel < handle
                 totalTiresTractor = 2 + (tractorNumAxles * numTiresPerAxleTractor);
         
                 if simParams.includeTrailer
-                    totalTiresTrailer = simParams.trailerNumAxles * numTiresPerAxleTrailer;
+                    trailerNumAxles = sum(simParams.trailerAxlesPerBox);
+                    totalTiresTrailer = trailerNumAxles * numTiresPerAxleTrailer;
                 else
                     totalTiresTrailer = 0;
                 end
@@ -1856,7 +1858,7 @@ classdef VehicleModel < handle
                         simParams.trailerCoGHeight, ...
                         simParams.trailerWheelbase, ...
                         simParams.trailerTrackWidth, ...
-                        simParams.trailerNumAxles, ...
+                        sum(simParams.trailerAxlesPerBox), ...
                         simParams.trailerAxleSpacing, ...
                         trailerContactAreas ...
                         );

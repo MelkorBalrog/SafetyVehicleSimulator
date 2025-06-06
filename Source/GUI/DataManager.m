@@ -211,8 +211,9 @@ classdef DataManager < handle
                 end
             end
 
-            % Use number of axles per box as tires-per-axle (remove separate tires-per-axle setting)
-            numTiresPerAxle = simParams.trailerNumAxles;
+            % Use configured tires per axle for trailer
+            numTiresPerAxle = simParams.numTiresPerAxleTrailer;
+            numAxles = sum(simParams.trailerAxlesPerBox);
 
             % Compute trailer mass from weight distributions when available
             massVal = simParams.trailerMass;
