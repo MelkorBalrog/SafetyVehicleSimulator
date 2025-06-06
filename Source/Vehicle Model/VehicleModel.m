@@ -3157,7 +3157,7 @@ classdef VehicleModel < handle
                                     'angularVelocity', [0; 0; r_trailer] ...
                                 );
                             else
-                                prevPsi = trailerThetaBoxes(j, i);
+                                prevPsi  = trailerThetaBoxes(j, i);
                                 prevOmega = spinnerModels{j-1}.angularState.omega;
                                 tractorState_sp = struct( ...
                                     'position', [0; 0; 0], ...
@@ -3166,8 +3166,9 @@ classdef VehicleModel < handle
                                     'angularVelocity', [0; 0; prevOmega] ...
                                 );
                             end
-                            % Build trailer state for this spinner
-                            currPsi = trailerThetaBoxes(j+1, i);
+
+                            % Current trailer box state taken from spinner model's last state
+                            currPsi  = spinnerModels{j}.angularState.psi;
                             currOmega = spinnerModels{j}.angularState.omega;
                             trailerState_sp = struct( ...
                                 'position', [0; 0; 0], ...
@@ -3175,8 +3176,10 @@ classdef VehicleModel < handle
                                 'velocity', [0; 0; 0], ...
                                 'angularVelocity', [0; 0; currOmega] ...
                             );
+
                             % Update spinner model dynamics
                             [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
+
                             % Store updated box orientation
                             trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
                         end
