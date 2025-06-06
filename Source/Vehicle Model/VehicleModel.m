@@ -623,16 +623,18 @@ classdef VehicleModel < handle
                     for j = 1:4
                         weightsKg(j) = obj.guiManager.trailerBoxWeightFields{b,j}.Value;
                     end
+                    extraKgPerCorner = 6000/4;
+                    weightsKgWithExtra = weightsKg + extraKgPerCorner;
                     positions = [ ...
                         -wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                         -wheelbase/2,  track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2,  track/2, simParams.trailerCoGHeight];
-                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKg*9.81];
+                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKgWithExtra*9.81];
                     if b == 1
                         totalMass = 0;
                     end
-                    boxMass = sum(weightsKg) + 6000;
+                    boxMass = sum(weightsKgWithExtra);
                     totalMass = totalMass + boxMass;
                 end
                 simParams.trailerMass = totalMass;
@@ -1303,7 +1305,7 @@ classdef VehicleModel < handle
                 if simParams.includeTrailer
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         % Compute the mass of each trailer box from its load distribution
-                        boxMasses = cellfun(@(ld) sum(ld(:,4)) / 9.81 + 6000, simParams.trailerBoxWeightDistributions);
+                        boxMasses = cellfun(@(ld) sum(ld(:,4)) / 9.81, simParams.trailerBoxWeightDistributions);
                         trailerMass = sum(boxMasses);
                     else
                         trailerMass = simParams.trailerMass;
