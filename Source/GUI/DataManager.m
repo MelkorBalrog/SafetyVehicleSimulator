@@ -211,8 +211,18 @@ classdef DataManager < handle
                 end
             end
 
-            % Use number of axles per box as tires-per-axle (remove separate tires-per-axle setting)
-            numTiresPerAxle = simParams.trailerNumAxles;
+            % Use configured tires per axle for trailer
+            numTiresPerAxle = simParams.numTiresPerAxleTrailer;
+            boxNumAxles = simParams.trailerAxlesPerBox;
+            numAxles = sum(boxNumAxles);
+
+            % Compute trailer mass from weight distributions when available
+            massVal = simParams.trailerMass;
+            boxMasses = [];
+            if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
+                boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
+                massVal = sum(boxMasses);
+            end
 
             % Compute trailer mass from weight distributions when available.
             % Always include the base mass of each trailer box (6,350 kg).

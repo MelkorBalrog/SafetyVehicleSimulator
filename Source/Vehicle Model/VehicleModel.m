@@ -90,7 +90,9 @@ classdef VehicleModel < handle
             obj.simParams.trailerCoGHeight = 1.5; % meters
             obj.simParams.trailerWheelbase = 8.0; % meters
             obj.simParams.trailerTrackWidth = 2.1; % meters
-            obj.simParams.trailerNumAxles = 2;
+            obj.simParams.trailerAxlesPerBox = [2];
+            obj.simParams.trailerNumAxles = sum(obj.simParams.trailerAxlesPerBox);
+            obj.simParams.trailerNumBoxes = numel(obj.simParams.trailerAxlesPerBox);
             obj.simParams.trailerAxleSpacing = 1.310; % meters
             obj.simParams.trailerHitchDistance = 1.310; % meters
             obj.simParams.tractorHitchDistance = 4.5; % meters
@@ -1392,7 +1394,8 @@ classdef VehicleModel < handle
                 totalTiresTractor = 2 + (tractorNumAxles * numTiresPerAxleTractor);
         
                 if simParams.includeTrailer
-                    totalTiresTrailer = simParams.trailerNumAxles * numTiresPerAxleTrailer;
+                    trailerNumAxles = sum(simParams.trailerAxlesPerBox);
+                    totalTiresTrailer = trailerNumAxles * numTiresPerAxleTrailer;
                 else
                     totalTiresTrailer = 0;
                 end
@@ -1854,11 +1857,13 @@ classdef VehicleModel < handle
                         simParams.trailerCoGHeight, ...
                         simParams.trailerWheelbase, ...
                         simParams.trailerTrackWidth, ...
-                        simParams.trailerNumAxles, ...
+                        sum(simParams.trailerAxlesPerBox), ...
                         simParams.trailerAxleSpacing, ...
                         trailerContactAreas ...
                         );
                     trailerParams.mass = trailerMass;
+                    trailerParams.boxNumAxles = simParams.trailerAxlesPerBox;
+                    trailerParams.boxMasses  = boxMasses;
         
                     % Set trailer tire dimensions
                     trailerParams.updateTireDimensions('trailer', trailerTireHeight, trailerTireWidth);
@@ -2357,6 +2362,7 @@ classdef VehicleModel < handle
                     trailerMassVal, ...                   % trailerMass (0 if no trailer)
                     trailerWheelbaseVal, ...              % trailerWheelbase (0 if no trailer)
                     numTrailerTiresVal, ...               % numTrailerTires (0 if no trailer)
+                    boxMasses, ...                        % trailer box masses
                     'highFidelity', ...                   % simulation fidelity
                     highFidelityTireModel, ...            % high-fidelity tire model
                     windVector, ...                       % wind speed and direction as a vector in 3D
@@ -3106,7 +3112,7 @@ classdef VehicleModel < handle
                                     'angularVelocity', [0; 0; r_trailer] ...
                                 );
                             else
-                                prevPsi = trailerThetaBoxes(j, i);
+                                prevPsi  = trailerThetaBoxes(j, i);
                                 prevOmega = spinnerModels{j-1}.angularState.omega;
                                 tractorState_sp = struct( ...
                                     'position', [0; 0; 0], ...
@@ -3115,8 +3121,9 @@ classdef VehicleModel < handle
                                     'angularVelocity', [0; 0; prevOmega] ...
                                 );
                             end
-                            % Build trailer state for this spinner
-                            currPsi = trailerThetaBoxes(j+1, i);
+
+                            % Current trailer box state taken from spinner model's last state
+                            currPsi  = spinnerModels{j}.angularState.psi;
                             currOmega = spinnerModels{j}.angularState.omega;
                             trailerState_sp = struct( ...
                                 'position', [0; 0; 0], ...
@@ -3124,8 +3131,10 @@ classdef VehicleModel < handle
                                 'velocity', [0; 0; 0], ...
                                 'angularVelocity', [0; 0; currOmega] ...
                             );
+
                             % Update spinner model dynamics
                             [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
+
                             % Store updated box orientation
                             trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
                         end
