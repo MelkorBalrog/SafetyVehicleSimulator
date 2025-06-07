@@ -1,0 +1,15 @@
+# ninja log v5
+13	205	7709650919511705	build/win64/VehicleCollisionSeverity_CalculateSeverity_wrapper_mexutil.o	46e085852a354367
+5	219	7709650919571699	build/win64/rt_nonfinite.o	af0cf903e6d2d9aa
+1	239	7709650919721699	build/win64/VehicleCollisionSeverity_CalculateSeverity_wrapper_data.o	fc2c405ad9503ad
+31	292	7709650920206709	build/win64/c_mexapi_version.o	5e7bf2c89c077697
+9	296	7709650920256708	build/win64/VehicleCollisionSeverity_CalculateSeverity_wrapper_initialize.o	93ea40736937d251
+17	300	7709650920411702	build/win64/VehicleCollisionSeverity_CalculateSeverity_wrapper.o	ad908a5194539c46
+22	303	7709650920361710	build/win64/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_info.o	117bfc4f60495382
+27	350	7709650921161743	build/win64/VehicleCollisionSeverity_CalculateSeverity_wrapper_terminate.o	2591962fdbc1821d
+36	355	7709650921036691	build/win64/VehicleCollisionSeverity.o	796a64b5da2012c2
+222	381	7709650921596698	build/win64/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.o	f743b868cf2a08b9
+215	396	7709650921691693	build/win64/fixEncoding.o	8b01fa1a9a35d9e3
+243	418	7709650921976681	build/win64/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_api.o	e1ae21909336d537
+40	445	7709650922251692	build/win64/num2str.o	ed4e0a6e461a3ec2
+448	554	7709650923316680	VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.mexw64	4b58d466814ba9bc

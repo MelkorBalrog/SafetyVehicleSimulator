@@ -1,0 +1,58 @@
+# CompilerName=mingw64
+# Mode=optim
+ninja_required_version = 1.3
+
+# Basic folders
+root = .
+builddir = $root/build/win64
+matlabdir = C:/Program Files/MATLAB/R2025a
+startdir = C:/Users/migue/codex/z/VDSS---Vehicle-Dynamics-Safety-Simulator
+
+# Toolchain information
+cc = C:\ProgramData\MATLAB\SupportPackages\R2025a\3P.instrset\mingw_w64.instrset\bin\gcc
+cxx = C:\ProgramData\MATLAB\SupportPackages\R2025a\3P.instrset\mingw_w64.instrset\bin\g++
+linker = C:\ProgramData\MATLAB\SupportPackages\R2025a\3P.instrset\mingw_w64.instrset\bin\gcc
+linkerxx = C:\ProgramData\MATLAB\SupportPackages\R2025a\3P.instrset\mingw_w64.instrset\bin\g++
+
+cflags =  -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I "C:\Users\migue\codex\z\VDSS---Vehicle-Dynamics-Safety-Simulator\codegen\mex\VehicleCollisionSeverity_CalculateSeverity_wrapper" -I "C:\Users\migue\codex\z\VDSS---Vehicle-Dynamics-Safety-Simulator" -I "C:\Users\migue\codex\z\VDSS---Vehicle-Dynamics-Safety-Simulator\codegen\mex\VehicleCollisionSeverity_CalculateSeverity_wrapper\interface" -I "C:\Program Files\MATLAB\R2025a\extern\include" -I "." -DMODEL=VehicleCollisionSeverity_CalculateSeverity_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized 
+
+cxxflags =  -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I "C:\Users\migue\codex\z\VDSS---Vehicle-Dynamics-Safety-Simulator\codegen\mex\VehicleCollisionSeverity_CalculateSeverity_wrapper" -I "C:\Users\migue\codex\z\VDSS---Vehicle-Dynamics-Safety-Simulator" -I "C:\Users\migue\codex\z\VDSS---Vehicle-Dynamics-Safety-Simulator\codegen\mex\VehicleCollisionSeverity_CalculateSeverity_wrapper\interface" -I "C:\Program Files\MATLAB\R2025a\extern\include" -I "." -DMODEL=VehicleCollisionSeverity_CalculateSeverity_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized 
+
+ldflags = VehicleCollisionSeverity_CalculateSeverity_wrapper.def  -m64 -Wl,--no-undefined -shared -static -L"C:\Program Files\MATLAB\R2025a\extern\lib\win64\mingw64" -llibmx -llibmex -llibmat -lm -llibmwlapack -llibmwblas -o "VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.mexw64" -L"$matlabdir\extern\lib\win64\mingw64" -llibmwblas -llibemlrt -llibcovrt -llibut -llibmwmathutil 
+
+ldxxflags = VehicleCollisionSeverity_CalculateSeverity_wrapper.def  -m64 -Wl,--no-undefined -shared -static -L"C:\Program Files\MATLAB\R2025a\extern\lib\win64\mingw64" -llibmx -llibmex -llibmat -lm -llibmwlapack -llibmwblas -llibMatlabDataArray -llibMatlabEngine  -o "VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.mexw64" -L"$matlabdir\extern\lib\win64\mingw64" -llibmwblas -llibemlrt -llibcovrt -llibut -llibmwmathutil 
+
+linkobjs = 
+
+# Build Rules
+rule cc
+    command = $cc $cflags $in -o $out
+
+rule cxx
+    command = $cxx $cxxflags $in -o $out
+
+rule link
+    command = $linker @$out.rsp $linkobjs $ldflags
+    rspfile = $out.rsp
+    rspfile_content = $in
+
+rule linkxx
+    command = $linkerxx $in $linkobjs $ldxxflags
+
+# Build
+build $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_data.o : cc $root/VehicleCollisionSeverity_CalculateSeverity_wrapper_data.c
+build $builddir/rt_nonfinite.o : cc $root/rt_nonfinite.c
+build $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_initialize.o : cc $root/VehicleCollisionSeverity_CalculateSeverity_wrapper_initialize.c
+build $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_terminate.o : cc $root/VehicleCollisionSeverity_CalculateSeverity_wrapper_terminate.c
+build $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper.o : cc $root/VehicleCollisionSeverity_CalculateSeverity_wrapper.c
+build $builddir/VehicleCollisionSeverity.o : cc $root/VehicleCollisionSeverity.c
+build $builddir/num2str.o : cc $root/num2str.c
+build $builddir/fixEncoding.o : cc $root/fixEncoding.c
+build $builddir/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_api.o : cc $root/interface/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_api.c
+build $builddir/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.o : cc $root/interface/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.c
+build $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_mexutil.o : cc $root/VehicleCollisionSeverity_CalculateSeverity_wrapper_mexutil.c
+build $builddir/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_info.o : cc $root/interface/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_info.c
+build $builddir/c_mexapi_version.o : cc $matlabdir/extern/version/c_mexapi_version.c
+
+# Link
+build $root\VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.mexw64 : link $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_data.o $builddir/rt_nonfinite.o $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_initialize.o $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_terminate.o $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper.o $builddir/VehicleCollisionSeverity.o $builddir/num2str.o $builddir/fixEncoding.o $builddir/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_api.o $builddir/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_mex.o $builddir/VehicleCollisionSeverity_CalculateSeverity_wrapper_mexutil.o $builddir/_coder_VehicleCollisionSeverity_CalculateSeverity_wrapper_info.o $builddir/c_mexapi_version.o 

@@ -216,7 +216,6 @@ classdef VehicleCollisionSeverity
             %
             % Returns:
             %   thresholds - Nx2 matrix of [min, max] delta-V values in kph
-
             % Vectorized delta-V thresholds lookup based on SAE J2980 tables
             persistent KE_tables
             if isempty(KE_tables)
