@@ -30,7 +30,7 @@ emlrtContext emlrtContextGlobal = {
     NULL                                                  /* fSigMem */
 };
 
-emlrtRSInfo cb_emlrtRSI =
+emlrtRSInfo bb_emlrtRSI =
     {
         54,            /* lineNo */
         "fixEncoding", /* fcnName */

@@ -50,7 +50,7 @@ typedef struct {
 static boolean_T dyn_not_empty;
 
 static emlrtRSInfo emlrtRSI = {
-    40,                                        /* lineNo */
+    39,                                        /* lineNo */
     "DynamicsUpdater_stateDerivative_wrapper", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Scripts\\Wrappers\\DynamicsUpdater_stateDerivative_wrapper"
@@ -58,7 +58,7 @@ static emlrtRSInfo emlrtRSI = {
 };
 
 static emlrtRSInfo b_emlrtRSI = {
-    49,                                        /* lineNo */
+    48,                                        /* lineNo */
     "DynamicsUpdater_stateDerivative_wrapper", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Scripts\\Wrappers\\DynamicsUpdater_stateDerivative_wrapper"
@@ -66,7 +66,7 @@ static emlrtRSInfo b_emlrtRSI = {
 };
 
 static emlrtRSInfo c_emlrtRSI = {
-    52,                                        /* lineNo */
+    51,                                        /* lineNo */
     "DynamicsUpdater_stateDerivative_wrapper", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Scripts\\Wrappers\\DynamicsUpdater_stateDerivative_wrapper"
@@ -74,7 +74,7 @@ static emlrtRSInfo c_emlrtRSI = {
 };
 
 static emlrtRSInfo d_emlrtRSI = {
-    54,                                        /* lineNo */
+    53,                                        /* lineNo */
     "DynamicsUpdater_stateDerivative_wrapper", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Scripts\\Wrappers\\DynamicsUpdater_stateDerivative_wrapper"
@@ -82,7 +82,7 @@ static emlrtRSInfo d_emlrtRSI = {
 };
 
 static emlrtRSInfo e_emlrtRSI = {
-    33,                                        /* lineNo */
+    32,                                        /* lineNo */
     "DynamicsUpdater_stateDerivative_wrapper", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Scripts\\Wrappers\\DynamicsUpdater_stateDerivative_wrapper"
@@ -90,7 +90,7 @@ static emlrtRSInfo e_emlrtRSI = {
 };
 
 static emlrtRSInfo f_emlrtRSI = {
-    39,                                        /* lineNo */
+    38,                                        /* lineNo */
     "DynamicsUpdater_stateDerivative_wrapper", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Scripts\\Wrappers\\DynamicsUpdater_stateDerivative_wrapper"
@@ -106,56 +106,56 @@ static emlrtRSInfo g_emlrtRSI = {
 };
 
 static emlrtRSInfo h_emlrtRSI = {
-    321,                               /* lineNo */
+    322,                               /* lineNo */
     "ForceCalculator/ForceCalculator", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
 static emlrtRSInfo i_emlrtRSI = {
-    339,                               /* lineNo */
-    "ForceCalculator/ForceCalculator", /* fcnName */
-    "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
-    "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
-};
-
-static emlrtRSInfo j_emlrtRSI = {
     340,                               /* lineNo */
     "ForceCalculator/ForceCalculator", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo k_emlrtRSI = {
-    497,                                   /* lineNo */
-    "ForceCalculator/calculateAxleMasses", /* fcnName */
+static emlrtRSInfo j_emlrtRSI = {
+    341,                               /* lineNo */
+    "ForceCalculator/ForceCalculator", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo l_emlrtRSI = {
+static emlrtRSInfo k_emlrtRSI = {
     498,                                   /* lineNo */
     "ForceCalculator/calculateAxleMasses", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo n_emlrtRSI = {
-    518,                                /* lineNo */
-    "ForceCalculator/calculateInertia", /* fcnName */
+static emlrtRSInfo l_emlrtRSI = {
+    499,                                   /* lineNo */
+    "ForceCalculator/calculateAxleMasses", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo o_emlrtRSI = {
+static emlrtRSInfo n_emlrtRSI = {
     519,                                /* lineNo */
     "ForceCalculator/calculateInertia", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo p_emlrtRSI = {
+static emlrtRSInfo o_emlrtRSI = {
     520,                                /* lineNo */
+    "ForceCalculator/calculateInertia", /* fcnName */
+    "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
+    "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
+};
+
+static emlrtRSInfo p_emlrtRSI = {
+    521,                                /* lineNo */
     "ForceCalculator/calculateInertia", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
@@ -190,14 +190,14 @@ static emlrtRSInfo hb_emlrtRSI = {
 };
 
 static emlrtRSInfo ib_emlrtRSI = {
-    401,                               /* lineNo */
+    408,                               /* lineNo */
     "DynamicsUpdater/stateDerivative", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\DynamicsUpdater.m" /* pathName */
 };
 
 static emlrtRSInfo jb_emlrtRSI = {
-    405,                               /* lineNo */
+    412,                               /* lineNo */
     "DynamicsUpdater/stateDerivative", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\DynamicsUpdater.m" /* pathName */
@@ -341,8 +341,6 @@ void DynamicsUpdater_stateDerivative_wrapper(const emlrtStack *sp,
   /*  Inputs: */
   /*    stateVec - vector [x; y; theta; p_x; p_y; L_z; phi; p] */
   if (!dyn_not_empty) {
-    /*  TODO: Initialize DynamicsUpdater with actual instances and initial state
-     */
     /*  Placeholder initialState struct */
     /*  Placeholder class instances and parameters */
     /*  Constructor for BrakeSystem */
@@ -635,6 +633,7 @@ void DynamicsUpdater_stateDerivative_wrapper(const emlrtStack *sp,
   }
   st.site = &d_emlrtRSI;
   /*  Compute state derivatives including roll dynamics and momentum */
+  /*  Use compiled wrapper if available when running in MATLAB */
   /*  Extract state variables */
   /*  Yaw angle */
   /*  Linear momentum in x */

@@ -624,22 +624,18 @@ classdef VehicleModel < handle
                     for j = 1:4
                         weightsKg(j) = obj.guiManager.trailerBoxWeightFields{b,j}.Value;
                     end
-                    extraKgPerCorner = 6000/4;
-                    weightsKgWithExtra = weightsKg + extraKgPerCorner;
                     positions = [ ...
                         -wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                         -wheelbase/2,  track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2,  track/2, simParams.trailerCoGHeight];
-                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKgWithExtra*9.81];
+                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKg*9.81];
                     if b == 1
                         totalMass = 0;
                     end
-                    boxMass = sum(weightsKgWithExtra);
-                    totalMass = totalMass + boxMass;
+                    totalMass = totalMass + sum(weightsKg);
                 end
                 simParams.trailerMass = totalMass;
-                fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -1311,7 +1307,6 @@ classdef VehicleModel < handle
                     else
                         trailerMass = simParams.trailerMass;
                     end
-                    fprintf('Total vehicle mass updated: %.2f kg\n', tractorMass + trailerMass);
                     trailerWheelbase = simParams.trailerWheelbase; % Defined when trailer is included
                 else
                     trailerMass = 0;
@@ -2358,7 +2353,7 @@ classdef VehicleModel < handle
         
                     % Instantiate HitchModel for tractor to first trailer box
                     dt_hitch = dt; % Use the same time step
-                    hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch);
+                    hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch, wheelbase_trailer/2);
                     % Instantiate Spinner HitchModels for additional trailer boxes
                     spinnerModels = {};
                     nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -2368,7 +2363,7 @@ classdef VehicleModel < handle
                         damp_sp = spCfg.damping;
                         tractorHitchPoint_sp = [simParams.trailerBoxSpacing; 0; simParams.trailerCoGHeight];
                         trailerKingpinPoint_sp = [0; 0; simParams.trailerCoGHeight];
-                        spinnerModels{iSpinner} = HitchModel(tractorHitchPoint_sp, trailerKingpinPoint_sp, stiff_sp, damp_sp, max_delta, simParams.trailerWheelbase, loadDistributionTrailer, dt_hitch);
+                        spinnerModels{iSpinner} = HitchModel(tractorHitchPoint_sp, trailerKingpinPoint_sp, stiff_sp, damp_sp, max_delta, simParams.trailerWheelbase, loadDistributionTrailer, dt_hitch, simParams.trailerWheelbase/2);
                     end
                     % Preallocate per-box trailer orientations for multi-box articulation
                     nBoxes = simParams.trailerNumBoxes;
@@ -2807,7 +2802,7 @@ classdef VehicleModel < handle
                     % --- Apply Steering and Acceleration Commands ---
                     % Limit steering angle and acceleration based on simulation constraints
                     limitedSteerAngleDeg = obj.limiter_LateralControl.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
-                
+
                     % --- Steering Control ---
                     desiredSteerAngleDeg = steerAngles(i); % In degrees
                     if ~steeringEnded(i)
@@ -3023,7 +3018,7 @@ classdef VehicleModel < handle
                                                'angularVelocity', [0; 0; r_trailer]);
         
                         % Calculate Hitch Forces and Moments
-                        [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
+                        [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState, F_traction);
                         % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
                         dynamicsUpdater.forceCalculator.calculatedForces.hitchMomentZ = M_hitch;
                         dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
@@ -3191,7 +3186,7 @@ classdef VehicleModel < handle
                             );
 
                             % Update spinner model dynamics
-                            [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
+                            [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp, F_traction);
 
                             % Store updated box orientation
                             trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
@@ -3712,38 +3707,12 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
     %   accelerationEnded  = Nx1
     %   tirePressureEnded  = Nx1
 
-    %% 1) Steering, Acceleration and Tire Pressure Parsing in Parallel
+    %% 1) Steering
     initialSteerAngle = 0;  % single scalar
-    initialAcceleration = 0;
-
-    pool = gcp('nocreate');
-    if isempty(pool)
-        pool = backgroundPool;
-    end
-
-    futures = parallel.FevalFuture.empty(3,0);
-
     if ~isempty(steeringCommands)
-        futures(1) = parfeval(pool, @processSignalColumn, 3, ...
+        [timeSteer, sVal, freeSteerFlag] = processSignalColumn(...
             steeringCommands, initialSteerAngle, 'SteeringAngle', dt);
-    end
-
-    if ~isempty(accelerationCommands)
-        futures(2) = parfeval(pool, @processSignalColumn, 3, ...
-            accelerationCommands, initialAcceleration, 'Acceleration', dt);
-    end
-
-    if ~isempty(tirePressureCommands)
-        futures(3) = parfeval(pool, @processSignalColumn, 3, ...
-            tirePressureCommands, defaultTirePressures, 'TirePressure', dt);
-    end
-
-    % Gather results (fetch in the order futures were created)
-    idx = 1;
-    if ~isempty(steeringCommands)
-        [timeSteer, sVal, freeSteerFlag] = fetchOutputs(futures(idx));
         endTimeSteer = timeSteer(end);
-        idx = idx + 1;
     else
         timeSteer = 0;
         sVal = initialSteerAngle;
@@ -3751,10 +3720,12 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
         endTimeSteer = 0;
     end
 
+    %% 2) Acceleration
+    initialAcceleration = 0;
     if ~isempty(accelerationCommands)
-        [timeAccel, aVal, freeAccelFlag] = fetchOutputs(futures(idx));
+        [timeAccel, aVal, freeAccelFlag] = processSignalColumn(...
+            accelerationCommands, initialAcceleration, 'Acceleration', dt);
         endTimeAccel = timeAccel(end);
-        idx = idx + 1;
     else
         timeAccel = 0;
         aVal = initialAcceleration;
@@ -3762,12 +3733,15 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
         endTimeAccel = 0;
     end
 
+    %% 3) Tire Pressures
+    % Use the provided defaultTirePressures for the initial multi-tire state
     if ~isempty(tirePressureCommands)
-        [timeTire, pVal, freePressFlag] = fetchOutputs(futures(idx));
+        [timeTire, pVal, freePressFlag] = processSignalColumn(...
+            tirePressureCommands, defaultTirePressures, 'TirePressure', dt);
         endTimeTire = timeTire(end);
     else
         timeTire = 0;
-        pVal = defaultTirePressures;  % 1×M
+        pVal = defaultTirePressures;  % 1×M 
         freePressFlag = false;
         endTimeTire = 0;
     end
