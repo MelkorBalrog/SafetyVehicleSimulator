@@ -76,7 +76,7 @@ classdef ForceCalculator
         h_CoG                    % Height of center of gravity of the tractor (m)
         h_CoG_trailer            % Height of center of gravity of the trailer (m)
         angularVelocity          % [p; q; r] in vehicle frame (rad/s)
-        inertia                  % [Ixx, Iyy, Izz] (kg·m²)
+        inertia = zeros(1,3)     % [Ixx, Iyy, Izz] (kg·m²)
         gravity                  % Gravitational acceleration (m/s²)
         slopeAngle               % Slope angle (radians)
         calculatedForces         % struct to store calculated forces and moments
