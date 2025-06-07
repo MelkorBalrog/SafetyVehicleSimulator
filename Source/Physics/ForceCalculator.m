@@ -180,8 +180,11 @@ classdef ForceCalculator
             % Preserves all original parameters, plus optional 'wheelSpeeds, wheelRadius, wheelInertia'
             % if given via varargin.
 
-            % Validate vehicleType
-            if ~ismember(vehicleType, {'tractor-trailer', 'tractor', 'passenger'})
+            % Validate vehicleType using codegen friendly syntax
+            validTractorTrailer   = strcmp(vehicleType, 'tractor-trailer');
+            validTractor          = strcmp(vehicleType, 'tractor');
+            validPassenger        = strcmp(vehicleType, 'passenger');
+            if ~(validTractorTrailer || validTractor || validPassenger)
                 error('vehicleType must be ''tractor-trailer'', ''tractor'', or ''passenger''.');
             end
             obj.vehicleType = vehicleType;
