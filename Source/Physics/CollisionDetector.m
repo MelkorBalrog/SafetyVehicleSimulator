@@ -88,11 +88,6 @@ classdef CollisionDetector
                 error('corners2 must be a 4x2 matrix of (X, Y) coordinates.');
             end
 
-            % If a compiled MEX version exists, use it for performance
-            if exist('CollisionDetector_mex_wrapper_mex','file') == 3
-                collision = CollisionDetector_mex_wrapper_mex(corners1, corners2);
-                return;
-            end
 
             % Get the axes (normals) to be tested
             axes = obj.getAxes(corners1, corners2);
