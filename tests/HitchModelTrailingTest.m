@@ -43,3 +43,17 @@ function testNoTrailingAtLowSpeed(testCase)
     [hitch, ~, ~] = hitch.calculateForces(tractorState, trailerState, pullingForce);
     verifyEqual(testCase, hitch.angularState.psi, 0.2, 'AbsTol', 1e-6);
 end
+
+function testInitializeState(testCase)
+    stiffness = struct('x',0,'y',0,'z',0,'roll',0,'pitch',0,'yaw',1000);
+    damping   = struct('x',0,'y',0,'z',0,'roll',0,'pitch',0,'yaw',100);
+    tractorHitchPoint = [0;0;0];
+    trailerKingpinPoint = [0;0;0];
+    loadDist = [0 0 0 9810];
+    dt = 0.1;
+    wheelbase = 4;
+    hitch = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, pi/2, wheelbase, loadDist, dt, wheelbase/2);
+    hitch = hitch.initializeState(0.3, 0.05);
+    verifyEqual(testCase, hitch.angularState.psi, 0.3, 'AbsTol', 1e-12);
+    verifyEqual(testCase, hitch.angularState.omega, 0.05, 'AbsTol', 1e-12);
+end

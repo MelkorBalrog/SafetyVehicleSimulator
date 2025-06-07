@@ -2364,6 +2364,8 @@ classdef VehicleModel < handle
                     % Instantiate HitchModel for tractor to first trailer box
                     dt_hitch = dt; % Use the same time step
                     hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch);
+                    % Align initial hitch orientation with trailer
+                    hitchModel = hitchModel.initializeState(psi_trailer, 0);
                     % Instantiate Spinner HitchModels for additional trailer boxes
                     spinnerModels = {};
                     nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -2374,6 +2376,8 @@ classdef VehicleModel < handle
                         tractorHitchPoint_sp = [simParams.trailerBoxSpacing; 0; simParams.trailerCoGHeight];
                         trailerKingpinPoint_sp = [0; 0; simParams.trailerCoGHeight];
                         spinnerModels{iSpinner} = HitchModel(tractorHitchPoint_sp, trailerKingpinPoint_sp, stiff_sp, damp_sp, max_delta, simParams.trailerWheelbase, loadDistributionTrailer, dt_hitch);
+                        % Ensure additional boxes start aligned
+                        spinnerModels{iSpinner} = spinnerModels{iSpinner}.initializeState(psi_trailer, 0);
                     end
                     % Preallocate per-box trailer orientations for multi-box articulation
                     nBoxes = simParams.trailerNumBoxes;
