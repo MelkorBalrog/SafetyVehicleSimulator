@@ -874,7 +874,8 @@ classdef SimManager < handle
             collisionFound = false;
             for a = 1:numel(group1)
                 for b = 1:numel(group2)
-                    if obj.collisionDetector.checkCollision(group1{a}, group2{b})
+                    collided = obj.collisionDetector.checkCollision(group1{a}, group2{b});
+                    if collided
                         collisionFound = true;
                         idxA = a; idxB = b; %#ok<NASGU>
                         break;
