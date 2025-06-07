@@ -17,14 +17,14 @@
 
 /* Variable Definitions */
 static emlrtRSInfo kb_emlrtRSI = {
-    1038,                              /* lineNo */
+    1039,                              /* lineNo */
     "ForceCalculator/calculateForces", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
 static emlrtDCInfo emlrtDCI = {
-    1262,                                       /* lineNo */
+    1263,                                       /* lineNo */
     45,                                         /* colNo */
     "ForceCalculator/applyMovingAverageFilter", /* fName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
@@ -35,7 +35,7 @@ static emlrtDCInfo emlrtDCI = {
 static emlrtBCInfo emlrtBCI = {
     1,                                          /* iFirst */
     5,                                          /* iLast */
-    1262,                                       /* lineNo */
+    1263,                                       /* lineNo */
     45,                                         /* colNo */
     "buffStruct.data",                          /* aName */
     "ForceCalculator/applyMovingAverageFilter", /* fName */
@@ -45,7 +45,7 @@ static emlrtBCInfo emlrtBCI = {
 };
 
 static emlrtDCInfo b_emlrtDCI = {
-    1263,                                       /* lineNo */
+    1264,                                       /* lineNo */
     33,                                         /* colNo */
     "ForceCalculator/applyMovingAverageFilter", /* fName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
@@ -56,7 +56,7 @@ static emlrtDCInfo b_emlrtDCI = {
 static emlrtBCInfo b_emlrtBCI = {
     1,                                          /* iFirst */
     5,                                          /* iLast */
-    1263,                                       /* lineNo */
+    1264,                                       /* lineNo */
     33,                                         /* colNo */
     "buffStruct.data",                          /* aName */
     "ForceCalculator/applyMovingAverageFilter", /* fName */
