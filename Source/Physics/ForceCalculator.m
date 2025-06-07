@@ -382,9 +382,13 @@ classdef ForceCalculator
             % Allow calling a compiled MEX wrapper when running in MATLAB
             if coder.target('MATLAB')
                 if exist('ForceCalculator_computeTireForces_wrapper_mex','file') == 3
-                    [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper_mex( ...
-                        loads, contactAreas, u, v, r);
-                    return;
+                    % The generated wrapper expects four tires. Only use it when
+                    % the number of loads matches to avoid dimension errors.
+                    if numel(loads) == 4
+                        [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper_mex( ...
+                            loads, contactAreas, u, v, r);
+                        return;
+                    end
                 end
             end
             numTires = numel(loads);
