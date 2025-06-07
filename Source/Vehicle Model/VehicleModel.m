@@ -1,4 +1,4 @@
-%/**
+%/**More actions
 % * @file VehicleModel.m
 % * @brief Simulates a Vehicle Model with integrated road conditions such as slope and friction.
 % */
@@ -19,7 +19,6 @@ classdef VehicleModel < handle
         limiter_LateralControl   % Instance of limiter_LateralControl
         limiter_LongitudinalControl  % Instance of limiter_LongitudinalControl
         jerkController              % Instance of jerk_Controller for jerk limiting
-        curveSpeedLimiter          % Instance of curveSpeed_Limiter for curve speed limiting
         simulationName
         uiManager
     end
@@ -53,11 +52,11 @@ classdef VehicleModel < handle
                 obj.initializeDefaultParameters();
             end
         end
-        
+
         %% Initialize Default Parameters
         function obj = initializeDefaultParameters(obj)
             % initializeDefaultParameters Initializes default simulation parameters
-            
+
             % --- Basic Configuration ---
             obj.simParams.includeTrailer = true; % Include trailer by default
             obj.simParams.tractorMass = 8000; % kg (empty tractor mass)
@@ -67,7 +66,7 @@ classdef VehicleModel < handle
             obj.simParams.maxDeltaDeg = 70; % degrees
             obj.simParams.dtMultiplier = 0.5; % Time step multiplier
             obj.simParams.windowSize = 10; % For moving average
-            
+
             % --- Tractor Parameters ---
             obj.simParams.tractorLength = 6.5; % meters
             obj.simParams.tractorWidth = 2.5; % meters
@@ -77,10 +76,10 @@ classdef VehicleModel < handle
             obj.simParams.tractorTrackWidth = 2.1; % meters
             obj.simParams.tractorNumAxles = 3;
             obj.simParams.tractorAxleSpacing = 1.310; % meters
-            
+
             % **New Parameter for Tractor**
             obj.simParams.numTiresPerAxleTractor = 2; % Default to 2 tires per axle for tractor
-            
+
             % --- Trailer Parameters ---
             obj.simParams.trailerLength = 12.0; % meters
             obj.simParams.trailerWidth = 2.5; % meters
@@ -95,13 +94,13 @@ classdef VehicleModel < handle
             obj.simParams.trailerHitchDistance = 1.310; % meters
             obj.simParams.tractorHitchDistance = 4.5; % meters
             obj.simParams.numTiresPerAxleTrailer = 4;
-            
+
             % --- Control Limits Parameters ---
             obj.simParams.maxSteeringAngleAtZeroSpeed = 30; % degrees
             % obj.simParams.minSteeringAngleAtMaxSpeed = 10;  % degrees
             obj.simParams.steeringCurveFilePath = "SteeringCurve.xlsx";
             obj.simParams.maxSteeringSpeed = 30;            % m/s
-            
+
             % --- Acceleration Limiter Parameters ---
             % obj.simParams.maxAccelAtZeroSpeed = 3.0;   % m/s^2
             obj.simParams.minAccelAtMaxSpeed = 1.0;    % m/s^2
@@ -111,52 +110,52 @@ classdef VehicleModel < handle
             obj.simParams.decelCurveFilePath = "DecelCurve.xlsx";
             obj.simParams.maxSpeedForAccelLimiting = 30.0; % m/s
             % --- End of Acceleration Limiter Parameters ---
-            
+
             % --- PID Speed Controller Parameters ---
             obj.simParams.Kp = 1.0;  % Proportional gain
             obj.simParams.Ki = 0.5;  % Integral gain
             obj.simParams.Kd = 0.1;  % Derivative gain
             obj.simParams.enableSpeedController = true;
             % --- End of PID Speed Controller Parameters ---
-            
+
             % --- Speed Limiting Parameter ---
             obj.simParams.maxSpeed = 25.0; % m/s (Average speed limit for vehicles)
             % --- End of Speed Limiting Parameter ---
-            
+
             % --- Tires Configuration Parameters ---
             obj.simParams.tractorTireHeight = 0.5; % meters
             obj.simParams.tractorTireWidth = 0.2;  % meters
             obj.simParams.trailerTireHeight = 0.5; % meters
             obj.simParams.trailerTireWidth = 0.2;  % meters
             % --- End of Tires Configuration Parameters ---
-            
+
             % --- Aerodynamics Parameters ---
             obj.simParams.airDensity = 1.225;     % kg/m³; standard air density at sea level
             obj.simParams.dragCoeff = 0.8;        % Example drag coefficient; adjust based on vehicle's aerodynamics
             % --- End of Aerodynamics Parameters ---
-            
+
             % --- Road Conditions Parameters ---
             obj.simParams.slopeAngle = 0;             % degrees
             obj.simParams.roadFrictionCoefficient = 0.9;  % μ (default value)
             obj.simParams.roadSurfaceType = 'Dry Asphalt';
             obj.simParams.roadRoughness = 0;          % 0 (smooth) to 1 (very rough)
             % --- End of Road Conditions Parameters ---
-            
+
             % --- Pressure Matrices Initialization ---
             obj.initializePressureMatrices();
             % --- End of Pressure Matrices Initialization ---
-            
+
             % --- Suspension Model Parameters ---
             obj.simParams.K_spring = 300000;   % Spring stiffness (N/m)
             obj.simParams.C_damping = 15000;   % Damping coefficient (N·s/m)
             obj.simParams.restLength = 0.5;    % Rest length (m)
             % --- End of Suspension Model Parameters ---
-            
+
             % --- Wind Parameters ---
             obj.simParams.windSpeed = 5;         % m/s
             obj.simParams.windAngleDeg = 45;     % degrees
             % --- End of Wind Parameters ---
-            
+
             % --- Brake Configuration Parameters (Updated) ---
             obj.simParams.brakingForce = 50000;    % N
             obj.simParams.brakeEfficiency = 85;     % %
@@ -164,7 +163,7 @@ classdef VehicleModel < handle
             obj.simParams.brakeType = 'Disk';       % ** New Parameter: Default Brake Type **
             obj.simParams.maxBrakingForce = 60000;
             % --- End of Brake Configuration Parameters ---
-            
+
             % --- Transmission Parameters ---
             obj.simParams.maxGear = 12; % Number of gears
             obj.simParams.gearRatios = [14.94, 11.21, 8.31, 6.26, 4.63, 3.47, 2.54, 1.84, 1.34, 1.00, 0.78, 0.64]; % Gear ratios
@@ -174,18 +173,18 @@ classdef VehicleModel < handle
             obj.simParams.engineBrakeTorque = 1500; % Engine braking torque in Nm
             obj.simParams.shiftDelay = 0.75; % Shift delay in seconds
             % --- End of Transmission Parameters ---
-            
+
             % --- Flat Tire Indices ---
             obj.simParams.flatTireIndices = []; % e.g., [1, 3] to indicate tires 1 and 3 are flat
             % --- End of Flat Tire Indices ---
-            
+
             % --- Vehicle Type Parameter (New) ---
             obj.simParams.vehicleType = 'Passenger Vehicle'; % ** New Parameter: Default Vehicle Type **
             % --- End of Vehicle Type Parameter ---
             % --- *** New Command Parameters *** ---
             % Steering Commands
             obj.simParams.steeringCommands = '';         % Steering commands (default empty)
-            
+
             % Acceleration Commands
             obj.simParams.accelerationCommands = '';     % Acceleration commands (default empty)
 
@@ -196,7 +195,7 @@ classdef VehicleModel < handle
             obj.simParams.maxClutchTorque = 3500;           % Maximum torque the clutch can handle (Nm), typical for heavy-duty trucks
             obj.simParams.engagementSpeed = 1.0;            % Time to engage the clutch (seconds), assuming gradual engagement
             obj.simParams.disengagementSpeed = 0.5;         % Time to disengage the clutch (seconds), assuming faster disengagement
-            
+
             obj.simParams.mapCommands = 'straight(100,200,300,200)|curve(300,250,50,270,90,ccw)|straight(300,300,100,300)|curve(100,250,50,90,270,ccw)';
             obj.simParams.waypoints = [
                 100, 200; 
@@ -263,7 +262,7 @@ classdef VehicleModel < handle
         %         obj.simParams.excelData = data;
         %     end
         % end
-                
+
         %% Set Simulation Parameters
         function setSimulationParameters(obj, simParams)
             % setSimulationParameters Sets the simulation parameters for the vehicle model
@@ -273,14 +272,14 @@ classdef VehicleModel < handle
             %
             % This method updates the 'simParams' property of the VehicleModel instance with the provided parameters.
             % If the GUI is enabled, it also updates the GUI fields to reflect the new parameters.
-        
+
             % Preserve existing excelData if it's not part of the new simParams
             if isfield(obj.simParams, 'excelData') && ~isfield(simParams, 'excelData')
                 simParams.excelData = obj.simParams.excelData;
             end
-        
+
             obj.simParams = simParams;
-        
+
             % If GUI is enabled, update the GUI fields with the new parameters
             if obj.hasUI && ~isempty(obj.guiManager)
                 %% --- Basic Configuration ---
@@ -293,23 +292,23 @@ classdef VehicleModel < handle
                     W = simParams.waypoints; % Nx2 numeric array
                     [numRows, numCols] = size(W);
                     cellData = cell(numRows, numCols);
-                
+
                     % Populate cellData using a loop
                     for r = 1:numRows
                         for c = 1:numCols
                             cellData{r, c} = W(r, c);
                         end
                     end
-                
+
                     obj.guiManager.waypointsTable.Data = cellData;
                 end
-        
+
                 %% --- Advanced Configuration ---
                 obj.guiManager.I_trailerMultiplierField.Value = simParams.I_trailerMultiplier;
                 obj.guiManager.maxDeltaField.Value = simParams.maxDeltaDeg;
                 obj.guiManager.dtMultiplierField.Value = simParams.dtMultiplier;
                 obj.guiManager.windowSizeField.Value = simParams.windowSize;
-        
+
                 %% --- Tractor Parameters ---
                 obj.guiManager.tractorLengthField.Value = simParams.tractorLength;
                 obj.guiManager.tractorWidthField.Value = simParams.tractorWidth;
@@ -320,7 +319,7 @@ classdef VehicleModel < handle
                 obj.guiManager.tractorNumAxlesDropdown.Value = num2str(simParams.tractorNumAxles);
                 obj.guiManager.tractorAxleSpacingField.Value = simParams.tractorAxleSpacing;
                 obj.guiManager.numTiresPerAxleTractorDropDown.Value = num2str(simParams.numTiresPerAxleTractor);
-        
+
                 %% --- Trailer Parameters ---
                 obj.guiManager.trailerLengthField.Value = simParams.trailerLength;
                 obj.guiManager.trailerWidthField.Value = simParams.trailerWidth;
@@ -341,7 +340,7 @@ classdef VehicleModel < handle
                 obj.guiManager.disengagementSpeedField.Value = simParams.disengagementSpeed;
 
                 obj.guiManager.torqueFileNameField.Value = simParams.torqueFileName;
-        
+
                 %% --- Control Limits Parameters ---
                 if isprop(obj.guiManager, 'steeringCurveFilePathField') && ...
                    isprop(obj.guiManager, 'maxSteeringSpeedField')
@@ -350,7 +349,7 @@ classdef VehicleModel < handle
                     obj.guiManager.steeringCurveFilePathField.Value = simParams.steeringCurveFilePath;
                     obj.guiManager.maxSteeringSpeedField.Value = simParams.maxSteeringSpeed;
                 end
-        
+
                 % obj.guiManager.maxAccelAtZeroSpeedField.Value = simParams.maxAccelAtZeroSpeed;
                 obj.guiManager.minAccelAtMaxSpeedField.Value = simParams.minAccelAtMaxSpeed;
                 % obj.guiManager.maxDecelAtZeroSpeedField.Value = simParams.maxDecelAtZeroSpeed;
@@ -358,12 +357,12 @@ classdef VehicleModel < handle
                 obj.guiManager.accelCurveFilePathField.Value = simParams.accelCurveFilePath;
                 obj.guiManager.decelCurveFilePathField.Value = simParams.decelCurveFilePath;
                 obj.guiManager.maxSpeedForAccelLimitingField.Value = simParams.maxSpeedForAccelLimiting;
-        
+
                 %% --- Maximum Speed Parameter ---
                 if isprop(obj.guiManager, 'maxSpeedField')
                     obj.guiManager.maxSpeedField.Value = simParams.maxSpeed;
                 end
-        
+
                 %% --- PID Speed Controller Parameters ---
                 if isprop(obj.guiManager, 'KpField') && isprop(obj.guiManager, 'KiField') && isprop(obj.guiManager, 'KdField') && isprop(obj.guiManager, 'enableSpeedControllerCheckbox')
                     obj.guiManager.KpField.Value = simParams.Kp;
@@ -371,7 +370,7 @@ classdef VehicleModel < handle
                     obj.guiManager.KdField.Value = simParams.Kd;
                     obj.guiManager.enableSpeedControllerCheckbox.Value = simParams.enableSpeedController;
                 end
-        
+
                 %% --- Tires Configuration Parameters ---
                 if isprop(obj.guiManager, 'tractorTireHeightField') && ...
                    isprop(obj.guiManager, 'tractorTireWidthField') && ...
@@ -392,7 +391,7 @@ classdef VehicleModel < handle
                     obj.guiManager.tirePressureCommandsBox.Value = simParams.tirePressureCommands;
                 end
                 % *** End of Commands Parameters ***
-        
+
                 %% --- Stiffness & Damping Parameters ---
                 if isprop(obj.guiManager, 'stiffnessXField') && ...
                    isprop(obj.guiManager, 'stiffnessYField') && ...
@@ -412,7 +411,7 @@ classdef VehicleModel < handle
                     obj.guiManager.stiffnessRollField.Value = simParams.stiffnessRoll;
                     obj.guiManager.stiffnessPitchField.Value = simParams.stiffnessPitch;
                     obj.guiManager.stiffnessYawField.Value = simParams.stiffnessYaw;
-        
+
                     obj.guiManager.dampingXField.Value = simParams.dampingX;
                     obj.guiManager.dampingYField.Value = simParams.dampingY;
                     obj.guiManager.dampingZField.Value = simParams.dampingZ;
@@ -420,7 +419,7 @@ classdef VehicleModel < handle
                     obj.guiManager.dampingPitchField.Value = simParams.dampingPitch;
                     obj.guiManager.dampingYawField.Value = simParams.dampingYaw;
                 end
-        
+
                 %% --- Aerodynamics Parameters ---
                 if isprop(obj.guiManager, 'airDensityField') && isprop(obj.guiManager, 'dragCoeffField') && ...
                    isprop(obj.guiManager, 'windSpeedField') && isprop(obj.guiManager, 'windAngleDegField')
@@ -430,7 +429,7 @@ classdef VehicleModel < handle
                     obj.guiManager.windAngleDegField.Value = simParams.windAngleDeg;
                     obj.guiManager.windAngleRad = deg2rad(simParams.windAngleDeg);  % *** New: Wind Angle in Radians ***
                 end
-        
+
                 %% --- Road Conditions Parameters ---
                 if isprop(obj.guiManager, 'slopeAngleField') && ...
                    isprop(obj.guiManager, 'roadFrictionCoefficientField') && ...
@@ -441,7 +440,7 @@ classdef VehicleModel < handle
                     obj.guiManager.roadSurfaceTypeDropdown.Value = simParams.roadSurfaceType;
                     obj.guiManager.roadRoughnessField.Value = simParams.roadRoughness;
                 end
-        
+
                 %% --- Suspension Model Parameters ---
                 if isprop(obj.guiManager, 'K_springField') && ...
                    isprop(obj.guiManager, 'C_dampingField') && ...
@@ -450,7 +449,7 @@ classdef VehicleModel < handle
                     obj.guiManager.C_dampingField.Value = simParams.C_damping;
                     obj.guiManager.restLengthField.Value = simParams.restLength;
                 end
-        
+
                 %% --- Brake Configuration Parameters ---  % *** New Section ***
                 if isprop(obj.guiManager, 'brakingForceField') && ...
                    isprop(obj.guiManager, 'brakeEfficiencyField') && ...
@@ -465,7 +464,7 @@ classdef VehicleModel < handle
                     %% --- End of Consistency Check ---
                 end
                 % *** End of Brake Configuration Parameters ***
-        
+
                 %% --- Transmission Configuration Parameters ---  % *** New Section ***
                 if isprop(obj.guiManager, 'maxGearField') && ...
                    isprop(obj.guiManager, 'gearRatiosTable') && ...
@@ -482,14 +481,14 @@ classdef VehicleModel < handle
                     obj.guiManager.shiftDownSpeedField.Value = mat2str(simParams.shiftDownSpeed);
                     obj.guiManager.engineBrakeTorqueField.Value = simParams.engineBrakeTorque;
                     obj.guiManager.shiftDelayField.Value = simParams.shiftDelay;
-        
+
                     %% --- Engine Gear Mapping ---
                     if isfield(simParams, 'engineGearMapping') && ~isempty(simParams.engineGearMapping)
                         obj.guiManager.engineGearMappingTable.Data = simParams.engineGearMapping;
                     end
                 end
                 % *** End of Transmission Configuration Parameters ***
-        
+
                 %% --- Engine Configuration Parameters ---
                 if isprop(obj.guiManager, 'maxEngineTorqueField') && ...
                    isprop(obj.guiManager, 'maxPowerField') && ...
@@ -502,12 +501,12 @@ classdef VehicleModel < handle
                     obj.guiManager.redlineRPMField.Value = simParams.redlineRPM;
                     obj.guiManager.fuelConsumptionRateField.Value = simParams.fuelConsumptionRate;
                 end
-        
+
                 %% --- Pressure Matrices Parameters ---
                 if isprop(obj.guiManager, 'pressureMatricesTab') && isprop(obj.guiManager, 'pressureMatrixPanels')
                     obj.guiManager.setPressureMatrices(simParams.pressureMatrices);
                 end
-        
+
                 %% --- Trailer Parameters Handling ---
                 % **This is the critical section to handle the numTiresPerAxleTrailerDropDown**
                 if isprop(obj.guiManager, 'includeTrailerCheckbox') && ...
@@ -531,7 +530,7 @@ classdef VehicleModel < handle
                         obj.guiManager.numTiresPerAxleTrailerDropDown.Enable = 'off';
                     end
                 end
-        
+
                 %% --- Trailer Tab Visibility ---
                 % Optionally, update the visibility of trailer-related tabs or panels based on includeTrailer
                 if isprop(obj.guiManager, 'trailerParamsTab')
@@ -540,7 +539,7 @@ classdef VehicleModel < handle
 
                 obj.guiManager.mapCommandsBox.Value = simParams.mapCommands;
                 obj.guiManager.generateWaypoints();
-        
+
                 %% --- Transmission Tab Visibility (Optional) ---
                 % If there are conditions to show/hide Transmission Configuration Tab
                 % Implement similar visibility handling if needed
@@ -550,33 +549,33 @@ classdef VehicleModel < handle
         %% Get Simulation Parameters from UI
         function simParams = getSimulationParameters(obj)
             % getSimulationParameters Retrieves simulation parameters from the UI
-        
+
             simParams = struct();
 
             simParams.guiManager = obj.guiManager;
             obj.guiManager.generateWaypoints();
             simParams.mapCommands = obj.guiManager.mapCommandsBox.Value;
-        
+
             % --- Basic Configuration ---
             simParams.includeTrailer = obj.guiManager.includeTrailerCheckbox.Value;
             simParams.tractorMass = obj.guiManager.tractorMassField.Value;
             simParams.initialVelocity = obj.guiManager.velocityField.Value;
-            
+
             % Update simParams.waypoints to the final Nx2 numeric array
             simParams.waypoints = obj.guiManager.waypointsTable.Data;
 
             simParams.maxClutchTorque = obj.guiManager.maxClutchTorqueField.Value;
             simParams.engagementSpeed = obj.guiManager.engagementSpeedField.Value;
             simParams.disengagementSpeed = obj.guiManager.disengagementSpeedField.Value;
-            
+
             simParams.torqueFileName = obj.guiManager.torqueFileNameField.Value;
-        
+
             % --- Advanced Configuration ---
             simParams.I_trailerMultiplier = obj.guiManager.I_trailerMultiplierField.Value;
             simParams.maxDeltaDeg = obj.guiManager.maxDeltaField.Value;
             simParams.dtMultiplier = obj.guiManager.dtMultiplierField.Value;
             simParams.windowSize = obj.guiManager.windowSizeField.Value;
-        
+
             % --- Tractor Parameters ---
             simParams.tractorLength = obj.guiManager.tractorLengthField.Value;
             simParams.tractorWidth = obj.guiManager.tractorWidthField.Value;
@@ -588,7 +587,7 @@ classdef VehicleModel < handle
             simParams.tractorAxleSpacing = obj.guiManager.tractorAxleSpacingField.Value;
             simParams.numTiresPerAxleTrailer = str2double(obj.guiManager.numTiresPerAxleTrailerDropDown.Value);
             simParams.numTiresPerAxleTractor = str2double(obj.guiManager.numTiresPerAxleTractorDropDown.Value);
-        
+
             % --- Trailer Parameters ---
             simParams.trailerLength = obj.guiManager.trailerLengthField.Value;
             simParams.trailerWidth = obj.guiManager.trailerWidthField.Value;
@@ -702,7 +701,7 @@ classdef VehicleModel < handle
                 simParams.fuelConsumptionRate = obj.simParams.fuelConsumptionRate;
                 warning('Engine Configuration GUI fields not found. Using default engine configuration parameters.');
             end
-        
+
             % --- Control Limits Parameters ---
             if isprop(obj.guiManager, 'steeringCurveFilePathField') && ...
                isprop(obj.guiManager, 'maxSteeringSpeedField') && ...
@@ -723,7 +722,7 @@ classdef VehicleModel < handle
                 simParams.maxSteeringSpeed = obj.simParams.maxSteeringSpeed;
                 warning('Steering Controller GUI fields not found. Using default steering parameters.');
             end
-        
+
             % --- Brake Configuration Parameters ---
             if isprop(obj.guiManager, 'brakingForceField') && ...
                isprop(obj.guiManager, 'brakeEfficiencyField') && ...
@@ -744,7 +743,7 @@ classdef VehicleModel < handle
                 warning('Brake Configuration GUI fields not found. Using default brake configuration parameters.');
             end
             % --- End of Brake Configuration Parameters ---
-        
+
             % --- Transmission Parameters ---
             if isprop(obj.guiManager, 'maxGearField') && ...
                isprop(obj.guiManager, 'gearRatiosTable') && ...
@@ -753,9 +752,9 @@ classdef VehicleModel < handle
                isprop(obj.guiManager, 'shiftDownSpeedField') && ...
                isprop(obj.guiManager, 'engineBrakeTorqueField') && ...
                isprop(obj.guiManager, 'shiftDelayField')
-                
+
                 simParams.maxGear = obj.guiManager.maxGearField.Value;
-                
+
                 % Retrieve gear ratios from the table
                 if iscell(obj.guiManager.gearRatiosTable.Data)
                     gearData = obj.guiManager.gearRatiosTable.Data;
@@ -764,17 +763,17 @@ classdef VehicleModel < handle
                     gearData = obj.guiManager.gearRatiosTable.Data;
                     simParams.gearRatios = gearData.Ratio; % Assuming second column contains ratios
                 end
-                
+
                 simParams.finalDriveRatio = obj.guiManager.finalDriveRatioField.Value;
-                
+
                 % Retrieve shift up speeds from the text field
                 shiftUpStr = obj.guiManager.shiftUpSpeedField.Value;
                 simParams.shiftUpSpeed = str2num(shiftUpStr); %#ok<ST2NM>
-                
+
                 % Retrieve shift down speeds from the text field
                 shiftDownStr = obj.guiManager.shiftDownSpeedField.Value;
                 simParams.shiftDownSpeed = str2num(shiftDownStr); %#ok<ST2NM>
-                
+
                 simParams.engineBrakeTorque = obj.guiManager.engineBrakeTorqueField.Value;
                 simParams.shiftDelay = obj.guiManager.shiftDelayField.Value;
             else
@@ -789,7 +788,7 @@ classdef VehicleModel < handle
                 warning('Transmission Configuration GUI fields not found. Using default transmission parameters.');
             end
             % --- End of Transmission Parameters ---
-        
+
             % --- Acceleration Limiter Parameters ---
             % simParams.maxAccelAtZeroSpeed = obj.guiManager.maxAccelAtZeroSpeedField.Value;
             simParams.minAccelAtMaxSpeed = obj.guiManager.minAccelAtMaxSpeedField.Value;
@@ -799,7 +798,7 @@ classdef VehicleModel < handle
             simParams.decelCurveFilePath = obj.guiManager.decelCurveFilePathField.Value;
             simParams.maxSpeedForAccelLimiting = obj.guiManager.maxSpeedForAccelLimitingField.Value;
             % --- End of Acceleration Limiter Parameters ---
-        
+
             % --- PID Speed Controller Parameters ---
             if isprop(obj.guiManager, 'KpField') && isprop(obj.guiManager, 'KiField') && isprop(obj.guiManager, 'KdField') && isprop(obj.guiManager, 'enableSpeedControllerCheckbox')
                 simParams.Kp = obj.guiManager.KpField.Value;
@@ -815,7 +814,7 @@ classdef VehicleModel < handle
                 warning('PID Controller GUI fields not found. Using default PID parameters.');
             end
             % --- End of PID Speed Controller Parameters ---
-        
+
             % --- Maximum Speed Parameter ---
             if isprop(obj.guiManager, 'maxSpeedField')
                 simParams.maxSpeed = obj.guiManager.maxSpeedField.Value; % m/s
@@ -824,7 +823,7 @@ classdef VehicleModel < handle
                 warning('Max Speed GUI field not found. Using default maxSpeed.');
             end
             % --- End of Max Speed Parameter ---
-        
+
             % --- Tires Configuration Parameters ---
             if isprop(obj.guiManager, 'tractorTireHeightField') && ...
                isprop(obj.guiManager, 'tractorTireWidthField') && ...
@@ -843,7 +842,7 @@ classdef VehicleModel < handle
                 warning('Tires Configuration GUI fields not found. Using default tire parameters.');
             end
             % --- End of Tires Configuration Parameters ---
-        
+
             % --- Aerodynamics Parameters ---
             if isprop(obj.guiManager, 'airDensityField') && isprop(obj.guiManager, 'dragCoeffField') && ...
                isprop(obj.guiManager, 'windSpeedField') && isprop(obj.guiManager, 'windAngleDegField')
@@ -860,7 +859,7 @@ classdef VehicleModel < handle
                 warning('Aerodynamics GUI fields not found. Using default aerodynamics parameters.');
             end
             % --- End of Aerodynamics Parameters ---
-        
+
             % --- Road Conditions Parameters ---
             if isprop(obj.guiManager, 'slopeAngleField') && ...
                isprop(obj.guiManager, 'roadFrictionCoefficientField') && ...
@@ -879,7 +878,7 @@ classdef VehicleModel < handle
                 warning('Road Conditions GUI fields not found. Using default road conditions parameters.');
             end
             % --- End of Road Conditions Parameters ---
-        
+
             % --- Stiffness & Damping Parameters ---
             if isprop(obj.guiManager, 'stiffnessXField') && ...
                isprop(obj.guiManager, 'stiffnessYField') && ...
@@ -899,7 +898,7 @@ classdef VehicleModel < handle
                 simParams.stiffnessRoll = obj.guiManager.stiffnessRollField.Value;
                 simParams.stiffnessPitch = obj.guiManager.stiffnessPitchField.Value;
                 simParams.stiffnessYaw = obj.guiManager.stiffnessYawField.Value;
-        
+
                 simParams.dampingX = obj.guiManager.dampingXField.Value;
                 simParams.dampingY = obj.guiManager.dampingYField.Value;
                 simParams.dampingZ = obj.guiManager.dampingZField.Value;
@@ -914,7 +913,7 @@ classdef VehicleModel < handle
                 simParams.stiffnessRoll = obj.simParams.stiffnessRoll;
                 simParams.stiffnessPitch = obj.simParams.stiffnessPitch;
                 simParams.stiffnessYaw = obj.simParams.stiffnessYaw;
-        
+
                 simParams.dampingX = obj.simParams.dampingX;
                 simParams.dampingY = obj.simParams.dampingY;
                 simParams.dampingZ = obj.simParams.dampingZ;
@@ -924,7 +923,7 @@ classdef VehicleModel < handle
                 warning('Stiffness & Damping GUI fields not found. Using default stiffness & damping parameters.');
             end
             % --- End of Stiffness & Damping Parameters ---
-        
+
             % --- Suspension Model Parameters ---
             if isprop(obj.guiManager, 'K_springField') && ...
                isprop(obj.guiManager, 'C_dampingField') && ...
@@ -940,7 +939,7 @@ classdef VehicleModel < handle
                 warning('Suspension Model GUI fields not found. Using default suspension parameters.');
             end
             % --- End of Suspension Model Parameters ---
-        
+
             % --- Wind Parameters ---
             if isprop(obj.guiManager, 'windSpeedField') && ...
                isprop(obj.guiManager, 'windAngleDegField')
@@ -952,7 +951,7 @@ classdef VehicleModel < handle
                 warning('Wind GUI fields not found. Using default wind parameters.');
             end
             % --- End of Wind Parameters ---
-        
+
             % --- X and Y Coefficients ---
             if isprop(obj.guiManager, 'pCx1Field') && isprop(obj.guiManager, 'pCy1Field')
                 simParams.pCx1 = obj.guiManager.pCx1Field.Value;
@@ -965,7 +964,7 @@ classdef VehicleModel < handle
                 simParams.pKx1 = obj.guiManager.pKx1Field.Value;
                 simParams.pKx2 = obj.guiManager.pKx2Field.Value;
                 simParams.pKx3 = obj.guiManager.pKx3Field.Value;
-        
+
                 simParams.pCy1 = obj.guiManager.pCy1Field.Value;
                 simParams.pDy1 = obj.guiManager.pDy1Field.Value;
                 simParams.pDy2 = obj.guiManager.pDy2Field.Value;
@@ -988,7 +987,7 @@ classdef VehicleModel < handle
                 simParams.pKx1 = obj.simParams.pKx1;
                 simParams.pKx2 = obj.simParams.pKx2;
                 simParams.pKx3 = obj.simParams.pKx3;
-        
+
                 simParams.pCy1 = obj.simParams.pCy1;
                 simParams.pDy1 = obj.simParams.pDy1;
                 simParams.pDy2 = obj.simParams.pDy2;
@@ -1002,7 +1001,7 @@ classdef VehicleModel < handle
                 warning('X and Y Coefficients GUI fields not found. Using default coefficients.');
             end
             % --- End of X and Y Coefficients ---
-        
+
             % --- Retrieve and Set Pressure Matrices ---
             if isprop(obj.guiManager, 'pressureMatricesTab') && isprop(obj.guiManager, 'pressureMatrixPanels')
                 simParams.pressureMatrices = obj.guiManager.getPressureMatrices();
@@ -1012,10 +1011,10 @@ classdef VehicleModel < handle
                 warning('Pressure Matrices GUI components not found. Using default pressure matrices.');
             end
             % --- End of Pressure Matrices ---
-        
+
             % --- Retrieve Excel Data ---
             simParams.excelData = obj.simParams.excelData; % Assuming excelData is managed elsewhere
-        
+
             % --- Final Step: Update Trailer Tab Visibility ---
             simParams.includeTrailer = obj.guiManager.includeTrailerCheckbox.Value;
         end
@@ -1229,10 +1228,10 @@ classdef VehicleModel < handle
                 end
             end
         end
-                                
+
         function [output] = initializeSim(obj)
             % runSimulation Executes the vehicle simulation and computes the dynamics
-        
+
             % Initialize output variables
             tractorX = [];
             tractorY = [];
@@ -1243,20 +1242,20 @@ classdef VehicleModel < handle
             steeringAnglesSim = [];
             speedData = [];
             globalVehicleFlags = struct('isWiggling', false, 'isRollover', false, 'isJackknife', false, 'isSkidding', false);
-        
+
             % Initialize flat tire indices
             flatTireIndicesTractor = [];
             flatTireIndicesTrailer = [];
             flatTireIndices = []; % Combined flat tire indices
-        
+
             % Initialize log messages storage
             logMessages = {};  % Preallocate as empty cell array
-        
+
             % --- Initialize Waitbar ---
             hWaitbar = waitbar(0, 'Starting Simulation...', 'Name', 'Simulation Progress');
             cleanupObj = onCleanup(@() closeIfOpen(hWaitbar)); % Ensure waitbar closes on function exit
             % --- End of Waitbar Initialization ---
-        
+
             try
                 % Extract simulation data
                 if obj.hasUI
@@ -1271,7 +1270,7 @@ classdef VehicleModel < handle
                         steeringCommands = simParams.steeringCommands;
                         accelerationCommands = simParams.accelerationCommands;
                         tirePressureCommands = simParams.tirePressureCommands;
-        
+
                         if isempty(steeringCommands)
                             error('Steering commands are empty.');
                         end
@@ -1287,7 +1286,7 @@ classdef VehicleModel < handle
                         steeringCommands = simParams.steeringCommands;
                         accelerationCommands = simParams.accelerationCommands;
                         tirePressureCommands = simParams.tirePressureCommands;
-        
+
                         if isempty(steeringCommands)
                             error('Steering commands are empty.');
                         end
@@ -1296,7 +1295,7 @@ classdef VehicleModel < handle
                         return;
                     end
                 end
-        
+
                 % Assign parameters to variables for easier access
                 tractorMass = simParams.tractorMass;
                 boxMasses = [];
@@ -1328,14 +1327,14 @@ classdef VehicleModel < handle
                 tractorAxleSpacing = simParams.tractorAxleSpacing;
                 numTiresPerAxleTrailer = simParams.numTiresPerAxleTrailer;
                 numTiresPerAxleTractor = simParams.numTiresPerAxleTractor; % **New Variable**
-        
+
                 % --- Tires Configuration Parameters ---
                 tractorTireHeight = simParams.tractorTireHeight; % meters
                 tractorTireWidth = simParams.tractorTireWidth;   % meters
                 trailerTireHeight = simParams.trailerTireHeight; % meters
                 trailerTireWidth = simParams.trailerTireWidth;   % meters
                 % --- End of Tires Configuration Parameters ---
-        
+
                 % --- Integrated Acceleration Limiter Parameters ---
                 % maxAccelAtZeroSpeed = simParams.maxAccelAtZeroSpeed;
                 minAccelAtMaxSpeed = simParams.minAccelAtMaxSpeed;
@@ -1345,21 +1344,21 @@ classdef VehicleModel < handle
                 decelCurve = readmatrix(simParams.decelCurveFilePath);
                 maxSpeedForAccelLimiting = simParams.maxSpeedForAccelLimiting;
                 % --- End of Acceleration Limiter Parameters ---
-        
+
                 % --- PID Speed Controller Parameters ---
                 Kp = simParams.Kp;
                 Ki = simParams.Ki;
                 Kd = simParams.Kd;
                 % --- End of PID Speed Controller Parameters ---
-        
+
                 % --- Speed Limiting Parameter ---
                 maxSpeed = simParams.maxSpeed; % m/s
                 % --- End of Speed Limiting Parameter ---
-        
+
                 % --- **Aerodynamics Parameters Integration** ---
                 airDensity = simParams.airDensity;     % kg/m³; retrieved from GUI
                 dragCoeff = simParams.dragCoeff;       % Dimensionless; retrieved from GUI
-        
+
                 if simParams.includeTrailer
                     trailerWidth = simParams.trailerWidth;
                     trailerHeight = simParams.trailerHeight;
@@ -1369,25 +1368,25 @@ classdef VehicleModel < handle
                     trailerHeight = 0;
                     trailerLength = 0;
                 end
-        
+
                 frontalWidth = max(tractorWidth, trailerWidth);
                 frontalHeight = max(tractorHeight, trailerHeight);
                 frontalArea = frontalWidth * frontalHeight;  % In square meters
-        
+
                 sideWidth = max(tractorWidth, trailerWidth);
                 sideLength = (tractorLength + trailerLength) - tractorAxleSpacing;
                 sideArea = sideWidth * sideLength;  % In square meters
                 % --- End of Aerodynamics Parameters Integration ---
-        
+
                 % --- **Road Conditions Parameters** ---
                 slopeAngleDeg = simParams.slopeAngle;  % In degrees
                 slopeAngleRad = deg2rad(slopeAngleDeg); % Convert to radians
                 roadRoughness = simParams.roadRoughness; % 0 (smooth) to 1 (very rough)
                 % --- End of Road Conditions Parameters ---
-        
+
                 % Calculate total number of tires
                 totalTiresTractor = 2 + (tractorNumAxles * numTiresPerAxleTractor);
-        
+
                 if simParams.includeTrailer
                     trailerNumAxles = sum(simParams.trailerAxlesPerBox);
                     totalTiresTrailer = trailerNumAxles * numTiresPerAxleTrailer;
@@ -1405,7 +1404,7 @@ classdef VehicleModel < handle
                     error('No pressure matrix found for %d tires.', totalNumberOfTires);
                 end
                 % --- End of Pressure Matrix Selection ---
-                
+
                 % Adjust time step based on multiplier
                 dt_original = 0.01; % Original time step
                 dt = dt_original * dtMultiplier;
@@ -1413,7 +1412,7 @@ classdef VehicleModel < handle
                     dt = 0.01;
                     logMessages{end+1} = sprintf('Adjusted time step to %.4f seconds for simulation stability.', dt);
                 end
-                
+
                 % --- Process Steering and Acceleration Data ---
                 % Handle ramp and step commands in steering angles and acceleration
                 [timeProcessed, steerAngles, accelerationData, tirePressureData, steeringEnded, accelerationEnded, tirePressureEnded] = processSignalData( ...
@@ -1432,7 +1431,7 @@ classdef VehicleModel < handle
                 else
                     trailerTirePressures = [];
                 end
-        
+
                 % Validate the lengths
                 if length(tractorTirePressures) ~= totalTiresTractor
                     error('Mismatch in number of tractor tire pressures.');
@@ -1441,15 +1440,15 @@ classdef VehicleModel < handle
                     error('Mismatch in number of trailer tire pressures.');
                 end
                 % --- End of Split Pressures ---
-        
+
                 % --- Begin Flat Tire Logic ---
                 % Define Pressure Threshold
                 % Convert 14 psi to Pascals (1 psi ≈ 6895 Pa)
                 pressureThresholdPa = 14 * 6895; % 14 psi in Pa
-        
+
                 % Log the pressure threshold
                 logMessages{end+1} = sprintf('Pressure Threshold set to %.2f Pa (14 psi).', pressureThresholdPa);
-        
+
                 % --- Check and Set Flat Tires for Tractor ---
                 for i = 1:length(tractorTirePressures)
                     if tractorTirePressures(i) < pressureThresholdPa
@@ -1461,7 +1460,7 @@ classdef VehicleModel < handle
                         tractorTirePressures(i) = 0; 
                     end
                 end
-        
+
                 % --- Check and Set Flat Tires for Trailer ---
                 if simParams.includeTrailer
                     for i = 1:length(trailerTirePressures)
@@ -1480,7 +1479,7 @@ classdef VehicleModel < handle
                 % Combine flat tire indices
                 flatTireIndices = [flatTireIndicesTractor, flatTireIndicesTrailer];
                 % --- End Flat Tire Logic ---
-        
+
                 % --- Compute Contact Areas ---
                 % Compute per-tire loads (assuming equal distribution for simplicity)
                 perTireLoadTractor = (tractorMass * 9.81) / totalTiresTractor; % N
@@ -1500,7 +1499,7 @@ classdef VehicleModel < handle
                         perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                     end
                 end
-        
+
                 % Compute per-tire contact areas
                 % Avoid division by zero by setting contact area to zero if pressure is zero (flat tire)
                 tractorContactAreas = zeros(size(tractorTirePressures));
@@ -1511,7 +1510,7 @@ classdef VehicleModel < handle
                         tractorContactAreas(i) = 0; % Flat tire
                     end
                 end
-        
+
                 if simParams.includeTrailer
                     trailerContactAreas = zeros(size(trailerTirePressures));
                     for i = 1:length(trailerTirePressures)
@@ -1525,7 +1524,7 @@ classdef VehicleModel < handle
                     trailerContactAreas = [];
                 end
                 % --- End of Compute Contact Areas ---
-        
+
                 % --- Adjust Friction Coefficient Based on Road Surface Type ---
                 % Use predefined friction coefficients for different surfaces
                 switch simParams.roadSurfaceType
@@ -1545,7 +1544,7 @@ classdef VehicleModel < handle
                 % Log the adjusted friction coefficient
                 logMessages{end+1} = sprintf('Adjusted friction coefficient (mu) based on road surface type (%s): %.2f', simParams.roadSurfaceType, mu);
                 % --- End of Friction Coefficient Adjustment ---
-        
+
                 % Log simulation parameters
                 logMessages{end+1} = 'Simulation Parameters:';
                 logMessages{end+1} = sprintf('Tractor Mass (including loads): %.2f kg', tractorMass);
@@ -1566,7 +1565,7 @@ classdef VehicleModel < handle
                 logMessages{end+1} = sprintf('Road Surface Type: %s', simParams.roadSurfaceType);
                 logMessages{end+1} = sprintf('Road Roughness: %.2f', roadRoughness);
                 logMessages{end+1} = '----------------------------------------';
-        
+
                 % --- Tires Configuration Logging ---
                 logMessages{end+1} = 'Tires Configuration:';
                 logMessages{end+1} = sprintf('Tractor Tire Height: %.2f m', tractorTireHeight);
@@ -1576,11 +1575,11 @@ classdef VehicleModel < handle
                     logMessages{end+1} = sprintf('Trailer Tire Width: %.2f m', trailerTireWidth);
                 end
                 logMessages{end+1} = '----------------------------------------';
-        
+
                 % Validate load inputs to prevent front overloading
                 % maxFrontLoad = 0.6 * tractorMass * 9.81; % 60% of tractor mass in N
                 % totalFrontLoad = (W_FrontLeft + W_FrontRight) * 9.81;
-        
+
                 % if totalFrontLoad > maxFrontLoad
                 %     msg = sprintf('Total front load exceeds 60%% of tractor mass (%.2f N). Please reduce the front load.', maxFrontLoad);
                 %     if obj.hasUI
@@ -1592,14 +1591,14 @@ classdef VehicleModel < handle
                 %     [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
                 %     return;
                 % end
-        
+
                 % --- Retrieve Brake System Parameters ---
                 maxBrakingForce = simParams.maxBrakingForce;
                 brakeEfficiency = simParams.brakeEfficiency;
                 brakeType = simParams.brakeType;
                 brakeResponseRate = 1;
                 brakeBias = simParams.brakeBias;
-        
+
                 % Initialize BrakeSystem with parameters from simParams
                 brakeSystem = BrakeSystem( ...
                     maxBrakingForce, ...
@@ -1610,7 +1609,7 @@ classdef VehicleModel < handle
                     );
                 logMessages{end+1} = 'BrakeSystem initialized successfully.';
                 % --- End of Brake System Parameters ---
-        
+
                 % --- Retrieve Transmission Parameters ---
                 maxGear = simParams.maxGear;
                 gearRatios = simParams.gearRatios;
@@ -1620,14 +1619,14 @@ classdef VehicleModel < handle
                 engineBrakeTorque = simParams.engineBrakeTorque;
                 shiftDelay = simParams.shiftDelay;
                 % --- End of Transmission Parameters ---
-        
+
                 % Log Brake System Parameters
                 logMessages{end+1} = 'Brake System Parameters:';
                 logMessages{end+1} = sprintf('Max Braking Force: %.2f N', simParams.maxBrakingForce);
                 logMessages{end+1} = sprintf('Brake Efficiency: %.2f', simParams.brakeEfficiency);
                 logMessages{end+1} = sprintf('Brake Type: %s', simParams.brakeType);
                 logMessages{end+1} = '----------------------------------------';
-        
+
                 % Log Transmission Parameters
                 logMessages{end+1} = 'Transmission Parameters:';
                 logMessages{end+1} = sprintf('Max Gear: %d', simParams.maxGear);
@@ -1637,7 +1636,7 @@ classdef VehicleModel < handle
                 logMessages{end+1} = sprintf('Engine Brake Torque: %.2f Nm', obj.simParams.engineBrakeTorque);
                 logMessages{end+1} = sprintf('Shift Delay: %.2f s', simParams.shiftDelay);
                 logMessages{end+1} = '----------------------------------------';
-        
+
                 % --- Instantiate Clutch ---
                 % Define clutch parameters for a Class 8 truck
                 maxClutchTorque = simParams.maxClutchTorque;           % Maximum torque the clutch can handle (Nm), typical for heavy-duty trucks
@@ -1666,29 +1665,29 @@ classdef VehicleModel < handle
                     );
                 logMessages{end+1} = 'Transmission initialized successfully for Class 8 Truck.';
                 % --- End of Transmission Initialization ---
-        
+
                 % --- Update Engine Efficiency Based on Fuel Consumption Rate ---
                 % Define base fuel consumption rate and corresponding base efficiency
                 baseFuelConsumptionRate = 10; % Example value in liters/hour
                 baseEfficiency = 0.85;        % Base drivetrain efficiency (0 to 1)
-        
+
                 % Ensure fuelConsumptionRate is positive to avoid division by zero
                 if simParams.fuelConsumptionRate <= 0
                     error('Fuel Consumption Rate must be positive.');
                 end
-        
+
                 % Calculate updated efficiency
                 % Assumption: Efficiency inversely proportional to fuel consumption rate
                 % You can adjust the relationship as needed
                 efficiency = baseEfficiency * (baseFuelConsumptionRate / simParams.fuelConsumptionRate);
-        
+
                 % Clamp efficiency between 0.5 and 1.0 for realistic values
                 efficiency = max(0.5, min(1.0, efficiency));
-        
+
                 % Log the updated efficiency
                 logMessages{end+1} = sprintf('Engine efficiency updated to %.2f based on fuel consumption rate of %.2f liters/hour.', efficiency, simParams.fuelConsumptionRate);
                 % --- End of Efficiency Update ---
-        
+
                 % --- Initialize Engine Class ---
                 % --- Engine Parameters ---
                 % Hardcoded values for a Class 8 truck
@@ -1698,7 +1697,7 @@ classdef VehicleModel < handle
                 gearRatiosEngine = gearRatios; % Use the same gear ratios as Transmission
                 differentialRatio = finalDriveRatio; % Differential gear ratio
                 % --- End of Engine Parameters ---
-        
+
                 % --- Read the non-linear torque curve from Excel file ---
                 % Assuming the file is named "torque_curve.xlsx" and has columns "RPM" and "Torque"
                 try
@@ -1706,10 +1705,10 @@ classdef VehicleModel < handle
                     if any(strcmp(torqueData.Properties.VariableNames, {'RPM', 'Torque'}))
                         rpmValues = torqueData.RPM;
                         torqueValues = torqueData.Torque;
-        
+
                         % Define the torque curve as an interpolation based on the loaded data
                         torqueCurve = @(rpm) interp1(rpmValues, torqueValues, rpm, 'linear', 'extrap');
-        
+
                         logMessages{end+1} = sprintf('Loaded non-linear torque curve from "%s".', simParams.torqueFileName);
                     else
                         error('File format error: Expected columns "RPM" and "Torque" not found.');
@@ -1722,12 +1721,12 @@ classdef VehicleModel < handle
                     torqueCurve = @(rpm) maxTorque * exp(-((rpm - torqueCurvePeakRPM).^2) / (2 * torqueCurveWidth^2)); % Example Gaussian torque curve
                     logMessages{end+1} = 'Using default Gaussian torque curve due to error.';
                 end
-        
+
                 % Instantiate the Engine with updated efficiency and clutch
                 engine = Engine(maxTorque, torqueCurve, maxRPM, minRPM, gearRatiosEngine, differentialRatio, efficiency, 0.1, clutch);
                 logMessages{end+1} = 'Engine initialized successfully.';
                 % --- End of Engine Initialization ---
-        
+
                 % --- Instantiate the SpeedController ---
                 desiredSpeed = initialVelocity; % Assuming initialVelocity is the desired speed
                 obj.pid_SpeedController = pid_SpeedController( ...
@@ -1746,7 +1745,7 @@ classdef VehicleModel < handle
 
                 % Set the waypoints
                 % obj.pid_SpeedController.setWaypoints(simParams.waypoints);
-        
+
                 % --- Instantiate the limiter_LateralControl ---
                 maxAngleAtZeroSpeed = simParams.maxSteeringAngleAtZeroSpeed;
                 % minAngleAtMaxSpeed = simParams.minSteeringAngleAtMaxSpeed;
@@ -1759,7 +1758,7 @@ classdef VehicleModel < handle
                     );
                 logMessages{end+1} = 'limiter_LateralControl initialized successfully.';
                 % --- End of limiter_LateralControl Initialization ---
-        
+
                 % --- Instantiate the limiter_LongitudinalControl ---
                 gaussianWindow = 11;  % Gaussian filter window size (must be odd)
                 gaussianStd = 1.0;     % Gaussian filter standard deviation
@@ -1772,55 +1771,53 @@ classdef VehicleModel < handle
                     gaussianStd ...
                     );
                 obj.jerkController = jerk_Controller(0.7 * 9.81);
-                obj.curveSpeedLimiter = curveSpeed_Limiter();
                 logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
-                logMessages{end+1} = 'curveSpeed_Limiter initialized successfully.';
                 % --- End of limiter_LongitudinalControl Initialization ---
-        
+
                 time = timeProcessed; % Update time vector
                 steerAngles = -steerAngles;
-        
+
                 % Interpolate data if dtMultiplier ≠ 1
                 if dtMultiplier ~= 1
                     new_time = time(1):dt:time(end);
-                    
+
                     % Interpolate steering and acceleration signals using linear interpolation
                     steerAngles = interp1(time, steerAngles, new_time, 'linear', 'extrap');
                     accelerationData = interp1(time, accelerationData, new_time, 'linear', 'extrap');
                     tirePressureData = interp1(time, tirePressureData, new_time, 'linear', 'extrap');
-                    
+
                     % Convert logical flags to double for interpolation
                     steeringEnded_double = double(steeringEnded);
                     accelerationEnded_double = double(accelerationEnded);
                     tirePressureEnded_double = double(tirePressureEnded);
-                    
+
                     % Interpolate steeringEnded and accelerationEnded using nearest-neighbor interpolation
                     steeringEnded_interp = interp1(time, steeringEnded_double, new_time, 'nearest', 'extrap');
                     accelerationEnded_interp = interp1(time, accelerationEnded_double, new_time, 'nearest', 'extrap');
                     tirePressureEnded_interp = interp1(time, tirePressureEnded_double, new_time, 'nearest', 'extrap');
-                    
+
                     % Convert interpolated flags back to logical arrays
                     steeringEnded = logical(steeringEnded_interp);
                     accelerationEnded = logical(accelerationEnded_interp);
                     tirePressureEnded = logical(tirePressureEnded_interp);
-                    
+
                     % Update the time vector
                     time = new_time;
-                    
+
                     % Log the interpolation
                     logMessages{end+1} = 'Interpolated simulation data to new time steps.';
                 end
-        
+
                 % Update the number of steps based on new time vector
                 numSteps = length(time);
-        
+
                 %% Tractor Tire Pressures and Contact Areas
                 % Calculate total load for tractor
                 totalLoadTractor = tractorMass * 9.81;  % Total weight in Newtons
-        
+
                 % Compute per-tire loads (assuming equal distribution for simplicity)
                 perTireLoadTractor = totalLoadTractor / totalTiresTractor;
-        
+
                 % Create VehicleParameters instance for tractor with computed contact area
                 tractorParams = VehicleParameters( ...
                     true, ...
@@ -1834,13 +1831,13 @@ classdef VehicleModel < handle
                     tractorAxleSpacing, ...
                     tractorContactAreas ...
                     );
-        
+
                 % Update masses
                 tractorParams.mass = tractorMass;
-        
+
                 % Set tractor tire dimensions
                 tractorParams.updateTireDimensions('tractor', tractorTireHeight, tractorTireWidth);
-        
+
                 %% Trailer Tire Pressures and Contact Areas (if trailer included)
                 if simParams.includeTrailer
                     % Calculate total load for trailer
@@ -1860,7 +1857,7 @@ classdef VehicleModel < handle
                     else
                         perTireLoadTrailer = (trailerMass * 9.81) / totalTiresTrailer * ones(totalTiresTrailer,1); % N each
                     end
-        
+
                     % Create VehicleParameters instance for trailer with computed contact area
                     trailerParams = VehicleParameters( ...
                         false, ...
@@ -1877,11 +1874,11 @@ classdef VehicleModel < handle
                     trailerParams.mass = trailerMass;
                     trailerParams.boxNumAxles = simParams.trailerAxlesPerBox;
                     trailerParams.boxMasses  = boxMasses;
-        
+
                     % Set trailer tire dimensions
                     trailerParams.updateTireDimensions('trailer', trailerTireHeight, trailerTireWidth);
                 end
-        
+
                 % Initial conditions for tractor
                 x = 0;
                 y = 0;
@@ -1889,16 +1886,16 @@ classdef VehicleModel < handle
                 u = 0; % Initial longitudinal speed (m/s)
                 v = 0; % Initial lateral velocity of tractor (m/s)
                 r = 0; % Initial yaw rate of tractor (rad/s)
-        
+
                 % Compute axle positions for the tractor
                 numAxlesTractor = tractorParams.numAxles;
                 wheelbaseTractor = tractorParams.wheelbase;
-        
+
                 % Define positions for the 2 front tires
                 front_x = tractorParams.wheelbase / 2;
                 front_y_left = tractorParams.width / 2;
                 front_y_right = -tractorParams.width / 2;
-        
+
                 if numAxlesTractor > 1
                     % Calculate positions from front axle at +wheelbase/2 to rear axle at -wheelbase/2
                     axleSpacingTractor = wheelbaseTractor / (numAxlesTractor + 1);
@@ -1906,19 +1903,19 @@ classdef VehicleModel < handle
                 else
                     axlePositionsTractor = front_x - wheelbaseTractor / 2;
                 end
-        
+
                 % Positions of front, middle, and rear axles
                 frontAxlePosition = axlePositionsTractor(1);
                 rearAxlePosition = axlePositionsTractor(end);
                 middleAxleIndex = ceil(numAxlesTractor / 2);
                 middleAxlePosition = axlePositionsTractor(middleAxleIndex);
-        
+
                 % Define hitch position between middle and rear axle
                 hitchPosition = simParams.trailerHitchDistance + ((middleAxlePosition + rearAxlePosition) / 2); % Between middle and rear axle
-        
+
                 % Set the hitch_offset to be at the calculated hitch position
                 hitch_offset = hitchPosition;
-        
+
                 % Initialize arrays to store positions for plotting
                 tractorX = zeros(1, numSteps);
                 tractorY = zeros(1, numSteps);
@@ -1926,23 +1923,23 @@ classdef VehicleModel < handle
                 steeringAnglesSim = zeros(1, numSteps);
                 speedData = zeros(1, numSteps);
                 horsepowerSim = zeros(1, numSteps); % Store horsepower data
-        
+
                 % Preallocate desiredGear and stability flag arrays
                 desiredGear = zeros(1, numSteps);
                 isWigglingArray = false(1, numSteps);
                 isRolloverArray = false(1, numSteps);
                 isSkiddingArray = false(1, numSteps);
                 isJackknifeArray = false(1, numSteps);
-        
+
                 % --- Calculate Moment of Inertia for Tractor ---
                 % Tractor parameters
                 m_tractor = simParams.tractorMass;          % Tractor mass (kg)
                 L_tractor = simParams.tractorLength;        % Tractor length (m)
                 W_tractor = simParams.tractorWidth;         % Tractor width (m)
-        
+
                 % Moment of inertia of the tractor (approximate, assuming rectangular prism)
                 I_tractor = (1/12) * m_tractor * (L_tractor^2 + W_tractor^2);
-        
+
                 % --- Check if Trailer is Included ---
                 if simParams.includeTrailer
                     % Trailer parameters
@@ -1952,34 +1949,34 @@ classdef VehicleModel < handle
                     h_CoG_trailer = trailerParams.h_CoG;
                     trackWidth_trailer = trailerParams.trackWidth;
                     wheelbase_trailer = trailerParams.wheelbase;
-        
+
                     % Moment of inertia of the trailer (approximate)
                     I_trailer = (1/12) * m_trailer * (L_trailer^2 + W_trailer^2);
                     I_trailer = I_trailer * I_trailerMultiplier; % Apply multiplier
-        
+
                     % Convert max articulation angle to radians
                     max_delta = deg2rad(maxDeltaDeg);
-        
+
                     % Initialize trailer states
                     delta = 0; % Initial articulation angle
                     psi_trailer = theta + delta; % Orientation of the trailer
-        
+
                     % Compute initial position of the hitch point
                     x_hitch = x + hitch_offset * cos(theta);
                     y_hitch = y + hitch_offset * sin(theta);
-        
+
                     % Compute initial position of the trailer's center of mass
                     % Distance from hitch to trailer's center of gravity
                     distance_hitch_to_cog = L_trailer / 2 - (middleAxlePosition - hitchPosition);
-        
+
                     x_trailer = x_hitch - distance_hitch_to_cog * cos(psi_trailer);
                     y_trailer = y_hitch - distance_hitch_to_cog * sin(psi_trailer);
-        
+
                     % Initialize trailer velocities and yaw rate
                     u_trailer = u; % For simplicity, assume same initial speed as tractor
                     v_trailer = 0; % Assuming negligible sideslip difference
                     r_trailer = 0; % Initial yaw rate of trailer (rad/s)
-        
+
                     trailerX = zeros(1, numSteps);
                     trailerY = zeros(1, numSteps);
                     trailerTheta = zeros(1, numSteps);
@@ -1996,10 +1993,10 @@ classdef VehicleModel < handle
                     loadDistributionTrailer = [];
                     centerOfGravityTrailer = [];
                 end
-        
+
                 % --- Compute Total Moment of Inertia ---
                 I_total = I_tractor + I_trailer;
-        
+
                 % --- Log Inertia Values ---
                 logMessages{end+1} = sprintf('Tractor Moment of Inertia (I_tractor): %.2f kg·m²', I_tractor);
                 if simParams.includeTrailer
@@ -2008,15 +2005,15 @@ classdef VehicleModel < handle
                     logMessages{end+1} = 'No trailer included. Trailer Moment of Inertia (I_trailer) set to 0 kg·m².';
                 end
                 logMessages{end+1} = sprintf('Total Moment of Inertia (I_total): %.2f kg·m²', I_total);
-        
+
                 % Initialize load distribution and tire positions for the tractor
                 % [x, y, z, load, contact_area]
                 loadDistribution = [];
-        
+
                 % Compute total front load (assuming the front carries 3 times the tractor mass)
                 front_load_total = tractorMass * 3 * 9.81; % Total front load in Newtons
                 front_load_per_tire = front_load_total / 2;  % Load per front tire
-        
+
                 % Add Front Left Tire to loadDistribution with contact area placeholder
                 loadDistribution(end+1, :) = [
                     front_x,        % x-position (m)
@@ -2025,7 +2022,7 @@ classdef VehicleModel < handle
                     front_load_per_tire,  % vertical load (N)
                     tractorContactAreas(1)  % contact area (m²)
                 ]; % Front Left Tire
-        
+
                 % Add Front Right Tire to loadDistribution with contact area placeholder
                 loadDistribution(end+1, :) = [
                     front_x,         % x-position (m)
@@ -2034,7 +2031,7 @@ classdef VehicleModel < handle
                     front_load_per_tire,  % vertical load (N)
                     tractorContactAreas(2)  % contact area (m²)
                 ]; % Front Right Tire
-        
+
                 % Calculate the positions of each axle based on the number of axles
                 if tractorNumAxles > 0
                     if tractorNumAxles > 1
@@ -2045,7 +2042,7 @@ classdef VehicleModel < handle
                         % Single axle positioned at the center of the wheelbase
                         axle_positions = front_x - tractorWheelbase / 2;
                     end
-        
+
                     % Iterate over each axle to add corresponding tires
                     for i = 1:tractorNumAxles
                         axle_x = axle_positions(i);
@@ -2058,11 +2055,11 @@ classdef VehicleModel < handle
                                 y_pos = -tractorParams.width / 2;
                                 contactArea = tractorContactAreas(2 + (i-1)*numTiresPerAxleTractor + j);
                             end
-        
+
                             % Compute total rear load (assuming the rear carries 2 times the tractor mass)
                             rear_load_total = tractorMass * 2 * 9.81; % Total rear load in Newtons
                             rear_load_per_tire = rear_load_total / (tractorNumAxles * numTiresPerAxleTractor); % Load per rear tire
-        
+
                             % Add Tire to loadDistribution with contact area
                             loadDistribution(end+1, :) = [
                                 axle_x,       % x-position (m)
@@ -2074,17 +2071,17 @@ classdef VehicleModel < handle
                         end
                     end
                 end
-        
+
                 % --- Select and Validate Pressure Matrices for Tractor ---
                 % Calculate total number of tractor tires
                 totalNumberOfTiresTractor = size(loadDistribution, 1);
-        
+
                 % Generate the pressure matrix key based on the number of tractor tires
                 pressureMatrixKeyTractor = sprintf('Tires%d', totalNumberOfTiresTractor);
-        
+
                 % Check if the pressure matrix exists
                 % (Already handled earlier, assuming selectedPressuresTractor is derived from selectedPressures)
-        
+
                 % --- Compute Contact Area Based on Tire Pressure for Tractor ---
                 for i = 1:size(loadDistribution,1)
                     if tractorTirePressures(i) > 0
@@ -2094,17 +2091,17 @@ classdef VehicleModel < handle
                         logMessages{end+1} = sprintf('Warning: Tractor Tire %d has zero or invalid pressure (%.2f Pa). Setting contact area to 0.', i, tractorTirePressures(i));
                     end
                 end
-        
+
                 % **Adjust Vertical Loads Based on Road Roughness**
                 % Road roughness affects the vertical loads on tires
                 loadDistribution(:,4) = loadDistribution(:,4) .* (1 - 0.3 * roadRoughness); % Reduce loads on rough surfaces
                 logMessages{end+1} = sprintf('Adjusted tractor vertical loads based on road roughness (%.2f).', roadRoughness);
-        
+
                 % --- Center of Gravity Calculation for Tractor ---
                 loads = loadDistribution(:,4);
                 positions = loadDistribution(:,1:3);
                 centerOfGravity = KinematicsCalculator.calculateCenterOfGravity(loads, positions);
-        
+
                 %% Initialize load distribution and center of gravity for the trailer
                 if simParams.includeTrailer
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
@@ -2205,7 +2202,7 @@ classdef VehicleModel < handle
                     % If trailer is not included, use the tractor's load distribution
                     % No additional action needed here
                 end
-        
+
                 % --- Initialize Tire Model ---
                 B = 10;    % Stiffness factor
                 C = 1.9;   % Shape factor
@@ -2216,7 +2213,7 @@ classdef VehicleModel < handle
                 % Assuming PacejkaMagicFormula can accept tireWidth as an additional parameter
                 simpleTireModel = PacejkaMagicFormula(B, C, D, E);
                 % --- End of Tire Width Integration ---
-        
+
                 % Define coefficients for high-fidelity tire model
                 coefficients = struct();
                 % Longitudinal Coefficients
@@ -2230,7 +2227,7 @@ classdef VehicleModel < handle
                 coefficients.pKx1 = simParams.pKx1;
                 coefficients.pKx2 = simParams.pKx2;
                 coefficients.pKx3 = simParams.pKx3;
-        
+
                 % Updated Lateral Coefficients
                 coefficients.pCy1 = simParams.pCy1;    % Shape factor
                 coefficients.pDy1 = simParams.pDy1;    % Peak lateral force
@@ -2242,19 +2239,19 @@ classdef VehicleModel < handle
                 coefficients.pKy1 = simParams.pKy1;    % Cornering stiffness
                 coefficients.pKy2 = simParams.pKy2;
                 coefficients.pKy3 = simParams.pKy3;
-        
+
                 highFidelityTireModel = Pacejka96TireModel(coefficients);
-        
+
                 % Initialize Suspension Model using GUI-provided parameters
                 K_spring = simParams.K_spring;       % Spring stiffness (N/m)
                 C_damping = simParams.C_damping;     % Damping coefficient (N·s/m)
                 restLength = simParams.restLength;   % Rest length (m)
-        
+
                 % **Adjust Suspension Parameters Based on Road Roughness**
                 K_spring = K_spring * (1 - 0.2 * roadRoughness);
                 C_damping = C_damping * (1 + 0.5 * roadRoughness);
                 logMessages{end+1} = sprintf('Adjusted suspension stiffness to %.2f N/m and damping to %.2f N·s/m based on road roughness.', K_spring, C_damping);
-        
+
                 suspensionModel = LeafSpringSuspension( ...
                     K_spring, ...
                     C_damping, ...
@@ -2263,59 +2260,59 @@ classdef VehicleModel < handle
                     tractorTrackWidth, ...
                     tractorWheelbase ...
                     );
-        
+
                 %% --- Instantiate the ForceCalculator Considering Both Load Distributions ---
                 if simParams.includeTrailer
                     vehicleType = 'tractor-trailer';
                     % Combine tractor and trailer load distributions
                     loadDistributionToUse = [loadDistribution; loadDistributionTrailer];
-        
+
                     % Log the combined load distribution
                     logMessages{end+1} = sprintf('Combined load distribution for tractor and trailer with a total of %d tires.', size(loadDistributionToUse, 1));
                 else
                     vehicleType = 'tractor';
                     loadDistributionToUse = loadDistribution; % Use tractor's load distribution only
-        
+
                     % Log the tractor-only load distribution
                     logMessages{end+1} = sprintf('Using load distribution for tractor only with a total of %d tires.', size(loadDistributionToUse, 1));
                 end
-        
+
                 % --- Center of Gravity Calculation ---
                 if simParams.includeTrailer
                     combinedLoads = loadDistributionToUse(:,4);
                     combinedPositions = loadDistributionToUse(:,1:3);
                     centerOfGravity = KinematicsCalculator.calculateCenterOfGravity(combinedLoads, combinedPositions);
-        
+
                     % Log the combined CoG
                     logMessages{end+1} = sprintf('Combined Center of Gravity: (%.2f, %.2f, %.2f)', centerOfGravity(1), centerOfGravity(2), centerOfGravity(3));
                 else
                     loads = loadDistributionToUse(:,4);
                     positions = loadDistributionToUse(:,1:3);
                     centerOfGravity = KinematicsCalculator.calculateCenterOfGravity(loads, positions);
-        
+
                     % Log the tractor CoG
                     logMessages{end+1} = sprintf('Tractor Center of Gravity: (%.2f, %.2f, %.2f)', centerOfGravity(1), centerOfGravity(2), centerOfGravity(3));
                 end
-        
+
                 % Define wind speed and direction
                 wind_speed = simParams.windSpeed; % m/s
                 wind_angle_deg = simParams.windAngleDeg; % degrees from the positive X-axis towards positive Y-axis
                 wind_angle_rad = deg2rad(wind_angle_deg);
-        
+
                 % Calculate wind components
                 wind_u = wind_speed * cos(wind_angle_rad); % X-component
                 wind_v = wind_speed * sin(wind_angle_rad); % Y-component
                 wind_w = 0; % Z-component (no vertical wind)
-        
+
                 % Define wind vector
                 windVector = [wind_u; wind_v; wind_w]; % [u; v; w] in global frame (m/s)
-        
+
                 if simParams.includeTrailer
                     totalMassToUse = tractorParams.mass + trailerParams.mass; % total mass
                 else
                     totalMassToUse = tractorParams.mass;
                 end
-        
+
                 %% --- Instantiate the ForceCalculator with Combined Load Distribution ---
                 % Define additional parameters for ForceCalculator
                 if simParams.includeTrailer
@@ -2327,14 +2324,14 @@ classdef VehicleModel < handle
                     trailerWheelbaseVal = 0;
                     numTrailerTiresVal = 0;
                 end
-        
+
                 trailerInertiaVal = 0;
                 if simParams.includeTrailer
                     %% Instantiate HitchModel
                     % Define Hitch Points in respective frames
                     tractorHitchPoint = [hitch_offset; 0; tractorCoGHeight];       % [x; y; z] in tractor's frame
                     trailerKingpinPoint = [0; 0; trailerParams.h_CoG];              % [x; y; z] in trailer's frame (kingpin at origin)
-        
+
                     % Define Stiffness and Damping Coefficients for HitchModel
                     stiffness = struct(...
                         'x', simParams.stiffnessX, ...     % Longitudinal stiffness (N/m)
@@ -2344,7 +2341,7 @@ classdef VehicleModel < handle
                         'pitch', simParams.stiffnessPitch, ... % Pitch stiffness (N·m/rad)
                         'yaw', simParams.stiffnessYaw ...    % Yaw stiffness (N·m/rad)
                     );
-        
+
                     damping = struct(...
                         'x', simParams.dampingX, ...     % Longitudinal damping (N·s/m)
                         'y', simParams.dampingY, ...     % Lateral damping (N·s/m)
@@ -2353,7 +2350,7 @@ classdef VehicleModel < handle
                         'pitch', simParams.dampingPitch, ... % Pitch damping (N·m·s/rad)
                         'yaw', simParams.dampingYaw ...    % Yaw damping (N·m·s/rad)
                     );
-        
+
                     % Instantiate HitchModel for tractor to first trailer box
                     dt_hitch = dt; % Use the same time step
                     hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch, wheelbase_trailer/2);
@@ -2371,15 +2368,15 @@ classdef VehicleModel < handle
                     % Preallocate per-box trailer orientations for multi-box articulation
                     nBoxes = simParams.trailerNumBoxes;
                     trailerThetaBoxes = zeros(nBoxes, numSteps);
-        
+
                     % Define roll angle threshold (in radians)
                     rollThreshold = deg2rad(30); % 30 degrees in radians
                     hitchInstabilityThreshold = 10000; % 10,000 N
-        
+
                     % Calculate trailer inertia
                     trailerInertiaVal = simParams.I_trailerMultiplier * hitchModel.trailerInertia;
                 end
-        
+
                 % --- Instantiate the ForceCalculator with Combined Load Distribution ---
                 forceCalc = ForceCalculator(...
                     vehicleType, ...                      % vehicleType ('tractor' or 'tractor-trailer')
@@ -2412,7 +2409,7 @@ classdef VehicleModel < handle
                     windVector, ...                       % wind speed and direction as a vector in 3D
                     brakeSystem ...                       % BrakeSystem instance
                 );
-                        
+
                 % -------------------------------------------------------------------
                 % %%% NEW LINES %%%: Initialize wheelSpeeds, wheelRadius, wheelInertia
                 % -------------------------------------------------------------------
@@ -2420,7 +2417,7 @@ classdef VehicleModel < handle
                 if simParams.includeTrailer
                     numDriveTires = numDriveTires + totalTiresTrailer; 
                 end
-                    
+
                 % %%% NEW LINES for WHEEL INERTIA CALCULATION %%%
                 %
                 % Let's do a simple approximation for the wheel inertia:
@@ -2438,7 +2435,7 @@ classdef VehicleModel < handle
                 Ravg        = (outerRadius + innerRadius)/2; 
                 factor      = 0.7;        % factor between 0.5 (solid disc) and 1.0 (thin ring)
                 I_perWheel  = factor * wheelMass * (Ravg^2);  % => ~0.7 * 80 * 0.475^2
-            
+
                 % Now, if each wheel is the same, total wheel inertia might just be I_perWheel.
                 % But the ForceCalculator uses "wheelInertia" as the *per-wheel* inertia.
                 %
@@ -2453,10 +2450,10 @@ classdef VehicleModel < handle
                 if ~isempty(flatTireIndices)
                     forceCalc = forceCalc.setFlatTire(flatTireIndices);
                 end
-        
+
                 % --- Logging Final Load Distribution ---
                 logMessages{end+1} = 'Load distribution initialized successfully for the vehicle.';
-        
+
                 % Initial state for DynamicsUpdater (tractor)
                 initialState.position = [x; y];
                 initialState.velocity = u; % Scalar longitudinal speed
@@ -2465,23 +2462,23 @@ classdef VehicleModel < handle
                 initialState.yawRate = r;
                 initialState.rollAngle = 0;   % Initialize roll angle to zero
                 initialState.rollRate = 0;    % Initialize roll rate to zero
-        
+
                 % Compute Hitch Point Distance (example value)
                 hitchPointDistance = hitch_offset; % meters
-        
+
                 % Update to include trackWidth for DynamicsUpdater
                 trackWidth = tractorTrackWidth;
-        
+
                 % For the tractor
                 K_roll_tractor = 50000;  % N·m/rad
                 D_roll_tractor = 5000;   % N·m·s/rad
                 I_roll_tractor = 2500;   % kg·m²
-        
+
                 % For the trailer (if included)
                 K_roll_trailer = 30000;  % N·m/rad
                 D_roll_trailer = 3000;   % N·m·s/rad
                 I_roll_trailer = 2000;   % kg·m²
-        
+
                 % Instantiate the KinematicsCalculator with the appropriate CoG
                 kinematicsCalc = KinematicsCalculator( ...
                     forceCalc, ...
@@ -2495,7 +2492,7 @@ classdef VehicleModel < handle
                     I_roll_trailer, ...
                     dt ...
                     );
-        
+
                 if simParams.includeTrailer
                     wheelBasetoUse = tractorWheelbase + trailerWheelbase;
                     widthtoUse = tractorWidth + trailerWidth;
@@ -2503,7 +2500,7 @@ classdef VehicleModel < handle
                     wheelBasetoUse = tractorWheelbase;
                     widthtoUse = tractorWidth;
                 end
-        
+
                 % --- Instantiate the DynamicsUpdater ---
                 dynamicsUpdater = DynamicsUpdater( ...
                     forceCalc, ...
@@ -2520,11 +2517,11 @@ classdef VehicleModel < handle
                     D_roll_tractor, ...   % N·m·s/rad
                     transmission ...      % Transmission instance
                     );
-        
+
                 % Directional stability parameters
                 U = -1.8; % deg/g (negative for oversteer)
                 L = 3.5; % m (wheelbase)
-                
+
                 % Tolerance
                 tolerance = 0.10; % 10% tolerance
                 if simParams.includeTrailer
@@ -2539,7 +2536,7 @@ classdef VehicleModel < handle
                         tractorCoGHeight ... % h_CoG (of trailer)
                         );
                 end
-        
+
                 %% Initialize arrays to store simulation data
                 n = numSteps; % Number of time steps
                 timeArray = time;
@@ -2557,36 +2554,36 @@ classdef VehicleModel < handle
                 jerkLongitudinal = zeros(n, 1);
                 jerkLateral = zeros(n, 1);
                 steeringAnglesSim = zeros(n, 1);
-        
+
                 %% Simulation Loop
                 logMessages{end+1} = '--- Starting Simulation ---';
-        
+
                 % Define Middle Axle Distance from Tractor's Front Axle
                 middleAxleDistance = simParams.tractorHitchDistance; % in meters (Adjust based on your tractor's configuration)
-        
+
                 % Define Additional Rearward Shift if necessary
                 additionalRearShift = 0.5; % Set to 0 for direct alignment, for now it is 50cm / half meter
-        
+
                 % Update Hitch Offset to Align Trailer's Hitch with Middle Axle
                 hitch_offset_plot = middleAxleDistance + additionalRearShift; % Should be equal to middleAxleDistance if additionalRearShift is 0
-        
+
                 % Log hitch alignment parameters
                 logMessages{end+1} = sprintf('Middle Axle Distance: %.2f meters', middleAxleDistance);
                 logMessages{end+1} = sprintf('Additional Rearward Shift: %.2f meters', additionalRearShift);
                 logMessages{end+1} = sprintf('Hitch Offset Plot: %.2f meters', hitch_offset_plot);
                 logMessages{end+1} = '----------------------------------------';
-        
+
                 % Initialize a flag to track if speed has reached zero
                 speedZeroReached = false;
-        
+
                 % Define how often to update the waitbar (e.g., every 1%)
                 reportInterval = ceil(numSteps / 100); % Update every 1%
-        
+
                 % --- BrakeSystem Integration Begins ---
                 % Ensure that the ForceCalculator has the BrakeSystem instance
                 forceCalc.brakeSystem = brakeSystem;
                 % --- BrakeSystem Integration Ends ---
-                
+
                 % Vehicle parameters
                 % Example of speed-dependent lookahead:
                 baseLookahead = 50; % base value
@@ -2658,7 +2655,7 @@ classdef VehicleModel < handle
                 rethrow(ME); % Re-throw the error after logging
             end
         end
-        
+
         function [output] = computeNextSimFrame(obj,input)
             try    
                 % --- Auto-import of all variables within 'input' ------------
@@ -2675,7 +2672,7 @@ classdef VehicleModel < handle
                         progress = (i / numSteps) * 100;
                         waitbar(i / numSteps, hWaitbar, sprintf('Simulation Progress: %.2f%%', progress));
                     end
-                    
+
                     templim = find(tirePressureEnded, 1, 'first');
                     if  i <= templim
                         selectedPressures = tirePressureData(i, :);
@@ -2798,14 +2795,14 @@ classdef VehicleModel < handle
                     % --- Update purePursuit_PathFollower with Current State ---
                     currentState = [x, y];
                     purePursuitPathFollower = purePursuitPathFollower.updateState(currentState, theta, u);
-                
+
                     % --- Compute Control Commands from purePursuit_PathFollower ---
                     [purePursuitPathFollower, desiredSteeringAngleDeg] = purePursuitPathFollower.computeSteering();
 
                     % --- Apply Steering and Acceleration Commands ---
                     % Limit steering angle and acceleration based on simulation constraints
                     limitedSteerAngleDeg = obj.limiter_LateralControl.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
-
+                
                     % --- Steering Control ---
                     desiredSteerAngleDeg = steerAngles(i); % In degrees
                     if ~steeringEnded(i)
@@ -2813,7 +2810,7 @@ classdef VehicleModel < handle
                     end
                     steerAngleRad = deg2rad(limitedSteerAngleDeg);
                     steerAngleRad = AckermannGeometry.enforceSteeringLimits(steerAngleRad);
-        
+
                     % --- Compute Desired Acceleration ---
                     accData = accelerationData(i);
                     if ~accelerationEnded(i)
@@ -2829,13 +2826,13 @@ classdef VehicleModel < handle
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
-        
+
                     % --- Speed Limiter Integration ---
                     if currentSpeed >= maxSpeed
                         desired_acceleration = 0; % No further acceleration
                         logMessages{end+1} = sprintf('Step %d: Max speed reached (%.2f m/s). Throttle set to 0.', i, currentSpeed);
                     end
-        
+
                     % --- Apply Acceleration Limiter ---
                     limited_acceleration = obj.limiter_LongitudinalControl.applyLimits(desired_acceleration, currentSpeed);
                     limited_acceleration = movmean(limited_acceleration, floor(windowSize/dt));
@@ -2845,24 +2842,17 @@ classdef VehicleModel < handle
                     dynamicsUpdater.forceCalculator.turnRadius = R;
                     dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
 
-                    curveLimitSpeed = obj.curveSpeedLimiter.limitSpeed(obj.pid_SpeedController.currentTargetSpeed, R);
-                    if currentSpeed > 0.5 && currentSpeed > curveLimitSpeed
-                        requiredDecel = (curveLimitSpeed - currentSpeed) / dt;
-                        limited_acceleration = min(limited_acceleration, requiredDecel);
-                        logMessages{end+1} = sprintf('Step %d: Curve speed limit applied: %.2f m/s', i, curveLimitSpeed);
-                    end
-
                     limited_acceleration_sig(i) = limited_acceleration;
                     logMessages{end+1} = sprintf('Step %d: Limited acceleration: %.4f m/s^2', i, limited_acceleration);
                     steeringAnglesSim(i) = steerAngleRad;
                     % --- End of Acceleration Limiter ---
-        
+
                     % --- Transmission Gear Update ---
                     [transmission, desiredGear(i)] = transmission.updateGear(currentSpeed, limited_acceleration, time(i), dt);
                     logMessages{end+1} = sprintf('Step %d: Current Gear after update: %d', i, transmission.currentGear);
                     % --- End of Transmission Gear Update ---
                     ClutchPedal(i) = clutch.engagementPercentage;
-        
+
                     % --- Determine Desired Braking Force Based on Desired Acceleration ---
                     if limited_acceleration < 0
                         % Negative acceleration: Deceleration command
@@ -2877,7 +2867,7 @@ classdef VehicleModel < handle
                         logMessages{end+1} = sprintf('Step %d: Desired braking force set to 0 N.', i);
                     end
                     % --- End of Desired Braking Force Determination ---
-        
+
                     % --- Apply Brakes ---
                     brakeForceInputSig(i) = brakeForceInput;
                     brakeSystem = brakeSystem.applyBrakes(dt);
@@ -2886,26 +2876,26 @@ classdef VehicleModel < handle
                     F_brakesig(i) = F_brake;
                     logMessages{end+1} = sprintf('Step %d: Braking Force applied: %.2f N.', i, F_brake);
                     % --- End of Brake Application ---
-        
+
                     % --- Transmission Engine Braking ---
                     % Get engine braking torque from Transmission
                     engineBrakeTorque = transmission.getEngineBrakeTorque();
                     logMessages{end+1} = sprintf('Step %d: Engine Brake Torque: %.2f Nm.', i, engineBrakeTorque);
-        
+
                     % Convert engine braking torque to braking force
                     wheelRadius = tractorTireHeight / 2; % meters
                     F_engineBrake = engineBrakeTorque / wheelRadius; % F = Torque / Radius
                     logMessages{end+1} = sprintf('Step %d: Engine Braking Force: %.2f N.', i, F_engineBrake);
-        
+
                     % --- Combine BrakeSystem and Engine Braking Forces ---
                     %total_F_brake = F_brake + F_engineBrake;
                     %logMessages{end+1} = sprintf('Step %d: Total Braking Force (BrakeSystem + Engine): %.2f N.', i, total_F_brake);
-        
+
                     % --- Update ForceCalculator with Combined Braking Force ---
                     forceCalc = forceCalc.updateBrakingForce(-F_brake); % Apply total braking force oppositely
                     logMessages{end+1} = sprintf('Step %d: Braking Force updated in ForceCalculator as %.2f N.', i, -F_brake);
                     % --- End of Braking Force Update ---
-        
+
                     % --- Determine Throttle Position ---
                     if currentSpeed >= maxSpeed || limited_acceleration <= 0
                         throttlePosition = 0; % No throttle during deceleration or at max speed
@@ -2914,17 +2904,17 @@ classdef VehicleModel < handle
                         [engineTorqueMax, wheelTorqueMax] = engine.getTorque(1, transmission.currentGear); % Full throttle
                         maxAvailableForce = wheelTorqueMax / wheelRadius; % F = Torque / Radius
                         maxPossibleAcceleration = maxAvailableForce / totalMassToUse; % a = F / m
-        
+
                         % Limit desired acceleration to max possible
                         limited_acceleration = min(limited_acceleration, maxPossibleAcceleration);
                         % Calculate required traction force
                         F_required = limited_acceleration * totalMassToUse; % F = m * a
                         wheelTorqueRequired = F_required * wheelRadius; % Torque = Force * Radius
-                
+
                         % Compute loadTorque
                         loadTorque = wheelTorqueRequired / (transmission.gearRatios(transmission.currentGear) * ...
                                            transmission.finalDriveRatio * engine.efficiency);
-        
+
                         % Compute throttle position needed
                         throttlePosition = wheelTorqueRequired / wheelTorqueMax;
                         throttlePosition = max(0, min(1, throttlePosition)); % Clamp between 0 and 1
@@ -2940,10 +2930,10 @@ classdef VehicleModel < handle
                         throttle = throttle.updateThrottle(clutch.engagementPercentage, dt);
                         throttlePositionSig(i) = 0;
                     end
-        
+
                     % --- Get Actual Torque from Engine ---
                     [engineTorque, wheelTorque] = engine.getTorque(throttlePosition, transmission.currentGear);
-                                        
+
                     % 2) Convert brake force to brake torque
                     %    Suppose F_brake is the total braking force on wheels (N)
                     %    Then brakeTorque = F_brake * radius
@@ -2982,7 +2972,7 @@ classdef VehicleModel < handle
                     % --- Update Engine RPM ---
                     engine.updateRPM(throttle.getThrottle(), loadTorque, dt, transmission.currentGear);
                     logMessages{end+1} = sprintf('Step %d: Engine Torque: %.2f Nm, Wheel Torque: %.2f Nm.', i, engineTorque, wheelTorque);
-        
+
                     % --- **Account for Number of Drive Tires in F_traction Calculation** ---
                     % **Assumption:** All tractor and trailer tires are drive tires.
                     % Adjust these variables if only a subset of tires are drive tires.
@@ -2992,28 +2982,28 @@ classdef VehicleModel < handle
                     else
                         numDriveTiresTrailer = 0;
                     end
-        
+
                     totalDriveTires = numDriveTiresTractor + numDriveTiresTrailer;
                     logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor: %d, Trailer: %d)', totalDriveTires, numDriveTiresTractor, numDriveTiresTrailer);
                     % --- End of Drive Tires Accounting ---
-        
+
                     % --- Update ForceCalculator with Traction Force ---
                     F_traction_per_tire = wheelTorque / wheelRadius; % Traction force per tire
                     F_traction = F_traction_per_tire; % Total traction force
                     forceCalc.updateTractionForce(F_traction);
                     logMessages{end+1} = sprintf('Step %d: Traction Force updated in ForceCalculator as %.2f N.', i, F_traction);
-        
+
                     % --- Calculate Horsepower ---
                     engineRPM = engine.getRPM(); % Retrieve the current RPM from the engine object
                     horsePower = (engineTorque * engineRPM) / 7127; % Convert torque and RPM to horsepower
                     logMessages{end+1} = sprintf('Step %d: Horsepower: %.2f HP', i, horsePower);
-        
+
                     % Update the force calculator's calculated forces
                     dynamicsUpdater.forceCalculator.calculatedForces.traction = [F_traction; 0; 0];
-        
+
                     % Optionally store horsepower in a data array if you wish to log it over time
                     horsepowerSim(i) = horsePower; % This array can be saved or plotted later
-        
+
                     %% Integration of HitchModel Forces if trailer is included
                     if simParams.includeTrailer
                         % Define tractor and trailer states for HitchModel
@@ -3021,41 +3011,41 @@ classdef VehicleModel < handle
                                                'orientation', [0; 0; theta], ...
                                                'velocity', [u; v; 0], ...
                                                'angularVelocity', [0; 0; r]);
-        
+
                         trailerState = struct('position', [x_trailer; y_trailer; 0], ...
                                                'orientation', [0; 0; psi_trailer], ...
                                                'velocity', [u_trailer; v_trailer; 0], ...
                                                'angularVelocity', [0; 0; r_trailer]);
-        
+
                         % Calculate Hitch Forces and Moments
                         [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState, F_traction);
                         % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
                         dynamicsUpdater.forceCalculator.calculatedForces.hitchMomentZ = M_hitch;
                         dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
-        
+
                         % Update trailer's orientation and yaw rate from HitchModel
                         psi_trailer = hitchModel.angularState.psi;
                         r_trailer = hitchModel.angularState.omega;
-        
+
                         % Update trailerState for next iteration
                         trailerState.orientation(3) = psi_trailer;
                         trailerState.angularVelocity(3) = r_trailer;
-        
+
                         % Update trailer's velocity (assuming simple model for demonstration)
                         u_trailer = u; % For simplicity, trailer's longitudinal speed equals tractor's speed
                         v_trailer = v; % Assuming negligible sideslip difference
-        
+
                         % Apply Hitch Forces to ForceCalculator
                         dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
-        
+
                         %% Update Trailer's State in DynamicsUpdater
                         dynamicsUpdater = dynamicsUpdater.setTrailerVelocity([u_trailer; v_trailer; 0]);
                         dynamicsUpdater = dynamicsUpdater.setTrailerAngularVelocity([0; 0; r_trailer]);
                     end
-        
+
                     %% Update dynamics for the tractor
                     dynamicsUpdater = dynamicsUpdater.updateState();
-        
+
                     % Retrieve updated state variables for the tractor
                     x = dynamicsUpdater.position(1);
                     y = dynamicsUpdater.position(2);
@@ -3077,10 +3067,10 @@ classdef VehicleModel < handle
                         newAngularVelocity = [0; 0; r];        % [p; q; r] in rad/s
                         newTurnRadius = dynamicsUpdater.forceCalculator.turnRadius; % Assuming 'turnRadius' is a property of Transmission
                         newVehicleMass = totalMassToUse;        % Total mass (tractor + trailer)
-        
+
                         % Update StabilityChecker with new dynamics
                         stabilityChecker = stabilityChecker.updateDynamics(newVelocity, newAngularVelocity, newTurnRadius, newVehicleMass, theta);
-        
+
                         % Update Hitch Angle (delta) based on current articulation
                         % Assuming 'delta' represents the current hitch articulation angle in radians
                         % Update this value based on your simulation's articulation logic
@@ -3089,7 +3079,7 @@ classdef VehicleModel < handle
                         % stabilityChecker = stabilityChecker.updateDamping(simParams.dampingX);
                         % Check stability conditions
                         stabilityChecker = stabilityChecker.checkStability();
-        
+
                         % Get stability flags
                         [isWiggling, isRollover, isSkidding, isJackknife] = stabilityChecker.getStabilityFlags();
 
@@ -3113,13 +3103,13 @@ classdef VehicleModel < handle
                         % hitchModel.dampingCoefficients.roll = recommendedHitchParams.dampingCoefficients.roll;
                         % hitchModel.dampingCoefficients.pitch = recommendedHitchParams.dampingCoefficients.pitch;
                         % hitchModel.dampingCoefficients.yaw = recommendedHitchParams.dampingCoefficients.yaw;
-        
+
                         % Update globalVehicleFlags
                         globalVehicleFlags.isWiggling = globalVehicleFlags.isWiggling || isWiggling;
                         globalVehicleFlags.isRollover = globalVehicleFlags.isRollover || isRollover;
                         globalVehicleFlags.isSkidding = globalVehicleFlags.isSkidding || isSkidding;
                         globalVehicleFlags.isJackknife = globalVehicleFlags.isJackknife || isJackknife;
-        
+
                         % Store the flags for plotting
                         isWigglingArray(i) = isWiggling;
                         isRolloverArray(i) = isRollover;
@@ -3134,7 +3124,7 @@ classdef VehicleModel < handle
                         logMessages{end+1} = sprintf('Step %d: Corrected negative longitudinal speed to zero.', i);
                     end
                     % --- End of Speed Correction ---
-        
+
                     % obj.pid_SpeedController.updatePosition(x,y);
                     % Store positions and angles for plotting
                     tractorX(i) = x;
@@ -3144,17 +3134,17 @@ classdef VehicleModel < handle
                     % Store Roll Dynamics
                     rollAngleArray(i) = phi;   % Store roll angle
                     rollRateArray(i) = p;      % Store roll rate
-        
+
                     %% Align Trailer's Orientation and Position with Tractor if included
                     if simParams.includeTrailer
                         % Compute Hitch Point Position based on Tractor's Position and Orientation
                         x_hitch = x - hitch_offset_plot * cos(theta);
                         y_hitch = y - hitch_offset_plot * sin(theta);
-        
+
                         % Set Trailer's Hitch Position to Hitch Point Position
                         trailerX(i) = x_hitch;
                         trailerY(i) = y_hitch;
-        
+
                         % Calculate Trailer's Orientation based on Movement Direction
                         if i > 1
                             trailerTheta(i) = psi_trailer;
@@ -3202,7 +3192,7 @@ classdef VehicleModel < handle
                             trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
                         end
                     end
-        
+
                     % Collect log messages
                     logMessages{end+1} = sprintf('Step %d:', i);
                     logMessages{end+1} = sprintf('  Tractor Position: (%.2f, %.2f)', x, y);
@@ -3251,7 +3241,7 @@ classdef VehicleModel < handle
                 rethrow(ME); % Re-throw the error after logging
             end
         end
-        
+
         function speedData = closeSim(obj,in)
             try    
                 % --- Auto-import of all variables within 'input' ------------
@@ -3263,49 +3253,49 @@ classdef VehicleModel < handle
                 end
                 % -------------------------------------------------------------------------
                 logMessages{end+1} = '--- Simulation Completed ---';
-        
+
                 % Plot Stability Flags
                 if simParams.includeTrailer
                     figure('Name', 'Stability Checker Flags');
-        
+
                     subplot(4,1,1);
                     plot(timeArray, isWigglingArray, 'r', 'LineWidth', 1.5);
                     title('Stability Flags Over Time');
                     ylabel('Wiggling');
                     ylim([-0.1 1.1]);
                     grid on;
-        
+
                     subplot(4,1,2);
                     plot(timeArray, isRolloverArray, 'g', 'LineWidth', 1.5);
                     ylabel('Rollover');
                     ylim([-0.1 1.1]);
                     grid on;
-        
+
                     subplot(4,1,3);
                     plot(timeArray, isSkiddingArray, 'b', 'LineWidth', 1.5);
                     ylabel('Skidding');
                     ylim([-0.1 1.1]);
                     grid on;
-        
+
                     subplot(4,1,4);
                     plot(timeArray, isJackknifeArray, 'm', 'LineWidth', 1.5);
                     ylabel('Jackknife');
                     xlabel('Time (s)');
                     ylim([-0.1 1.1]);
                     grid on;
-        
+
                     % Improve layout
                     sgtitle('Stability Checker Flags Over Time');
-        
+
                     % Optionally, save the figure
                     figFilename = obj.getUniqueFilename(obj.simulationName, '.png');
                     saveas(gcf, figFilename);
                     logMessages{end+1} = sprintf('Stability flags plot saved to %s.', figFilename);
                 end
-        
+
                 %% Assign Speed Data
                 speedData = velocityU(:);  % Ensure it's a column vector
-        
+
                 %% Write simulation data to MATLAB .mat file (faster than Excel)
                 simulationData = struct(...
                     'Time', timeArray, ...
@@ -3332,7 +3322,7 @@ classdef VehicleModel < handle
                     'Throttle', throttlePositionSig, ...
                     'SteeringWheelAngle', -steeringAnglesSim*20 ...
                 );
-        
+
                 if simParams.includeTrailer
                     simulationData.TrailerX = trailerX;
                     simulationData.TrailerY = trailerY;
@@ -3340,33 +3330,33 @@ classdef VehicleModel < handle
                     % Export per-box trailer orientations for multi-box follow-the-lead
                     simulationData.trailerThetaBoxes = trailerThetaBoxes;
                 end
-        
+
                 % Plot acceleration limits
                 obj.limiter_LongitudinalControl.plotLimits();
-                
+
                 % Plot Gaussian filter coefficients
                 %obj.limiter_LongitudinalControl.plotGaussianResponse();
 
                 % Generate unique filename for .mat file
                 matFilename = obj.getUniqueFilename(obj.simulationName, '.mat');
                 save(matFilename, '-struct', 'simulationData');
-        
+
                 %% Save log data to a text and CSV file
                 [txtFilename, csvFilename] = obj.saveLogs(logMessages); % Capture filenames
-        
+
                 %% Confirmation Messages
                 if exist(matFilename, 'file')
                     disp(['Simulation data saved to ', matFilename]);
                 else
                     warning('Failed to save simulation data.');
                 end
-        
+
                 if exist(txtFilename, 'file') && exist(csvFilename, 'file')
                     disp(['Logs saved to ', txtFilename, ' and ', csvFilename]);
                 else
                     warning('Failed to save simulation logs.');
                 end
-        
+
                 fprintf('--- Simulation Data and Logs Saved ---\n');
                 % Auto-export all local simulation variables to output struct
                 vars = setdiff(who, {'obj','input','output','fn','k'});
@@ -3459,7 +3449,7 @@ function [time, signal, freeFlag] = processSignalColumn(commandString, initialVa
     stepPattern      = '^step_(\-?\d+\.?\d*)\(\s*(\d+\.?\d*)\)$';
     keepPattern      = '^keep_(\-?\d+\.?\d*)\(\s*(\d+\.?\d*)\)$';
     simvalPattern    = '^simval_\((\d+\.?\d*)\)$';
-    
+
     % Single-tire pressure pattern (optional):
     singlePressurePattern = '^pressure_\(\s*t\s*:\s*(\d+\.?\d*)\s*;\s*tire\s*:\s*(\d+)\s*;\s*psi\s*:\s*(\d+\.?\d*)\s*\)$';
 
@@ -3860,7 +3850,7 @@ function y = smoothNonlinearTransform(x, a)
     if nargin < 2
         error('smoothNonlinearTransform requires two input arguments: x and a');
     end
-    
+
     % Apply the transformation
     y = x + a * x.^3;
 end

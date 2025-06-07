@@ -1,4 +1,4 @@
-%{
+%{More actions
 % @file pid_SpeedController.m
 % @brief PID-based speed controller with smoothing and cornering logic.
 %        Reduces speed for tight turns to avoid skidding.
@@ -203,13 +203,23 @@ classdef pid_SpeedController < handle
             % ---------------- 2) Filter the current speed reading ------------------
             filteredSpeed = obj.applyFilter(currentSpeed);
 
-            % ---------------- 3) Controller Activation -------------------------
-            % Keep the controller active even when slowing down so that the PID
-            % can generate negative acceleration commands for braking.
-            if ~obj.controllerActive && obj.verbose
-                fprintf('[pid_SpeedController] Re-enabling controller.\n');
+            % ---------------- 3) Check if we need to decelerate --------------------
+            if filteredSpeed > obj.currentTargetSpeed
+                % Deceleration is required => let the brakes handle it
+                obj.controllerActive = false;
+                acceleration = 0;
+                if obj.verbose
+                    fprintf('[pid_SpeedController] Deceleration needed. Controller set to 0.\n');
+                end
+                return;
+            else
+                % Re-enable controller if not active
+                if ~obj.controllerActive && obj.verbose
+                    fprintf('[pid_SpeedController] Re-enabling controller.\n');
+                end
+                obj.controllerActive = true;
             end
-            obj.controllerActive = true;
+
 
             % Ensure filtered speed is not negative
             if filteredSpeed < 0
@@ -261,9 +271,13 @@ classdef pid_SpeedController < handle
             obj.previousError = error;
             obj.previousTime  = currentTime;
 
-            % Allow negative acceleration so the braking system can act
-            if acceleration < 0 && obj.verbose
-                fprintf('[pid_SpeedController] Requesting deceleration of %.2f m/s^2.\n', acceleration);
+            % If negative acceleration was computed, override with 0 to let brakes do it
+            if acceleration < 0
+                obj.controllerActive = false;
+                acceleration = 0;
+                if obj.verbose
+                    fprintf('[pid_SpeedController] Negative accel => letting brakes handle deceleration.\n');
+                end
             end
         end
 
