@@ -19,6 +19,7 @@ classdef VehicleModel < handle
         limiter_LateralControl   % Instance of limiter_LateralControl
         limiter_LongitudinalControl  % Instance of limiter_LongitudinalControl
         jerkController              % Instance of jerk_Controller for jerk limiting
+        curveSpeedLimiter          % Instance of curveSpeed_Limiter for curve speed limiting
         simulationName
         uiManager
     end
@@ -1771,7 +1772,9 @@ classdef VehicleModel < handle
                     gaussianStd ...
                     );
                 obj.jerkController = jerk_Controller(0.7 * 9.81);
+                obj.curveSpeedLimiter = curveSpeed_Limiter();
                 logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
+                logMessages{end+1} = 'curveSpeed_Limiter initialized successfully.';
                 % --- End of limiter_LongitudinalControl Initialization ---
         
                 time = timeProcessed; % Update time vector
@@ -2841,6 +2844,13 @@ classdef VehicleModel < handle
                     [~, ~, R] = AckermannGeometry.calculateAckermannSteeringAngles(steerAngleRad, tractorWheelbase, tractorTrackWidth);
                     dynamicsUpdater.forceCalculator.turnRadius = R;
                     dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
+
+                    curveLimitSpeed = obj.curveSpeedLimiter.limitSpeed(obj.pid_SpeedController.currentTargetSpeed, R);
+                    if currentSpeed > 0.5 && currentSpeed > curveLimitSpeed
+                        requiredDecel = (curveLimitSpeed - currentSpeed) / dt;
+                        limited_acceleration = min(limited_acceleration, requiredDecel);
+                        logMessages{end+1} = sprintf('Step %d: Curve speed limit applied: %.2f m/s', i, curveLimitSpeed);
+                    end
 
                     limited_acceleration_sig(i) = limited_acceleration;
                     logMessages{end+1} = sprintf('Step %d: Limited acceleration: %.4f m/s^2', i, limited_acceleration);
