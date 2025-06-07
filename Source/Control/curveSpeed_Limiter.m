@@ -93,7 +93,7 @@ classdef curveSpeed_Limiter < handle
             end
 
             accelOverride = NaN; % default: no override
-
+            
             if inCurve
                 obj.currentFactor = obj.reductionFactor;
             else
