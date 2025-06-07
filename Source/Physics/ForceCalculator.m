@@ -76,7 +76,7 @@ classdef ForceCalculator
         h_CoG                    % Height of center of gravity of the tractor (m)
         h_CoG_trailer            % Height of center of gravity of the trailer (m)
         angularVelocity          % [p; q; r] in vehicle frame (rad/s)
-        inertia                  % [Ixx, Iyy, Izz] (kg·m²)
+        inertia = zeros(1,3)     % [Ixx, Iyy, Izz] (kg·m²)
         gravity                  % Gravitational acceleration (m/s²)
         slopeAngle               % Slope angle (radians)
         calculatedForces         % struct to store calculated forces and moments
@@ -180,8 +180,11 @@ classdef ForceCalculator
             % Preserves all original parameters, plus optional 'wheelSpeeds, wheelRadius, wheelInertia'
             % if given via varargin.
 
-            % Validate vehicleType
-            if ~ismember(vehicleType, {'tractor-trailer', 'tractor', 'passenger'})
+            % Validate vehicleType using codegen friendly syntax
+            validTractorTrailer   = strcmp(vehicleType, 'tractor-trailer');
+            validTractor          = strcmp(vehicleType, 'tractor');
+            validPassenger        = strcmp(vehicleType, 'passenger');
+            if ~(validTractorTrailer || validTractor || validPassenger)
                 error('vehicleType must be ''tractor-trailer'', ''tractor'', or ''passenger''.');
             end
             obj.vehicleType = vehicleType;
@@ -206,16 +209,19 @@ classdef ForceCalculator
             obj.wheelbase           = wheelbase;
             obj.gravity             = 9.81;         % m/s²
             % Initialize calculated forces struct with zero values
-            forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',... 
-                         'momentZ_wind','traction','traction_force','M_z','momentZ',...  
-                         'F_y_total','momentRoll','totalForce','F_y_trailer','momentZ_trailer',...   
-                         'F_total_trailer_local','F_total_trailer_global','yawMoment_trailer',...  
-                         'momentRoll_trailer','trailerPsi','trailerOmega','rolloverRiskIndex',...  
+            forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',...
+                         'momentZ_wind','traction','traction_force','M_z','momentZ',...
+                         'F_y_total','momentRoll','totalForce','F_y_trailer','momentZ_trailer',...
+                         'F_total_trailer_local','F_total_trailer_global','yawMoment_trailer',...
+                         'momentRoll_trailer','trailerPsi','trailerOmega','rolloverRiskIndex',...
                          'jackknifeRiskIndex','braking'};
-            obj.calculatedForces = struct();
-            for iKey = 1:numel(forceKeys)
-                obj.calculatedForces.(forceKeys{iKey}) = 0;
-            end
+            obj.calculatedForces = struct( ...
+                'hitch', zeros(3,1), 'hitchLateralForce', 0, 'F_drag_global', 0, 'F_side_global', 0, ...
+                'momentZ_wind', 0, 'traction', zeros(3,1), 'traction_force', zeros(3,1), 'M_z', 0, 'momentZ', 0, ...
+                'F_y_total', 0, 'momentRoll', 0, 'totalForce', zeros(3,1), 'F_y_trailer', 0, 'momentZ_trailer', 0, ...
+                'F_total_trailer_local', zeros(3,1), 'F_total_trailer_global', zeros(3,1), 'yawMoment_trailer', 0, ...
+                'momentRoll_trailer', 0, 'trailerPsi', 0, 'trailerOmega', 0, 'rolloverRiskIndex', 0, ...
+                'jackknifeRiskIndex', 0, 'braking', zeros(3,1) );
             obj.orientation         = 0;            % initial orientation
             obj.steeringAngle       = 0;
             obj.C_alpha_front       = 80000;        % example
@@ -229,8 +235,12 @@ classdef ForceCalculator
             else
                 obj.tireModelFlag = tireModelFlag;
             end
+            coeffsZero = struct('pCx1',0,'pDx1',0,'pDx2',0,'pEx1',0,'pEx2',0,...
+                'pEx3',0,'pEx4',0,'pKx1',0,'pKx2',0,'pKx3',0,'pCy1',0,'pDy1',0,...
+                'pDy2',0,'pEy1',0,'pEy2',0,'pEy3',0,'pEy4',0,'pKy1',0,'pKy2',0,...
+                'pKy3',0);
             if isempty(highFidelityTireModel)
-                obj.highFidelityTireModel = [];
+                obj.highFidelityTireModel = Pacejka96TireModel(coeffsZero);
             else
                 obj.highFidelityTireModel = highFidelityTireModel;
             end
@@ -270,11 +280,15 @@ classdef ForceCalculator
                 obj.trailerPsi       = [];
                 obj.trailerOmega     = [];
                 obj.trailerPosition  = [];
-                obj.trailerInertia   = [];
-                obj.dt               = [];
-                obj.trailerMass      = [];
-                obj.trailerWheelbase = [];
-                obj.numTrailerTires  = [];
+                obj.trailerInertia   = 0;
+                obj.dt               = 0;
+                obj.trailerMass      = 0;
+                obj.trailerWheelbase = 0;
+                if nargin >= 24
+                    obj.numTrailerTires = numTrailerTires;
+                else
+                    obj.numTrailerTires = 0;
+                end
                 obj.trailerBoxMasses = [];
                 if strcmp(vehicleType, 'passenger')
                     obj.jointForce = [0; 0; 0];
@@ -333,13 +347,23 @@ classdef ForceCalculator
             % --- Filter Setup ---
             obj.filterWindowSize = 5;
             % Pre-allocate force buffers and filtered forces for moving average (fixed-size)
-            obj.forceBuffers = struct();
-            obj.calculatedForces_filtered = struct();
-            for iKey = 1:numel(forceKeys)
-                key = forceKeys{iKey};
-                obj.forceBuffers.(key) = struct('data', zeros(obj.filterWindowSize,1), 'sum', 0, 'index', 0, 'count', 0);
-                obj.calculatedForces_filtered.(key) = 0;
-            end
+            bufTemplate = struct('data', zeros(obj.filterWindowSize,1), 'sum', 0, 'index', 0, 'count', 0);
+            obj.forceBuffers = struct( ...
+                'hitch', bufTemplate, 'hitchLateralForce', bufTemplate, ...
+                'F_drag_global', bufTemplate, 'F_side_global', bufTemplate, ...
+                'momentZ_wind', bufTemplate, 'traction', bufTemplate, 'traction_force', bufTemplate, ...
+                'M_z', bufTemplate, 'momentZ', bufTemplate, 'F_y_total', bufTemplate, 'momentRoll', bufTemplate, ...
+                'totalForce', bufTemplate, 'F_y_trailer', bufTemplate, 'momentZ_trailer', bufTemplate, ...
+                'F_total_trailer_local', bufTemplate, 'F_total_trailer_global', bufTemplate, 'yawMoment_trailer', bufTemplate, ...
+                'momentRoll_trailer', bufTemplate, 'trailerPsi', bufTemplate, 'trailerOmega', bufTemplate, ...
+                'rolloverRiskIndex', bufTemplate, 'jackknifeRiskIndex', bufTemplate, 'braking', bufTemplate);
+            obj.calculatedForces_filtered = struct( ...
+                'hitch', zeros(3,1), 'hitchLateralForce', 0, 'F_drag_global', 0, 'F_side_global', 0, ...
+                'momentZ_wind', 0, 'traction', zeros(3,1), 'traction_force', zeros(3,1), 'M_z', 0, 'momentZ', 0, ...
+                'F_y_total', 0, 'momentRoll', 0, 'totalForce', zeros(3,1), 'F_y_trailer', 0, 'momentZ_trailer', 0, ...
+                'F_total_trailer_local', zeros(3,1), 'F_total_trailer_global', zeros(3,1), 'yawMoment_trailer', 0, ...
+                'momentRoll_trailer', 0, 'trailerPsi', 0, 'trailerOmega', 0, 'rolloverRiskIndex', 0, ...
+                'jackknifeRiskIndex', 0, 'braking', zeros(3,1) );
 
             % --- Optional wheel parameters via varargin ---
             if length(varargin) >= 3
@@ -355,6 +379,12 @@ classdef ForceCalculator
         
         %% computeTireForces (vectorized lateral forces and yaw moment)
         function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r)
+            % Allow calling a compiled MEX wrapper if available
+            if exist('ForceCalculator_computeTireForces_wrapper_mex','file') == 3
+                [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper_mex( ...
+                    loads, contactAreas, u, v, r);
+                return;
+            end
             numTires = numel(loads);
             xPos = obj.loadDistribution(:,1);
             a = obj.wheelbase/2;
