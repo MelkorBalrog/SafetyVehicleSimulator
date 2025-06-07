@@ -249,7 +249,7 @@ classdef HitchModel
             M_yaw_spring  = -obj.fifthWheelStiffnessYaw * deltaYaw;
             M_yaw_damping = -obj.fifthWheelDampingYaw   * (omega_trailer - omega_tractor);
             if norm(tractorState.velocity) > obj.trailingVelocityThreshold
-                M_trailing    = obj.trailingCoefficient * pullingForce * sin(deltaYaw);
+                M_trailing    = -obj.trailingCoefficient * pullingForce * sin(deltaYaw);
             else
                 M_trailing    = 0;
             end
