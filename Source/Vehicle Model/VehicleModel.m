@@ -19,6 +19,7 @@ classdef VehicleModel < handle
         limiter_LateralControl   % Instance of limiter_LateralControl
         limiter_LongitudinalControl  % Instance of limiter_LongitudinalControl
         jerkController              % Instance of jerk_Controller for jerk limiting
+        curveSpeedLimiter           % Instance of curveSpeed_Limiter
         simulationName
         uiManager
     end
@@ -1777,6 +1778,11 @@ classdef VehicleModel < handle
                 obj.jerkController = jerk_Controller(0.7 * 9.81);
                 logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
                 % --- End of limiter_LongitudinalControl Initialization ---
+
+                % --- Instantiate the curveSpeedLimiter ---
+                obj.curveSpeedLimiter = curveSpeed_Limiter();
+                logMessages{end+1} = 'curveSpeed_Limiter initialized successfully.';
+                % --- End of curveSpeedLimiter Initialization ---
         
                 time = timeProcessed; % Update time vector
                 steerAngles = -steerAngles;
@@ -2826,7 +2832,19 @@ classdef VehicleModel < handle
                         curIdx = purePursuitPathFollower.currentWaypointIndex;
                         lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
                         upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
+                        waypointSpacing = 1.0;
+                        curveIdx = find(~isinf(upcomingRadii),1,'first');
+                        if isempty(curveIdx)
+                            distToCurve = Inf;
+                        else
+                            distToCurve = (curveIdx-1)*waypointSpacing;
+                        end
+                        inCurve = ~isinf(upcomingRadii(1));
+                        baseSpeed = obj.pid_SpeedController.desiredSpeed;
+                        limitedSpeed = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
+                        obj.pid_SpeedController.desiredSpeed = limitedSpeed;
                         desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
+                        obj.pid_SpeedController.desiredSpeed = baseSpeed;
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
