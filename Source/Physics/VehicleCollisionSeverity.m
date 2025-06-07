@@ -228,7 +228,10 @@ classdef VehicleCollisionSeverity
                 KE_tables.Average.ObliqueCollision     = [0,4.75;4.75,20.5;20.5,47.5;47.5,Inf];
             end
             bt = bound_type_str;
-            ct = regexprep(collision_type, '[- ]', '');
+            % MATLAB Coder does not support regexprep, so remove hyphens and
+            % spaces using strrep which is codegen compatible
+            ct = strrep(collision_type, '-', '');
+            ct = strrep(ct, ' ', '');
             baseDV = KE_tables.(bt).(ct);
             scale = sqrt(J2980MaxAssumedMass / vehicle_mass);
             thresholds = baseDV * scale;
