@@ -80,6 +80,10 @@ classdef HitchModel
         %! \var trailingCoefficient
         %! \brief Lever arm coefficient converting pulling force to yaw correcting torque (meters).
         trailingCoefficient
+
+        %! \var trailingVelocityThreshold
+        %! \brief Minimum tractor speed to apply trailing torque (m/s).
+        trailingVelocityThreshold
     end
 
     methods
@@ -122,6 +126,7 @@ classdef HitchModel
             else
                 obj.trailingCoefficient = trailingCoefficient;
             end
+            obj.trailingVelocityThreshold = 0.5; % m/s
 
             % Validate 'stiffness' struct
             requiredFields = {'x', 'y', 'z', 'roll', 'pitch', 'yaw'};
@@ -243,7 +248,11 @@ classdef HitchModel
             M_pitch = -stiff.pitch * deltaAngles(2) - damp.pitch * deltaOmega(2);
             M_yaw_spring  = -obj.fifthWheelStiffnessYaw * deltaYaw;
             M_yaw_damping = -obj.fifthWheelDampingYaw   * (omega_trailer - omega_tractor);
-            M_trailing    = obj.trailingCoefficient * pullingForce * sin(deltaYaw);
+            if norm(tractorState.velocity) > obj.trailingVelocityThreshold
+                M_trailing    = obj.trailingCoefficient * pullingForce * sin(deltaYaw);
+            else
+                M_trailing    = 0;
+            end
             torque_hitch  = M_yaw_spring + M_yaw_damping + M_trailing;
             M_total = [M_roll; M_pitch; torque_hitch];
 
