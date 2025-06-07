@@ -2,16 +2,29 @@ function tests = CurveSpeedLimiterTest
     tests = functiontests(localfunctions);
 end
 
-function testNoLimitForLargeRadius(testCase)
-    limiter = curveSpeed_Limiter(0.5);
-    speed = 20;
-    limited = limiter.limitSpeed(speed, 150); % radius larger than threshold
-    verifyEqual(testCase, limited, speed);
+function testNoRampBeforeStoppingDistance(testCase)
+    limiter = curveSpeed_Limiter();
+    curSpeed = 20;
+    tgtSpeed = 20;
+    stopDist = limiter.computeStoppingDistance(curSpeed, tgtSpeed * limiter.reductionFactor);
+    limited = limiter.limitSpeed(curSpeed, tgtSpeed, stopDist + 1);
+    verifyEqual(testCase, limited, tgtSpeed, 'AbsTol', 1e-10);
 end
 
-function testLimitForSmallRadius(testCase)
-    limiter = curveSpeed_Limiter(0.5);
-    speed = 20;
-    limited = limiter.limitSpeed(speed, 50); % radius below threshold
-    verifyEqual(testCase, limited, speed * 0.5);
+function testFullReductionAtCurveStart(testCase)
+    limiter = curveSpeed_Limiter();
+    curSpeed = 20;
+    tgtSpeed = 20;
+    limited = limiter.limitSpeed(curSpeed, tgtSpeed, 0);
+    verifyEqual(testCase, limited, tgtSpeed * limiter.reductionFactor, 'AbsTol', 1e-10);
+end
+
+function testHalfwayReduction(testCase)
+    limiter = curveSpeed_Limiter();
+    curSpeed = 20;
+    tgtSpeed = 20;
+    stopDist = limiter.computeStoppingDistance(curSpeed, tgtSpeed * limiter.reductionFactor);
+    limited = limiter.limitSpeed(curSpeed, tgtSpeed, stopDist/2);
+    expected = tgtSpeed * (limiter.reductionFactor + (1 - limiter.reductionFactor) * 0.5);
+    verifyEqual(testCase, limited, expected, 'AbsTol', 1e-10);
 end
