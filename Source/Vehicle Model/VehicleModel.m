@@ -2846,7 +2846,7 @@ classdef VehicleModel < handle
                     dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
 
                     curveLimitSpeed = obj.curveSpeedLimiter.limitSpeed(obj.pid_SpeedController.currentTargetSpeed, R);
-                    if currentSpeed > curveLimitSpeed
+                    if currentSpeed > 0.5 && currentSpeed > curveLimitSpeed
                         requiredDecel = (curveLimitSpeed - currentSpeed) / dt;
                         limited_acceleration = min(limited_acceleration, requiredDecel);
                         logMessages{end+1} = sprintf('Step %d: Curve speed limit applied: %.2f m/s', i, curveLimitSpeed);
