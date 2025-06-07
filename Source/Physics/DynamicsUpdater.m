@@ -334,10 +334,12 @@ classdef DynamicsUpdater < handle
 
         % Compute state derivatives including roll dynamics and momentum
         function [dydt, accelerations] = stateDerivative(obj, state)
-            % Use a compiled MEX implementation if available
-            if exist('DynamicsUpdater_stateDerivative_wrapper_mex','file') == 3
-                [dydt, accelerations] = DynamicsUpdater_stateDerivative_wrapper_mex(state);
-                return;
+            % Use a compiled MEX implementation if available when running in MATLAB
+            if coder.target('MATLAB')
+                if exist('DynamicsUpdater_stateDerivative_wrapper_mex','file') == 3
+                    [dydt, accelerations] = DynamicsUpdater_stateDerivative_wrapper_mex(state);
+                    return;
+                end
             end
             % Extract state variables
             x = state(1);
