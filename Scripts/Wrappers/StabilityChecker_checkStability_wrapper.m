@@ -50,4 +50,3 @@ function [isWiggling,isRollover,isSkidding,isJackknife] = StabilityChecker_check
     checker = checker.checkStability();
     [isWiggling,isRollover,isSkidding,isJackknife] = checker.getStabilityFlags();
 end
-

@@ -218,6 +218,32 @@ classdef VehicleCollisionSeverity
             %
             % Returns:
             %   thresholds - Nx2 matrix of [min, max] delta-V values in kph
+            % Vectorized delta-V thresholds lookup based on SAE J2980 tables
+            persistent KE_tables
+            if isempty(KE_tables)
+                KE_tables.LowerBound.HeadOnCollision   = [0,4;4,20;20,40;40,Inf];
+                KE_tables.LowerBound.RearEndCollision  = [0,4;4,20;20,40;40,Inf];
+                KE_tables.LowerBound.SideCollision     = [0,2;2,8;8,16;16,Inf];
+                KE_tables.LowerBound.ObliqueCollision  = [0,3;3,14;14,28;28,Inf];
+                KE_tables.HigherBound.HeadOnCollision  = [0,10;10,50;50,65;65,Inf];
+                KE_tables.HigherBound.RearEndCollision = [0,10;10,50;50,60;60,Inf];
+                KE_tables.HigherBound.SideCollision    = [0,3;10,30;30,40;40,Inf];
+                KE_tables.HigherBound.ObliqueCollision = [0,6.5;10,40;40,50;50,Inf];
+                KE_tables.Average.HeadOnCollision      = [0,7;7,35;35,52.5;52.5,Inf];
+                KE_tables.Average.RearEndCollision     = [0,7;7,35;35,52.5;52.5,Inf];
+                KE_tables.Average.SideCollision        = [0,2.5;2.5,6;6,39;39,Inf];
+                KE_tables.Average.ObliqueCollision     = [0,4.75;4.75,20.5;20.5,47.5;47.5,Inf];
+            end
+            % MATLAB Coder does not allow dynamic field names, so select the
+            % appropriate table explicitly using switch statements
+            switch bound_type_str
+                case 'LowerBound'
+                    tableSel = KE_tables.LowerBound;
+                case 'HigherBound'
+                    tableSel = KE_tables.HigherBound;
+                otherwise
+                    tableSel = KE_tables.Average;
+            end
 
             % Vectorized delta-V thresholds lookup based on SAE J2980 tables
             % Use separate persistent arrays for each lookup table so codegen

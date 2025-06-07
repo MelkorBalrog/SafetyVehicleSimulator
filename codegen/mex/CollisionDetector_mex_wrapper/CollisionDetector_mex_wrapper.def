@@ -1,0 +1,9 @@
+LIBRARY CollisionDetector_mex_wrapper.mexw64
+EXPORTS
+mexFunction
+mexfilerequiredapiversion
+emlrtMexFcnProperties
+CollisionDetector_mex_wrapper
+CollisionDetector_mex_wrapper_initialize
+CollisionDetector_mex_wrapper_terminate
+CollisionDetector_mex_wrapper_atexit
