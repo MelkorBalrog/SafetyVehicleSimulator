@@ -853,45 +853,13 @@ classdef SimManager < handle
             collisionX = NaN;
             collisionY = NaN;
 
-            % Collect corner sets for each vehicle and its trailer boxes
-            group1 = {tractorCorners1};
-            group2 = {tractorCorners2};
-
-            if obj.vehicleSim1.simParams.includeTrailer && ~isempty(trailerParams1)
-                if isfield(obj.dataManager.globalTrailer1Data, 'Boxes') && ...
-                        ~isempty(obj.dataManager.globalTrailer1Data.Boxes)
-                    boxes = obj.dataManager.globalTrailer1Data.Boxes;
-                    for bi = 1:numel(boxes)
-                        group1{end+1} = VehiclePlotter.getVehicleCorners(...
-                            boxes(bi).X(i), boxes(bi).Y(i), boxes(bi).Theta(i), ...
-                            trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
-                    end
-                else
-                    group1{end+1} = VehiclePlotter.getVehicleCorners(...
-                        obj.dataManager.globalTrailer1Data.X(i), ...
-                        obj.dataManager.globalTrailer1Data.Y(i), ...
-                        obj.dataManager.globalTrailer1Data.Theta(i), ...
-                        trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
-                end
-            end
-
-            if obj.vehicleSim2.simParams.includeTrailer && ~isempty(trailerParams2)
-                if isfield(obj.dataManager.globalTrailer2Data, 'Boxes') && ...
-                        ~isempty(obj.dataManager.globalTrailer2Data.Boxes)
-                    boxes2 = obj.dataManager.globalTrailer2Data.Boxes;
-                    for bi = 1:numel(boxes2)
-                        group2{end+1} = VehiclePlotter.getVehicleCorners(...
-                            boxes2(bi).X(i), boxes2(bi).Y(i), boxes2(bi).Theta(i), ...
-                            trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
-                    end
-                else
-                    group2{end+1} = VehiclePlotter.getVehicleCorners(...
-                        obj.dataManager.globalTrailer2Data.X(i), ...
-                        obj.dataManager.globalTrailer2Data.Y(i), ...
-                        obj.dataManager.globalTrailer2Data.Theta(i), ...
-                        trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
-                end
-            end
+            % Collect corner sets for each vehicle and all of its trailer boxes
+            group1 = [{tractorCorners1}, ...
+                      obj.getTrailerBoxesCorners(obj.dataManager.globalTrailer1Data, ...
+                                                trailerParams1, i)];
+            group2 = [{tractorCorners2}, ...
+                      obj.getTrailerBoxesCorners(obj.dataManager.globalTrailer2Data, ...
+                                                trailerParams2, i)];
 
             % Check all combinations for collision
             collisionFound = false;
@@ -1175,6 +1143,29 @@ classdef SimManager < handle
                 obj.dataManager.TrailerLength1 = simParams.trailerLength;
             elseif trailerNumber == 2
                 obj.dataManager.TrailerLength2 = simParams.trailerLength;
+            end
+        end
+
+        function cornersCell = getTrailerBoxesCorners(obj, trailerData, trailerParams, step)
+            % getTrailerBoxesCorners Returns corners for all trailer boxes at a given step
+            cornersCell = {};
+            if isempty(trailerParams)
+                return;
+            end
+            if isfield(trailerData, 'Boxes') && ~isempty(trailerData.Boxes)
+                nBoxes = numel(trailerData.Boxes);
+                cornersCell = cell(1, nBoxes);
+                for bi = 1:nBoxes
+                    cornersCell{bi} = VehiclePlotter.getVehicleCorners( ...
+                        trailerData.Boxes(bi).X(step), ...
+                        trailerData.Boxes(bi).Y(step), ...
+                        trailerData.Boxes(bi).Theta(step), ...
+                        trailerParams, false, 0, trailerParams.numTiresPerAxle);
+                end
+            elseif isfield(trailerData, 'X') && ~isempty(trailerData.X)
+                cornersCell = {VehiclePlotter.getVehicleCorners( ...
+                    trailerData.X(step), trailerData.Y(step), trailerData.Theta(step), ...
+                    trailerParams, false, 0, trailerParams.numTiresPerAxle)};
             end
         end
     end
