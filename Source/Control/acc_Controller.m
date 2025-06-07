@@ -28,6 +28,13 @@ classdef acc_Controller < handle
         end
 
         function [accelOut, predictedRotation] = adjust(obj, currentSpeed, pidAccel, distToCurve, turnRadius, dt)
+            %ADJUST Modifies PID acceleration based on upcoming curve distance.
+            %   currentSpeed  - current vehicle speed [m/s]
+            %   pidAccel      - acceleration request from speed controller [m/s^2]
+            %   distToCurve   - distance to first upcoming curve [m]
+            %   turnRadius    - current path radius (Inf when straight)
+            %   dt            - time step [s]
+
             if nargin < 5 || isempty(turnRadius)
                 turnRadius = inf;
             end
@@ -35,28 +42,32 @@ classdef acc_Controller < handle
                 dt = 0.01;
             end
 
-            if ~obj.decelActive
-                obj.baseSpeed = currentSpeed; % remember speed before decel
+            triggerDist = currentSpeed * obj.decelLookaheadTime;
+
+            if ~obj.decelActive && distToCurve <= triggerDist
+                % Begin ramp down and capture pre-curve speed
+                obj.decelActive = true;
+                obj.baseSpeed = currentSpeed;
+            elseif obj.decelActive && isinf(turnRadius) && distToCurve > triggerDist
+                % Resume normal control when out of the curve and the next one
+                % is sufficiently far away
+                obj.decelActive = false;
+            elseif ~obj.decelActive
+                % continuously update base speed when cruising
+                obj.baseSpeed = currentSpeed;
             end
 
-            decel = max(obj.maxDecel, -pidAccel); % use pid accel if stronger braking
             targetSpeed = obj.speedReduction * obj.baseSpeed;
 
-            triggerDist = currentSpeed * obj.decelLookaheadTime;
-            if distToCurve <= triggerDist
-                obj.decelActive = true;
-            elseif isinf(turnRadius)
-                % reset when road straightens and far from curve
-                obj.decelActive = false;
-            end
-
             if obj.decelActive
-                if currentSpeed > targetSpeed
-                    accelOut = -decel;
-                elseif currentSpeed < targetSpeed
-                    accelOut = max(pidAccel, 0); % do not accelerate above target
+                if currentSpeed > targetSpeed + 0.1
+                    % Decelerate until target reached, limit by maximum rate
+                    accelOut = -min(obj.maxDecel, abs(pidAccel));
+                elseif currentSpeed < targetSpeed - 0.1
+                    % Small boost if dropping below target but do not exceed
+                    accelOut = max(pidAccel, 0);
                 else
-                    accelOut = 0;
+                    accelOut = 0; % Hold speed within tolerance
                 end
             else
                 accelOut = pidAccel;
