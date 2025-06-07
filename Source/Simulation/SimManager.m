@@ -830,67 +830,80 @@ classdef SimManager < handle
             collisionX = NaN;
             collisionY = NaN;
 
-            % Trailer corners if needed
-            trailerCorners1 = [];
-            trailerCorners2 = [];
+            % Collect corner sets for each vehicle and its trailer boxes
+            group1 = {tractorCorners1};
+            group2 = {tractorCorners2};
+
             if obj.vehicleSim1.simParams.includeTrailer && ~isempty(trailerParams1)
-                trailerCorners1 = VehiclePlotter.getVehicleCorners(...
-                    obj.dataManager.globalTrailer1Data.X(i), ...
-                    obj.dataManager.globalTrailer1Data.Y(i), ...
-                    obj.dataManager.globalTrailer1Data.Theta(i), ...
-                    trailerParams1, ...
-                    false, ...
-                    0, ...
-                    trailerParams1.numTiresPerAxle ...
-                );
+                if isfield(obj.dataManager.globalTrailer1Data, 'Boxes') && ...
+                        ~isempty(obj.dataManager.globalTrailer1Data.Boxes)
+                    boxes = obj.dataManager.globalTrailer1Data.Boxes;
+                    for bi = 1:numel(boxes)
+                        group1{end+1} = VehiclePlotter.getVehicleCorners(...
+                            boxes(bi).X(i), boxes(bi).Y(i), boxes(bi).Theta(i), ...
+                            trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
+                    end
+                else
+                    group1{end+1} = VehiclePlotter.getVehicleCorners(...
+                        obj.dataManager.globalTrailer1Data.X(i), ...
+                        obj.dataManager.globalTrailer1Data.Y(i), ...
+                        obj.dataManager.globalTrailer1Data.Theta(i), ...
+                        trailerParams1, false, 0, trailerParams1.numTiresPerAxle);
+                end
             end
+
             if obj.vehicleSim2.simParams.includeTrailer && ~isempty(trailerParams2)
-                trailerCorners2 = VehiclePlotter.getVehicleCorners(...
-                    obj.dataManager.globalTrailer2Data.X(i), ...
-                    obj.dataManager.globalTrailer2Data.Y(i), ...
-                    obj.dataManager.globalTrailer2Data.Theta(i), ...
-                    trailerParams2, ...
-                    false, ...
-                    0, ...
-                    trailerParams2.numTiresPerAxle ...
-                );
+                if isfield(obj.dataManager.globalTrailer2Data, 'Boxes') && ...
+                        ~isempty(obj.dataManager.globalTrailer2Data.Boxes)
+                    boxes2 = obj.dataManager.globalTrailer2Data.Boxes;
+                    for bi = 1:numel(boxes2)
+                        group2{end+1} = VehiclePlotter.getVehicleCorners(...
+                            boxes2(bi).X(i), boxes2(bi).Y(i), boxes2(bi).Theta(i), ...
+                            trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
+                    end
+                else
+                    group2{end+1} = VehiclePlotter.getVehicleCorners(...
+                        obj.dataManager.globalTrailer2Data.X(i), ...
+                        obj.dataManager.globalTrailer2Data.Y(i), ...
+                        obj.dataManager.globalTrailer2Data.Theta(i), ...
+                        trailerParams2, false, 0, trailerParams2.numTiresPerAxle);
+                end
             end
 
-            % Check collisions
-            collisionTT = obj.collisionDetector.checkCollision(tractorCorners1, tractorCorners2);
-            collisionTrailers = false;
-
-            if ~isempty(trailerCorners1) && ~isempty(trailerCorners2)
-                collisionTrailers = obj.collisionDetector.checkCollision(trailerCorners1, trailerCorners2);
+            % Check all combinations for collision
+            collisionFound = false;
+            for a = 1:numel(group1)
+                for b = 1:numel(group2)
+                    if obj.collisionDetector.checkCollision(group1{a}, group2{b})
+                        collisionFound = true;
+                        idxA = a; idxB = b; %#ok<NASGU>
+                        break;
+                    end
+                end
+                if collisionFound
+                    break;
+                end
             end
 
-            collisionTractor1Trailer2 = false;
-            collisionTractor2Trailer1 = false;
-            if ~isempty(trailerCorners1)
-                collisionTractor2Trailer1 = obj.collisionDetector.checkCollision(tractorCorners2, trailerCorners1);
-            end
-            if ~isempty(trailerCorners2)
-                collisionTractor1Trailer2 = obj.collisionDetector.checkCollision(tractorCorners1, trailerCorners2);
-            end
-
-            if collisionTT || collisionTrailers || collisionTractor1Trailer2 || collisionTractor2Trailer1
+            if collisionFound
                 didCollide = true;
 
-                % Attempt to compute intersection center
-                poly1 = polyshape(tractorCorners1(:,1), tractorCorners1(:,2));
-                poly2 = polyshape(tractorCorners2(:,1), tractorCorners2(:,2));
-                if ~isempty(trailerCorners1)
-                    poly1 = union(poly1, polyshape(trailerCorners1(:,1), trailerCorners1(:,2)));
+                % Build union polygons for each vehicle group for accurate center
+                poly1 = polyshape(group1{1}(:,1), group1{1}(:,2));
+                for k = 2:numel(group1)
+                    poly1 = union(poly1, polyshape(group1{k}(:,1), group1{k}(:,2)));
                 end
-                if ~isempty(trailerCorners2)
-                    poly2 = union(poly2, polyshape(trailerCorners2(:,1), trailerCorners2(:,2)));
+
+                poly2 = polyshape(group2{1}(:,1), group2{1}(:,2));
+                for k = 2:numel(group2)
+                    poly2 = union(poly2, polyshape(group2{k}(:,1), group2{k}(:,2)));
                 end
+
                 intersection = intersect(poly1, poly2);
                 if ~isempty(intersection.Vertices)
                     collisionX = mean(intersection.Vertices(:,1));
                     collisionY = mean(intersection.Vertices(:,2));
                 else
-                    % Fallback approximate
                     collisionX = 0.5 * (obj.dataManager.globalVehicle1Data.X(i) + ...
                                         obj.dataManager.globalVehicle2Data.X(i));
                     collisionY = 0.5 * (obj.dataManager.globalVehicle1Data.Y(i) + ...
