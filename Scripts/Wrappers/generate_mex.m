@@ -1,7 +1,8 @@
 % generate_mex.m
 % Script to generate MEX functions for performance-critical routines via MATLAB Coder
 
-% Ensure MATLAB Coder is installed and paths include this folder and Source/Physics
+% Ensure MATLAB Coder is installed and add required source paths
+addpath(genpath(fullfile('Source')));
 
 fprintf('Generating MEX for CollisionDetector.checkCollision...\n');
 codegen -config:mex CollisionDetector_mex_wrapper -args {zeros(4,2,'double'), zeros(4,2,'double')} -report;
