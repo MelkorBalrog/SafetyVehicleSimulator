@@ -10,9 +10,12 @@ classdef VehicleLocalizer < handle
     methods
         function obj = VehicleLocalizer(waypoints, spacing)
             if nargin >= 1 && ~isempty(waypoints)
-                obj.waypoints = waypoints;
+                if iscell(waypoints)
+                    waypoints = cell2mat(waypoints);
+                end
+                obj.waypoints = double(waypoints);
             else
-                obj.waypoints = [];
+                obj.waypoints = zeros(0,2);
             end
             if nargin >= 2 && ~isempty(spacing)
                 obj.waypointSpacing = spacing;
@@ -25,8 +28,12 @@ classdef VehicleLocalizer < handle
                 idx = 1;
                 return;
             end
-            diffs = obj.waypoints - position(:)';
-            [~, idx] = min(sum(diffs.^2,2));
+            posVec = double(position(:)');
+            if numel(posVec) > 2
+                posVec = posVec(1:2);
+            end
+            diffs = obj.waypoints(:,1:2) - posVec;
+            [~, idx] = min(sum(diffs.^2, 2));
         end
 
         function dist = distanceToNextCurve(obj, currentIdx, upcomingRadii)
