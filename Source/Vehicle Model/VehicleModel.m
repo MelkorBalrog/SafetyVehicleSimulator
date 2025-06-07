@@ -3704,12 +3704,38 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
     %   accelerationEnded  = Nx1
     %   tirePressureEnded  = Nx1
 
-    %% 1) Steering
+    %% 1) Steering, Acceleration and Tire Pressure Parsing in Parallel
     initialSteerAngle = 0;  % single scalar
+    initialAcceleration = 0;
+
+    pool = gcp('nocreate');
+    if isempty(pool)
+        pool = backgroundPool;
+    end
+
+    futures = parallel.FevalFuture.empty(3,0);
+
     if ~isempty(steeringCommands)
-        [timeSteer, sVal, freeSteerFlag] = processSignalColumn(...
+        futures(1) = parfeval(pool, @processSignalColumn, 3, ...
             steeringCommands, initialSteerAngle, 'SteeringAngle', dt);
+    end
+
+    if ~isempty(accelerationCommands)
+        futures(2) = parfeval(pool, @processSignalColumn, 3, ...
+            accelerationCommands, initialAcceleration, 'Acceleration', dt);
+    end
+
+    if ~isempty(tirePressureCommands)
+        futures(3) = parfeval(pool, @processSignalColumn, 3, ...
+            tirePressureCommands, defaultTirePressures, 'TirePressure', dt);
+    end
+
+    % Gather results (fetch in the order futures were created)
+    idx = 1;
+    if ~isempty(steeringCommands)
+        [timeSteer, sVal, freeSteerFlag] = fetchOutputs(futures(idx));
         endTimeSteer = timeSteer(end);
+        idx = idx + 1;
     else
         timeSteer = 0;
         sVal = initialSteerAngle;
@@ -3717,12 +3743,10 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
         endTimeSteer = 0;
     end
 
-    %% 2) Acceleration
-    initialAcceleration = 0;
     if ~isempty(accelerationCommands)
-        [timeAccel, aVal, freeAccelFlag] = processSignalColumn(...
-            accelerationCommands, initialAcceleration, 'Acceleration', dt);
+        [timeAccel, aVal, freeAccelFlag] = fetchOutputs(futures(idx));
         endTimeAccel = timeAccel(end);
+        idx = idx + 1;
     else
         timeAccel = 0;
         aVal = initialAcceleration;
@@ -3730,15 +3754,12 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
         endTimeAccel = 0;
     end
 
-    %% 3) Tire Pressures
-    % Use the provided defaultTirePressures for the initial multi-tire state
     if ~isempty(tirePressureCommands)
-        [timeTire, pVal, freePressFlag] = processSignalColumn(...
-            tirePressureCommands, defaultTirePressures, 'TirePressure', dt);
+        [timeTire, pVal, freePressFlag] = fetchOutputs(futures(idx));
         endTimeTire = timeTire(end);
     else
         timeTire = 0;
-        pVal = defaultTirePressures;  % 1×M 
+        pVal = defaultTirePressures;  % 1×M
         freePressFlag = false;
         endTimeTire = 0;
     end
