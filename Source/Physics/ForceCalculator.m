@@ -235,8 +235,12 @@ classdef ForceCalculator
             else
                 obj.tireModelFlag = tireModelFlag;
             end
+            coeffsZero = struct('pCx1',0,'pDx1',0,'pDx2',0,'pEx1',0,'pEx2',0,...
+                'pEx3',0,'pEx4',0,'pKx1',0,'pKx2',0,'pKx3',0,'pCy1',0,'pDy1',0,...
+                'pDy2',0,'pEy1',0,'pEy2',0,'pEy3',0,'pEy4',0,'pKy1',0,'pKy2',0,...
+                'pKy3',0);
             if isempty(highFidelityTireModel)
-                obj.highFidelityTireModel = [];
+                obj.highFidelityTireModel = Pacejka96TireModel(coeffsZero);
             else
                 obj.highFidelityTireModel = highFidelityTireModel;
             end
