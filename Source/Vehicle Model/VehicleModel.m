@@ -2802,7 +2802,7 @@ classdef VehicleModel < handle
                     % --- Apply Steering and Acceleration Commands ---
                     % Limit steering angle and acceleration based on simulation constraints
                     limitedSteerAngleDeg = obj.limiter_LateralControl.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
-                
+
                     % --- Steering Control ---
                     desiredSteerAngleDeg = steerAngles(i); % In degrees
                     if ~steeringEnded(i)
