@@ -37,6 +37,40 @@ classdef curveSpeed_Limiter < handle
             obj.currentFactor   = 1.0;
         end
 
+        function [dist, time] = stoppingDistance(obj, speed)
+            % stoppingDistance  Calculate distance and time needed to reduce
+            % speed to reductionFactor * speed using the deceleration profile.
+
+            if nargin < 2
+                speed = 0;
+            end
+
+            acc1 = 1;      % m/s^2 for the first 0.5 s
+            t1max = 0.5;   % seconds
+            acc2 = 4.5;    % m/s^2 for the next 1 s
+            t2max = 1.0;   % seconds
+
+            deltaV = speed * (1 - obj.reductionFactor);
+
+            if deltaV <= acc1 * t1max
+                t1 = deltaV / acc1;
+                dist = speed * t1 - 0.5 * acc1 * t1^2;
+                time = t1;
+                return;
+            end
+
+            t1 = t1max;
+            v1 = speed - acc1 * t1;
+            dist1 = speed * t1 - 0.5 * acc1 * t1^2;
+
+            remaining = deltaV - acc1 * t1;
+            t2 = min(remaining / acc2, t2max);
+            dist2 = v1 * t2 - 0.5 * acc2 * t2^2;
+
+            dist = dist1 + dist2;
+            time = t1 + t2;
+        end
+
         function limitedSpeed = limitSpeed(obj, currentSpeed, targetSpeed, distToCurve, inCurve, dt)
             % limitSpeed Applies ramping to the target speed based on distance
             % to the upcoming curve and whether the vehicle is currently in a
@@ -59,23 +93,19 @@ classdef curveSpeed_Limiter < handle
             if inCurve
                 obj.currentFactor = obj.reductionFactor;
             else
+                [stopDist, rampTime] = obj.stoppingDistance(targetSpeed);
                 timeToCurve = distToCurve / max(currentSpeed, eps);
-                % Piecewise deceleration profile when approaching a curve
-                if timeToCurve <= obj.rampDownTime && distToCurve >= 0
-                    if timeToCurve > 1.0
-                        % First 0.5 s: -1 m/s^2
-                        elapsed = obj.rampDownTime - timeToCurve;
+                if distToCurve <= stopDist && distToCurve >= 0
+                    elapsed = max(0, rampTime - timeToCurve);
+                    if elapsed <= 0.5
                         deltaV = 1 * elapsed;
                     else
-                        % Second 1 s: -4.5 m/s^2
-                        elapsed = obj.rampDownTime - 1.0;
-                        deltaV = 1 * 0.5 + 4.5 * (1.0 - timeToCurve);
+                        deltaV = 1 * 0.5 + 4.5 * min(elapsed - 0.5, 1.0);
                     end
                     factor = 1 - deltaV / max(targetSpeed, eps);
                     factor = max(obj.reductionFactor, min(1, factor));
                     obj.currentFactor = min(obj.currentFactor, factor);
                 else
-                    % Ramp up using specified acceleration
                     rate = obj.rampUpAccel * dt / max(targetSpeed, eps);
                     obj.currentFactor = min(1, obj.currentFactor + rate);
                 end
