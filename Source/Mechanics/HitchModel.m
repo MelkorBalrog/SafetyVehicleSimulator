@@ -248,7 +248,12 @@ classdef HitchModel
             %% Calculate forces using spring-damper model
             stiff = obj.stiffnessCoefficients;
             damp  = obj.dampingCoefficients;
-            F_total = [0; 0; 0];
+            if norm(tractorState.velocity) > obj.trailingVelocityThreshold
+                % Apply pulling force along tractor's longitudinal axis
+                F_total = R_tr * [pullingForce; 0; 0];
+            else
+                F_total = [0; 0; 0];
+            end
 
             %% Calculate torques around all axes
             M_roll  = -stiff.roll  * deltaAngles(1) - damp.roll  * deltaOmega(1);

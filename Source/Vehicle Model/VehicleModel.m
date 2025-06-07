@@ -2125,6 +2125,22 @@ classdef VehicleModel < handle
                         end
                         loadDistributionTrailer(:,5) = trailerContactAreasToUse;
 
+                        % Expand rows to match number of trailer tires if needed
+                        numTiresTrailer = trailerParams.numAxles * simParams.numTiresPerAxleTrailer;
+                        if numTiresTrailer > numRowsTrailer && mod(numTiresTrailer, numRowsTrailer) == 0
+                            repFactor = numTiresTrailer / numRowsTrailer;
+                            % Spread the original load across the duplicated rows
+                            loadDistributionTrailer = repelem(loadDistributionTrailer, repFactor, 1);
+                            loadDistributionTrailer(:,4) = loadDistributionTrailer(:,4) / repFactor;
+                        end
+
+                        % Expand rows to match number of trailer tires if needed
+                        numTiresTrailer = trailerParams.numAxles * simParams.numTiresPerAxleTrailer;
+                        if numTiresTrailer > numRowsTrailer && mod(numTiresTrailer, numRowsTrailer) == 0
+                            repFactor = numTiresTrailer / numRowsTrailer;
+                            loadDistributionTrailer = repelem(loadDistributionTrailer, repFactor, 1);
+                        end
+
                         % Adjust vertical loads for road roughness
                         loadDistributionTrailer(:,4) = loadDistributionTrailer(:,4) .* (1 - 0.3 * roadRoughness);
 
