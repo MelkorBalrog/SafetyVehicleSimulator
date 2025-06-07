@@ -72,6 +72,9 @@ classdef pid_SpeedController < handle
 
         % -------------------- Jerk Limit Props -------------------------
         jerkLimit         % Maximum allowable jerk (m/s^3)
+
+        % Reduction factor (<1) applied to cornering speed limits
+        curveSpeedReduction
     end
 
     methods
@@ -109,6 +112,7 @@ classdef pid_SpeedController < handle
 
             % ---- Jerk limit for deceleration planning -----
             addParameter(p, 'JerkLimit', 0.7*9.81, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'CurveSpeedReduction', 0.75, @(x) isnumeric(x) && x>0 && x<=1);
 
             % ---- New parameters for friction-based cornering speed  -----
             addParameter(p, 'FrictionCoeff', 0.7, @(x) isnumeric(x) && x>0 && x<=1);
@@ -146,6 +150,7 @@ classdef pid_SpeedController < handle
             obj.safetyFactor  = p.Results.SafetyFactor;
 
             obj.jerkLimit = p.Results.JerkLimit;
+            obj.curveSpeedReduction = p.Results.CurveSpeedReduction;
 
             % Speed smoothing factor and current target speed
             obj.speedSmoothing     = p.Results.SpeedSmoothing;
@@ -283,8 +288,43 @@ classdef pid_SpeedController < handle
                 cornerSpeed = obj.maxSpeed;
             else
                 cornerSpeed = sqrt(obj.frictionCoeff * obj.gravity * turnRadius) * obj.safetyFactor;
-                % Also clamp it to maxSpeed
-                cornerSpeed = min(cornerSpeed, obj.maxSpeed);
+                % Also clamp it to maxSpeed then apply reduction factor
+                cornerSpeed = min(cornerSpeed, obj.maxSpeed) * obj.curveSpeedReduction;
+            end
+        end
+
+        %% computeStoppingDistance
+        %  Computes stopping distance from v0 to v1 using jerk limited profile
+        function dist = computeStoppingDistance(obj, v0, v1)
+            if v0 <= v1
+                dist = 0;
+                return;
+            end
+
+            aMax = -obj.minAcceleration; % positive deceleration
+            jMax = obj.jerkLimit;
+
+            dv = v0 - v1;
+            threshold = aMax^2 / jMax;
+
+            if dv >= threshold
+                t1 = aMax / jMax;
+                t2 = (dv - threshold) / aMax;
+
+                d1 = v0*t1 - jMax*t1^3/6;
+                v1a = v0 - 0.5*jMax*t1^2;
+                d2 = v1a*t2 - 0.5*aMax*t2^2;
+                v2 = v1a - aMax*t2;
+                d3 = v2*t1 - aMax*t1^2/2 + jMax*t1^3/6;
+                dist = d1 + d2 + d3;
+            else
+                t1 = sqrt(dv/jMax);
+                aPeak = jMax * t1;
+
+                d1 = v0*t1 - jMax*t1^3/6;
+                v1a = v0 - 0.5*jMax*t1^2;
+                d3 = v1a*t1 - aPeak*t1^2/2 + jMax*t1^3/6;
+                dist = d1 + d3;
             end
         end
 
