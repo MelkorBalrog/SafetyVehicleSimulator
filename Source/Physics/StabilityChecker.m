@@ -431,15 +431,6 @@ classdef StabilityChecker
         % CHECK STABILITY
         % ================================================================
         function obj = checkStability(obj)
-            % Use compiled MEX version if available
-            if exist('StabilityChecker_checkStability_wrapper_mex','file') == 3
-                [w, r, s, j] = StabilityChecker_checkStability_wrapper_mex();
-                obj.isWiggling  = w;
-                obj.isRollover  = r;
-                obj.isSkidding  = s;
-                obj.isJackknife = j;
-                return;
-            end
 
             % ------------------------------------------
             % 1) If speed is below a certain threshold,
