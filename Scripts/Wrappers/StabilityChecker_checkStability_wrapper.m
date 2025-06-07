@@ -25,7 +25,18 @@ function [isWiggling,isRollover,isSkidding,isJackknife] = StabilityChecker_check
             dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, ...
             tireModelFlag, highFidelityModel, windVector, brakeSystem, varargin{:});
         kin = KinematicsCalculator(fc, 1.0, 2.0, 200000, 5000, 5000, 150000, 4000, 8000, dt);
-        transmission = Transmission();
+        clutch = Clutch(500, 0.5, 0.5);
+        maxGear = 5;
+        gearRatios = [3.5, 2.1, 1.4, 1.0, 0.8];
+        finalDriveRatio = 2.8;
+        shiftUpSpeed = [10, 20, 30, 45, 60];
+        shiftDownSpeed = [8, 15, 25, 40, 55];
+        engineBrakeTorque = 400;
+        shiftDelay = 0.5;
+        filterWindowSize = 5;
+        transmission = Transmission(maxGear, gearRatios, finalDriveRatio, ...
+            shiftUpSpeed, shiftDownSpeed, engineBrakeTorque, shiftDelay, ...
+            clutch, filterWindowSize);
         initialState.position = [0;0];
         initialState.orientation = 0;
         initialState.velocity = 0;
