@@ -18,6 +18,7 @@ classdef VehicleModel < handle
         pid_SpeedController      % Instance of pid_SpeedController
         limiter_LateralControl   % Instance of limiter_LateralControl
         limiter_LongitudinalControl  % Instance of limiter_LongitudinalControl
+        jerkController              % Instance of jerk_Controller for jerk limiting
         simulationName
         uiManager
     end
@@ -1770,9 +1771,10 @@ classdef VehicleModel < handle
                     decelCurve, ...
                     maxSpeedForAccelLimiting, ...
                     windowSize, ...
-                    gaussianWindow, ... 
+                    gaussianWindow, ...
                     gaussianStd ...
                     );
+                obj.jerkController = jerk_Controller(0.7 * 9.81);
                 logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
                 % --- End of limiter_LongitudinalControl Initialization ---
         
@@ -2805,8 +2807,6 @@ classdef VehicleModel < handle
                     % Limit steering angle and acceleration based on simulation constraints
                     limitedSteerAngleDeg = obj.limiter_LateralControl.computeSteeringAngle(desiredSteeringAngleDeg(1), currentSpeed);
                 
-                    steeringAnglesSim(i) = deg2rad(limitedSteerAngleDeg); % Convert to radians
-        
                     % --- Steering Control ---
                     desiredSteerAngleDeg = steerAngles(i); % In degrees
                     if ~steeringEnded(i)
@@ -2814,10 +2814,6 @@ classdef VehicleModel < handle
                     end
                     steerAngleRad = deg2rad(limitedSteerAngleDeg);
                     steerAngleRad = AckermannGeometry.enforceSteeringLimits(steerAngleRad);
-                    steeringAnglesSim(i) = steerAngleRad;
-                    [~, ~, R] = AckermannGeometry.calculateAckermannSteeringAngles(steerAngleRad, tractorWheelbase, tractorTrackWidth);
-                    dynamicsUpdater.forceCalculator.turnRadius = R;
-                    dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
         
                     % --- Compute Desired Acceleration ---
                     accData = accelerationData(i);
@@ -2826,7 +2822,11 @@ classdef VehicleModel < handle
                         desired_acceleration_sim(i) = desired_acceleration;
                         logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
                     else
-                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
+                        % Obtain upcoming path geometry for speed planning
+                        curIdx = purePursuitPathFollower.currentWaypointIndex;
+                        lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
+                        upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
+                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
@@ -2840,8 +2840,15 @@ classdef VehicleModel < handle
                     % --- Apply Acceleration Limiter ---
                     limited_acceleration = obj.limiter_LongitudinalControl.applyLimits(desired_acceleration, currentSpeed);
                     limited_acceleration = movmean(limited_acceleration, floor(windowSize/dt));
+
+                    [limited_acceleration, steerAngleRad] = obj.jerkController.limit(limited_acceleration, steerAngleRad, time(i));
+                    [~, ~, R] = AckermannGeometry.calculateAckermannSteeringAngles(steerAngleRad, tractorWheelbase, tractorTrackWidth);
+                    dynamicsUpdater.forceCalculator.turnRadius = R;
+                    dynamicsUpdater.forceCalculator.steeringAngle = steerAngleRad;
+
                     limited_acceleration_sig(i) = limited_acceleration;
                     logMessages{end+1} = sprintf('Step %d: Limited acceleration: %.4f m/s^2', i, limited_acceleration);
+                    steeringAnglesSim(i) = steerAngleRad;
                     % --- End of Acceleration Limiter ---
         
                     % --- Transmission Gear Update ---
