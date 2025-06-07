@@ -8,4 +8,6 @@ function testACCIntegration(testCase)
     vm.initializeSim();
     verifyTrue(testCase, isprop(vm, 'accController'));
     verifyNotEmpty(testCase, vm.accController);
+    verifyTrue(testCase, isprop(vm, 'localizer'));
+    verifyNotEmpty(testCase, vm.localizer);
 end
