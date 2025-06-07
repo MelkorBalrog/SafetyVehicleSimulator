@@ -227,12 +227,29 @@ classdef VehicleCollisionSeverity
                 KE_tables.Average.SideCollision        = [0,2.5;2.5,6;6,39;39,Inf];
                 KE_tables.Average.ObliqueCollision     = [0,4.75;4.75,20.5;20.5,47.5;47.5,Inf];
             end
-            bt = bound_type_str;
-            % MATLAB Coder does not support regexprep, so remove hyphens and
-            % spaces using strrep which is codegen compatible
+            % MATLAB Coder does not allow dynamic field names, so select the
+            % appropriate table explicitly using switch statements
+            switch bound_type_str
+                case 'LowerBound'
+                    tableSel = KE_tables.LowerBound;
+                case 'HigherBound'
+                    tableSel = KE_tables.HigherBound;
+                otherwise
+                    tableSel = KE_tables.Average;
+            end
+
             ct = strrep(collision_type, '-', '');
             ct = strrep(ct, ' ', '');
-            baseDV = KE_tables.(bt).(ct);
+            switch ct
+                case 'HeadOnCollision'
+                    baseDV = tableSel.HeadOnCollision;
+                case 'RearEndCollision'
+                    baseDV = tableSel.RearEndCollision;
+                case 'SideCollision'
+                    baseDV = tableSel.SideCollision;
+                otherwise
+                    baseDV = tableSel.ObliqueCollision;
+            end
             scale = sqrt(J2980MaxAssumedMass / vehicle_mass);
             thresholds = baseDV * scale;
         end
