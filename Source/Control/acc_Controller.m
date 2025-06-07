@@ -11,6 +11,11 @@ classdef acc_Controller < handle
         wheelbase (1,1) double {mustBePositive} = 3.0
     end
 
+    properties(Access=private)
+        decelActive(1,1) logical = false
+        baseSpeed(1,1) double = NaN
+    end
+
     methods
         function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase)
             if nargin >= 1 && ~isempty(speedReduction); obj.speedReduction = speedReduction; end
@@ -27,12 +32,29 @@ classdef acc_Controller < handle
                 dt = 0.01;
             end
 
-            targetSpeed = obj.speedReduction * currentSpeed;
+            if ~obj.decelActive
+                obj.baseSpeed = currentSpeed; % remember speed before decel
+            end
+
             decel = max(obj.maxDecel, -pidAccel); % use pid accel if stronger braking
+            targetSpeed = obj.speedReduction * obj.baseSpeed;
             stopDist = obj.computeStoppingDistance(currentSpeed, targetSpeed, decel);
 
             if distToCurve <= stopDist
-                accelOut = -decel;
+                obj.decelActive = true;
+            elseif isinf(turnRadius)
+                % reset when road straightens and far from curve
+                obj.decelActive = false;
+            end
+
+            if obj.decelActive
+                if currentSpeed > targetSpeed
+                    accelOut = -decel;
+                elseif currentSpeed < targetSpeed
+                    accelOut = max(pidAccel, 0); % do not accelerate above target
+                else
+                    accelOut = 0;
+                end
             else
                 accelOut = pidAccel;
             end
@@ -40,7 +62,7 @@ classdef acc_Controller < handle
             if isinf(turnRadius)
                 predictedRotation = 0;
             else
-                predictedRotation = currentSpeed * dt / turnRadius;
+                predictedRotation = currentSpeed * dt / turnRadius * (obj.trailerLength / obj.wheelbase);
             end
         end
     end
