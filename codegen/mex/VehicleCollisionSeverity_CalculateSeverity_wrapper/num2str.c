@@ -33,7 +33,7 @@ typedef struct emxArray_char_T_1x12 emxArray_char_T_1x12;
 #endif /* typedef_emxArray_char_T_1x12 */
 
 /* Variable Definitions */
-static emlrtRSInfo k_emlrtRSI = {
+static emlrtRSInfo j_emlrtRSI = {
     102,       /* lineNo */
     "num2str", /* fcnName */
     "C:\\Program "
@@ -41,7 +41,7 @@ static emlrtRSInfo k_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo l_emlrtRSI = {
+static emlrtRSInfo k_emlrtRSI = {
     92,        /* lineNo */
     "num2str", /* fcnName */
     "C:\\Program "
@@ -49,7 +49,7 @@ static emlrtRSInfo l_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo m_emlrtRSI = {
+static emlrtRSInfo l_emlrtRSI = {
     90,        /* lineNo */
     "num2str", /* fcnName */
     "C:\\Program "
@@ -57,7 +57,7 @@ static emlrtRSInfo m_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo n_emlrtRSI = {
+static emlrtRSInfo m_emlrtRSI = {
     88,        /* lineNo */
     "num2str", /* fcnName */
     "C:\\Program "
@@ -65,7 +65,7 @@ static emlrtRSInfo n_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo o_emlrtRSI = {
+static emlrtRSInfo n_emlrtRSI = {
     395,                /* lineNo */
     "int2strForVector", /* fcnName */
     "C:\\Program "
@@ -73,7 +73,7 @@ static emlrtRSInfo o_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo p_emlrtRSI = {
+static emlrtRSInfo o_emlrtRSI = {
     388,                /* lineNo */
     "int2strForVector", /* fcnName */
     "C:\\Program "
@@ -81,7 +81,7 @@ static emlrtRSInfo p_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo q_emlrtRSI = {
+static emlrtRSInfo p_emlrtRSI = {
     385,                /* lineNo */
     "int2strForVector", /* fcnName */
     "C:\\Program "
@@ -89,7 +89,7 @@ static emlrtRSInfo q_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo r_emlrtRSI = {
+static emlrtRSInfo q_emlrtRSI = {
     94,        /* lineNo */
     "int2str", /* fcnName */
     "C:\\Program "
@@ -97,7 +97,7 @@ static emlrtRSInfo r_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo s_emlrtRSI = {
+static emlrtRSInfo r_emlrtRSI = {
     25,                 /* lineNo */
     "printNumToBuffer", /* fcnName */
     "C:\\Program "
@@ -105,7 +105,7 @@ static emlrtRSInfo s_emlrtRSI = {
     "internal\\printNumToBuffer.m" /* pathName */
 };
 
-static emlrtRSInfo t_emlrtRSI = {
+static emlrtRSInfo s_emlrtRSI = {
     23,        /* lineNo */
     "strtrim", /* fcnName */
     "C:\\Program "
@@ -113,7 +113,7 @@ static emlrtRSInfo t_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo u_emlrtRSI = {
+static emlrtRSInfo t_emlrtRSI = {
     24,        /* lineNo */
     "strtrim", /* fcnName */
     "C:\\Program "
@@ -121,7 +121,7 @@ static emlrtRSInfo u_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo v_emlrtRSI = {
+static emlrtRSInfo u_emlrtRSI = {
     32,         /* lineNo */
     "firstcol", /* fcnName */
     "C:\\Program "
@@ -129,7 +129,7 @@ static emlrtRSInfo v_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo w_emlrtRSI = {
+static emlrtRSInfo v_emlrtRSI = {
     51,          /* lineNo */
     "allwspace", /* fcnName */
     "C:\\Program "
@@ -138,7 +138,7 @@ static emlrtRSInfo w_emlrtRSI = {
 };
 
 static emlrtRSInfo
-    x_emlrtRSI =
+    w_emlrtRSI =
         {
             15,          /* lineNo */
             "isstrprop", /* fcnName */
@@ -148,7 +148,7 @@ static emlrtRSInfo
 };
 
 static emlrtRSInfo
-    y_emlrtRSI =
+    x_emlrtRSI =
         {
             23,                         /* lineNo */
             "apply_property_predicate", /* fcnName */
@@ -157,7 +157,7 @@ static emlrtRSInfo
             "p.m" /* pathName */
 };
 
-static emlrtRSInfo ab_emlrtRSI = {
+static emlrtRSInfo y_emlrtRSI = {
     41,        /* lineNo */
     "lastcol", /* fcnName */
     "C:\\Program "
@@ -165,7 +165,7 @@ static emlrtRSInfo ab_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo bb_emlrtRSI =
+static emlrtRSInfo ab_emlrtRSI =
     {
         10,            /* lineNo */
         "makeCString", /* fcnName */
@@ -174,7 +174,7 @@ static emlrtRSInfo bb_emlrtRSI =
         "internal\\makeCString.m" /* pathName */
 };
 
-static emlrtRSInfo db_emlrtRSI = {
+static emlrtRSInfo cb_emlrtRSI = {
     220,                      /* lineNo */
     "handleNumericPrecision", /* fcnName */
     "C:\\Program "
@@ -182,7 +182,7 @@ static emlrtRSInfo db_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo eb_emlrtRSI = {
+static emlrtRSInfo db_emlrtRSI = {
     207,                      /* lineNo */
     "handleNumericPrecision", /* fcnName */
     "C:\\Program "
@@ -190,7 +190,7 @@ static emlrtRSInfo eb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo fb_emlrtRSI = {
+static emlrtRSInfo eb_emlrtRSI = {
     195,                      /* lineNo */
     "handleNumericPrecision", /* fcnName */
     "C:\\Program "
@@ -198,7 +198,7 @@ static emlrtRSInfo fb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo gb_emlrtRSI = {
+static emlrtRSInfo fb_emlrtRSI = {
     180,                      /* lineNo */
     "handleNumericPrecision", /* fcnName */
     "C:\\Program "
@@ -206,7 +206,7 @@ static emlrtRSInfo gb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo hb_emlrtRSI = {
+static emlrtRSInfo gb_emlrtRSI = {
     292,               /* lineNo */
     "formatGenerator", /* fcnName */
     "C:\\Program "
@@ -214,7 +214,7 @@ static emlrtRSInfo hb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo ib_emlrtRSI = {
+static emlrtRSInfo hb_emlrtRSI = {
     293,               /* lineNo */
     "formatGenerator", /* fcnName */
     "C:\\Program "
@@ -222,7 +222,7 @@ static emlrtRSInfo ib_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo jb_emlrtRSI = {
+static emlrtRSInfo ib_emlrtRSI = {
     301,               /* lineNo */
     "formatGenerator", /* fcnName */
     "C:\\Program "
@@ -230,7 +230,7 @@ static emlrtRSInfo jb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo kb_emlrtRSI =
+static emlrtRSInfo jb_emlrtRSI =
     {
         40,            /* lineNo */
         "fixEncoding", /* fcnName */
@@ -239,7 +239,7 @@ static emlrtRSInfo kb_emlrtRSI =
         "internal\\fixEncoding.m" /* pathName */
 };
 
-static emlrtRSInfo lb_emlrtRSI =
+static emlrtRSInfo kb_emlrtRSI =
     {
         46,            /* lineNo */
         "fixEncoding", /* fcnName */
@@ -248,7 +248,7 @@ static emlrtRSInfo lb_emlrtRSI =
         "internal\\fixEncoding.m" /* pathName */
 };
 
-static emlrtRSInfo mb_emlrtRSI = {
+static emlrtRSInfo lb_emlrtRSI = {
     250,                       /* lineNo */
     "generateFormattedString", /* fcnName */
     "C:\\Program "
@@ -256,7 +256,7 @@ static emlrtRSInfo mb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo nb_emlrtRSI = {
+static emlrtRSInfo mb_emlrtRSI = {
     248,                       /* lineNo */
     "generateFormattedString", /* fcnName */
     "C:\\Program "
@@ -264,7 +264,7 @@ static emlrtRSInfo nb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo ob_emlrtRSI = {
+static emlrtRSInfo nb_emlrtRSI = {
     247,                       /* lineNo */
     "generateFormattedString", /* fcnName */
     "C:\\Program "
@@ -272,7 +272,7 @@ static emlrtRSInfo ob_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo pb_emlrtRSI = {
+static emlrtRSInfo ob_emlrtRSI = {
     322,             /* lineNo */
     "formatInteger", /* fcnName */
     "C:\\Program "
@@ -280,7 +280,7 @@ static emlrtRSInfo pb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo qb_emlrtRSI = {
+static emlrtRSInfo pb_emlrtRSI = {
     324,             /* lineNo */
     "formatInteger", /* fcnName */
     "C:\\Program "
@@ -288,7 +288,7 @@ static emlrtRSInfo qb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo rb_emlrtRSI = {
+static emlrtRSInfo qb_emlrtRSI = {
     326,             /* lineNo */
     "formatInteger", /* fcnName */
     "C:\\Program "
@@ -296,7 +296,7 @@ static emlrtRSInfo rb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo sb_emlrtRSI = {
+static emlrtRSInfo rb_emlrtRSI = {
     330,             /* lineNo */
     "formatInteger", /* fcnName */
     "C:\\Program "
@@ -304,7 +304,7 @@ static emlrtRSInfo sb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo tb_emlrtRSI = {
+static emlrtRSInfo sb_emlrtRSI = {
     19,        /* lineNo */
     "deblank", /* fcnName */
     "C:\\Program "
@@ -312,7 +312,7 @@ static emlrtRSInfo tb_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo ub_emlrtRSI = {
+static emlrtRSInfo tb_emlrtRSI = {
     27,              /* lineNo */
     "deblank_ncols", /* fcnName */
     "C:\\Program "
@@ -320,7 +320,7 @@ static emlrtRSInfo ub_emlrtRSI = {
                                                                            */
 };
 
-static emlrtRSInfo vb_emlrtRSI = {
+static emlrtRSInfo ub_emlrtRSI = {
     37,          /* lineNo */
     "allwspace", /* fcnName */
     "C:\\Program "
@@ -383,7 +383,7 @@ static emlrtRTEInfo l_emlrtRTEI = {
                                                                            */
 };
 
-static emlrtRSInfo wb_emlrtRSI = {
+static emlrtRSInfo vb_emlrtRSI = {
     26,                 /* lineNo */
     "printNumToBuffer", /* fcnName */
     "C:\\Program "
@@ -493,8 +493,8 @@ static void generateFormattedString(const emlrtStack *sp, real_T x,
   for (i = 0; i < 24; i++) {
     s[i] = ' ';
   }
-  d_st.site = &ob_emlrtRSI;
-  e_st.site = &bb_emlrtRSI;
+  d_st.site = &nb_emlrtRSI;
+  e_st.site = &ab_emlrtRSI;
   fixEncoding(&e_st, outBuff, cStr_size);
   p = (cfmt_size[1] == cStr_size[1]);
   if (p && (cfmt_size[1] != 0) && (cStr_size[1] != 0)) {
@@ -511,14 +511,14 @@ static void generateFormattedString(const emlrtStack *sp, real_T x,
     }
   }
   if (p) {
-    d_st.site = &nb_emlrtRSI;
+    d_st.site = &mb_emlrtRSI;
     if (x >= 9.2233720368547758E+18) {
-      e_st.site = &pb_emlrtRSI;
-      f_st.site = &bb_emlrtRSI;
+      e_st.site = &ob_emlrtRSI;
+      f_st.site = &ab_emlrtRSI;
       outLength =
           emlrtEncoding2Encoding((char_T *)&cv[0], (char_T *)&destEncoding[0],
                                  0, 3, (char_T *)&b_str[0], &outBuff[0]);
-      g_st.site = &cb_emlrtRSI;
+      g_st.site = &bb_emlrtRSI;
       if (outLength == -1) {
         emlrtErrorWithMessageIdR2018a(
             &g_st, &b_emlrtRTEI, "Coder:toolbox:EncodingInvalidEncoding",
@@ -558,7 +558,7 @@ static void generateFormattedString(const emlrtStack *sp, real_T x,
         memcpy(&b_cfmt_data[0], &outBuff[0],
                (uint32_T)outLength * sizeof(char_T));
       }
-      e_st.site = &qb_emlrtRSI;
+      e_st.site = &pb_emlrtRSI;
       for (i = 0; i < 20; i++) {
         c_st[i] = ' ';
       }
@@ -580,12 +580,12 @@ static void generateFormattedString(const emlrtStack *sp, real_T x,
     } else {
       int64_T i1;
       real_T d;
-      e_st.site = &rb_emlrtRSI;
-      f_st.site = &bb_emlrtRSI;
+      e_st.site = &qb_emlrtRSI;
+      f_st.site = &ab_emlrtRSI;
       outLength =
           emlrtEncoding2Encoding((char_T *)&cv[0], (char_T *)&destEncoding[0],
                                  0, 6, (char_T *)&str[0], &st[0]);
-      g_st.site = &cb_emlrtRSI;
+      g_st.site = &bb_emlrtRSI;
       if (outLength == -1) {
         emlrtErrorWithMessageIdR2018a(
             &g_st, &b_emlrtRTEI, "Coder:toolbox:EncodingInvalidEncoding",
@@ -624,7 +624,7 @@ static void generateFormattedString(const emlrtStack *sp, real_T x,
       if (outLength - 1 >= 0) {
         memcpy(&b_cfmt_data[0], &st[0], (uint32_T)outLength * sizeof(char_T));
       }
-      e_st.site = &sb_emlrtRSI;
+      e_st.site = &rb_emlrtRSI;
       for (i = 0; i < 30; i++) {
         b_st[i] = ' ';
       }
@@ -655,7 +655,7 @@ static void generateFormattedString(const emlrtStack *sp, real_T x,
       }
     }
   } else {
-    d_st.site = &mb_emlrtRSI;
+    d_st.site = &lb_emlrtRSI;
     for (i = 0; i < 24; i++) {
       st[i] = ' ';
     }
@@ -715,7 +715,7 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
   emlrtStack f_st;
   emlrtStack g_st;
   emlrtStack h_st;
-  emxArray_char_T_1x12 xb_emlrtRSI;
+  emxArray_char_T_1x12 wb_emlrtRSI;
   const mxArray *b_y;
   const mxArray *m;
   const mxArray *y;
@@ -755,18 +755,18 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     uint8_T b_u;
     boolean_T exitg1;
     boolean_T p;
-    b_st.site = &n_emlrtRSI;
-    c_st.site = &q_emlrtRSI;
+    b_st.site = &m_emlrtRSI;
+    c_st.site = &p_emlrtRSI;
     b_s_data[0] = ' ';
     b_s_data[1] = ' ';
     b_s_data[2] = ' ';
-    c_st.site = &p_emlrtRSI;
+    c_st.site = &o_emlrtRSI;
     if (unnamed_idx_0 == 0.0) {
       currInt_size[1] = 1;
       currInt_data[0] = '0';
     } else {
-      d_st.site = &r_emlrtRSI;
-      e_st.site = &s_emlrtRSI;
+      d_st.site = &q_emlrtRSI;
+      e_st.site = &r_emlrtRSI;
       y = NULL;
       m = emlrtCreateCharArray(2, &iv[0]);
       emlrtInitCharArrayR2013a(&d_st, 7, m, &u[0]);
@@ -775,7 +775,7 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
       m = emlrtCreateCharArray(2, &iv1[0]);
       emlrtInitCharArrayR2013a(&d_st, 4, m, &mlfmt[0]);
       emlrtAssign(&b_y, m);
-      e_st.site = &wb_emlrtRSI;
+      e_st.site = &vb_emlrtRSI;
       emlrt_marshallIn(
           &e_st,
           feval(&e_st, y, b_y, emlrt_marshallOut(unnamed_idx_0), &emlrtMCI),
@@ -784,15 +784,15 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     if (currInt_size[1] >= 1) {
       b_s_data[2] = currInt_data[0];
     }
-    c_st.site = &o_emlrtRSI;
-    d_st.site = &t_emlrtRSI;
+    c_st.site = &n_emlrtRSI;
+    d_st.site = &s_emlrtRSI;
     b_j1 = 0;
     exitg1 = false;
     while ((!exitg1) && (b_j1 + 1 <= 3)) {
-      e_st.site = &v_emlrtRSI;
-      f_st.site = &w_emlrtRSI;
-      g_st.site = &x_emlrtRSI;
-      h_st.site = &y_emlrtRSI;
+      e_st.site = &u_emlrtRSI;
+      f_st.site = &v_emlrtRSI;
+      g_st.site = &w_emlrtRSI;
+      h_st.site = &x_emlrtRSI;
       b_u = (uint8_T)b_s_data[b_j1];
       if (b_u > 127) {
         emlrtErrorWithMessageIdR2018a(
@@ -810,14 +810,14 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
         exitg1 = true;
       }
     }
-    d_st.site = &u_emlrtRSI;
+    d_st.site = &t_emlrtRSI;
     j2 = 2;
     exitg1 = false;
     while ((!exitg1) && (j2 + 1 > 0)) {
-      e_st.site = &ab_emlrtRSI;
-      f_st.site = &w_emlrtRSI;
-      g_st.site = &x_emlrtRSI;
-      h_st.site = &y_emlrtRSI;
+      e_st.site = &y_emlrtRSI;
+      f_st.site = &v_emlrtRSI;
+      g_st.site = &w_emlrtRSI;
+      h_st.site = &x_emlrtRSI;
       b_u = (uint8_T)b_s_data[j2];
       if (b_u > 127) {
         emlrtErrorWithMessageIdR2018a(
@@ -845,10 +845,10 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     for (i = 0; i <= j2; i++) {
       s_data[i] = b_s_data[b_j1 + i];
     }
-    b_st.site = &m_emlrtRSI;
     b_st.site = &l_emlrtRSI;
-    c_st.site = &bb_emlrtRSI;
-    fixEncoding(&c_st, xb_emlrtRSI.data, xb_emlrtRSI.size);
+    b_st.site = &k_emlrtRSI;
+    c_st.site = &ab_emlrtRSI;
+    fixEncoding(&c_st, wb_emlrtRSI.data, wb_emlrtRSI.size);
   } else {
     int32_T b_j1;
     int32_T j2;
@@ -860,13 +860,13 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     } else {
       b_j1 = 5;
     }
-    b_st.site = &k_emlrtRSI;
-    c_st.site = &gb_emlrtRSI;
-    d_st.site = &hb_emlrtRSI;
-    e_st.site = &bb_emlrtRSI;
+    b_st.site = &j_emlrtRSI;
+    c_st.site = &fb_emlrtRSI;
+    d_st.site = &gb_emlrtRSI;
+    e_st.site = &ab_emlrtRSI;
     j2 = emlrtEncoding2Encoding((char_T *)&cv[0], (char_T *)&destEncoding[0], 0,
                                 13, (char_T *)&str[0], &outBuff[0]);
-    f_st.site = &cb_emlrtRSI;
+    f_st.site = &bb_emlrtRSI;
     if (j2 == -1) {
       emlrtErrorWithMessageIdR2018a(&f_st, &b_emlrtRTEI,
                                     "Coder:toolbox:EncodingInvalidEncoding",
@@ -905,7 +905,7 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     if (j2 - 1 >= 0) {
       memcpy(&fmtGen_data[0], &outBuff[0], (uint32_T)j2 * sizeof(char_T));
     }
-    d_st.site = &ib_emlrtRSI;
+    d_st.site = &hb_emlrtRSI;
     for (i = 0; i < 8; i++) {
       st[i] = ' ';
     }
@@ -920,15 +920,15 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
                                     "Coder:builtins:AssertionFailed",
                                     "Coder:builtins:AssertionFailed", 0);
     }
-    d_st.site = &jb_emlrtRSI;
-    e_st.site = &bb_emlrtRSI;
+    d_st.site = &ib_emlrtRSI;
+    e_st.site = &ab_emlrtRSI;
     if (j2 - 1 >= 0) {
       memcpy(&str_data[0], &st[0], (uint32_T)j2 * sizeof(char_T));
     }
     str_data[j2] = '\x00';
     b_j1 = emlrtEncoding2Encoding((char_T *)&cv[0], (char_T *)&destEncoding[0],
                                   0, j2 + 1, &str_data[0], NULL);
-    f_st.site = &kb_emlrtRSI;
+    f_st.site = &jb_emlrtRSI;
     if (b_j1 == -1) {
       emlrtErrorWithMessageIdR2018a(&f_st, &b_emlrtRTEI,
                                     "Coder:toolbox:EncodingInvalidEncoding",
@@ -966,7 +966,7 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
                                     "Coder:builtins:AssertionFailed",
                                     "Coder:builtins:AssertionFailed", 0);
     }
-    f_st.site = &lb_emlrtRSI;
+    f_st.site = &kb_emlrtRSI;
     if (b_j1 < 0) {
       emlrtNonNegativeCheckR2012b(b_j1, &emlrtDCI, &f_st);
     }
@@ -975,7 +975,7 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     if (b_j1 != 0) {
       j2 = emlrtEncoding2Encoding((char_T *)&cv[0], (char_T *)&destEncoding[0],
                                   0, j2 + 1, &str_data[0], &outBuff_data[0]);
-      f_st.site = &cb_emlrtRSI;
+      f_st.site = &bb_emlrtRSI;
       if (j2 == -1) {
         emlrtErrorWithMessageIdR2018a(
             &f_st, &b_emlrtRTEI, "Coder:toolbox:EncodingInvalidEncoding",
@@ -1009,23 +1009,23 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
                                       "Coder:toolbox:EncodingUnknown", 0);
       }
     }
-    c_st.site = &fb_emlrtRSI;
+    c_st.site = &eb_emlrtRSI;
     generateFormattedString(&c_st, unnamed_idx_0, outBuff_data, currInt_size,
                             formattedArray);
     for (i = 0; i < 25; i++) {
       sArr[i] = ' ';
     }
-    c_st.site = &eb_emlrtRSI;
-    d_st.site = &tb_emlrtRSI;
+    c_st.site = &db_emlrtRSI;
+    d_st.site = &sb_emlrtRSI;
     j2 = 24;
     exitg1 = false;
     while ((!exitg1) && (j2 > 0)) {
-      e_st.site = &ub_emlrtRSI;
+      e_st.site = &tb_emlrtRSI;
       b_u = (uint8_T)formattedArray[j2 - 1];
       if (b_u != 0) {
-        f_st.site = &vb_emlrtRSI;
-        g_st.site = &x_emlrtRSI;
-        h_st.site = &y_emlrtRSI;
+        f_st.site = &ub_emlrtRSI;
+        g_st.site = &w_emlrtRSI;
+        h_st.site = &x_emlrtRSI;
         if (b_u > 127) {
           emlrtErrorWithMessageIdR2018a(
               &h_st, &k_emlrtRTEI, "Coder:toolbox:unsupportedString",
@@ -1048,15 +1048,15 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
     if (j2 - 1 >= 0) {
       memcpy(&sArr[0], &formattedArray[0], (uint32_T)j2 * sizeof(char_T));
     }
-    c_st.site = &db_emlrtRSI;
-    d_st.site = &t_emlrtRSI;
+    c_st.site = &cb_emlrtRSI;
+    d_st.site = &s_emlrtRSI;
     b_j1 = 0;
     exitg1 = false;
     while ((!exitg1) && (b_j1 + 1 <= 25)) {
-      e_st.site = &v_emlrtRSI;
-      f_st.site = &w_emlrtRSI;
-      g_st.site = &x_emlrtRSI;
-      h_st.site = &y_emlrtRSI;
+      e_st.site = &u_emlrtRSI;
+      f_st.site = &v_emlrtRSI;
+      g_st.site = &w_emlrtRSI;
+      h_st.site = &x_emlrtRSI;
       b_u = (uint8_T)sArr[b_j1];
       if (b_u > 127) {
         emlrtErrorWithMessageIdR2018a(
@@ -1074,14 +1074,14 @@ void num2str(const emlrtStack *sp, real_T x, char_T s_data[], int32_T s_size[2])
         exitg1 = true;
       }
     }
-    d_st.site = &u_emlrtRSI;
+    d_st.site = &t_emlrtRSI;
     j2 = 24;
     exitg1 = false;
     while ((!exitg1) && (j2 + 1 > 0)) {
-      e_st.site = &ab_emlrtRSI;
-      f_st.site = &w_emlrtRSI;
-      g_st.site = &x_emlrtRSI;
-      h_st.site = &y_emlrtRSI;
+      e_st.site = &y_emlrtRSI;
+      f_st.site = &v_emlrtRSI;
+      g_st.site = &w_emlrtRSI;
+      h_st.site = &x_emlrtRSI;
       b_u = (uint8_T)sArr[j2];
       if (b_u > 127) {
         emlrtErrorWithMessageIdR2018a(
