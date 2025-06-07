@@ -872,7 +872,6 @@ classdef SimManager < handle
 
             % Check all combinations for collision
             collisionFound = false;
-            useMex = exist('CollisionDetector_mex_wrapper_mex','file') == 3;
             for a = 1:numel(group1)
                 for b = 1:numel(group2)
                     collided = obj.collisionDetector.checkCollision(group1{a}, group2{b});

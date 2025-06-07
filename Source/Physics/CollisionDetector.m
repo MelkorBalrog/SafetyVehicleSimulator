@@ -71,13 +71,6 @@ classdef CollisionDetector
         % *
         % * @throws Error if the input matrices do not have the correct dimensions.
         function collision = checkCollision(obj, corners1, corners2)
-            % Use compiled wrapper if available when running in MATLAB
-            if coder.target('MATLAB')
-                if exist('CollisionDetector_mex_wrapper_mex','file')
-                    collision = CollisionDetector_mex_wrapper_mex(corners1, corners2);
-                    return;
-                end
-            end
             % checkCollision Determines if two rectangles collide using SAT.
             %
             % Inputs:

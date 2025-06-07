@@ -431,17 +431,6 @@ classdef StabilityChecker
         % CHECK STABILITY
         % ================================================================
         function obj = checkStability(obj)
-            % Use compiled wrapper when available and not in code generation
-            if coder.target('MATLAB')
-                if exist('StabilityChecker_checkStability_wrapper_mex','file')
-                    [wiggle,roll,skid,jack] = StabilityChecker_checkStability_wrapper_mex();
-                    obj.isWiggling  = wiggle;
-                    obj.isRollover  = roll;
-                    obj.isSkidding  = skid;
-                    obj.isJackknife = jack;
-                    return;
-                end
-            end
             % ------------------------------------------
             % 1) If speed is below a certain threshold,
             %    reset all flags to false & scores to 0.
