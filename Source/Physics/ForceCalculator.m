@@ -379,16 +379,11 @@ classdef ForceCalculator
         
         %% computeTireForces (vectorized lateral forces and yaw moment)
         function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r)
-            % Allow calling a compiled MEX wrapper when running in MATLAB
+            % Use compiled wrapper when available and running in MATLAB
             if coder.target('MATLAB')
-                if exist('ForceCalculator_computeTireForces_wrapper_mex','file') == 3
-                    % The generated wrapper expects four tires. Only use it when
-                    % the number of loads matches to avoid dimension errors.
-                    if numel(loads) == 4
-                        [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper_mex( ...
-                            loads, contactAreas, u, v, r);
-                        return;
-                    end
+                if exist('ForceCalculator_computeTireForces_wrapper_mex','file') && numel(loads) == 4
+                    [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper_mex(loads, contactAreas, u, v, r);
+                    return;
                 end
             end
             numTires = numel(loads);
