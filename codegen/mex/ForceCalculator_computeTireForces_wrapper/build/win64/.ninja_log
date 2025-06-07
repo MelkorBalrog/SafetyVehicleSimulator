@@ -1,0 +1,14 @@
+# ninja log v5
+18	202	7709650587551702	build/win64/sum.o	df150efbc53d4d9b
+0	220	7709650587441698	build/win64/rt_nonfinite.o	a82e30a15926bf94
+13	233	7709650587581701	build/win64/_coder_ForceCalculator_computeTireForces_wrapper_mex.o	10f29f8ae2063f84
+4	237	7709650587761719	build/win64/ForceCalculator_computeTireForces_wrapper_data.o	556045a6d7aa6133
+22	244	7709650587656696	build/win64/c_mexapi_version.o	665990bea4e0ce6a
+33	247	7709650587821694	build/win64/_coder_ForceCalculator_computeTireForces_wrapper_api.o	2469f7be261aa009
+27	291	7709650588216709	build/win64/sumMatrixIncludeNaN.o	bf8d433f96ab67bf
+8	300	7709650588526694	build/win64/ForceCalculator_computeTireForces_wrapper.o	6d3f7e66ee29a688
+37	316	7709650588371697	build/win64/ForceCalculator_computeTireForces_wrapper_mexutil.o	3ef3ad6dd129f3fb
+41	319	7709650588561694	build/win64/_coder_ForceCalculator_computeTireForces_wrapper_info.o	602549f3171f4b9f
+211	348	7709650589016701	build/win64/ForceCalculator_computeTireForces_wrapper_initialize.o	eafe3da4ff96134b
+223	363	7709650589176698	build/win64/ForceCalculator_computeTireForces_wrapper_terminate.o	79a9282bd9eede6a
+366	464	7709650590171681	ForceCalculator_computeTireForces_wrapper_mex.mexw64	2188547ed0ba79f7
