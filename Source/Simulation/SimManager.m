@@ -84,6 +84,29 @@ classdef SimManager < handle
                 disp('Updating simulation parameters for Vehicle 2...');
                 obj.vehicleSim2.simParams = obj.vehicleSimConfig2.getSimulationParameters();
 
+                %% Override command parameters with values from the UIManager command tabs
+                if isprop(obj.uiManager, 'vehicle1SteeringCommandsField') && ...
+                   isprop(obj.uiManager, 'vehicle1AccelerationCommandsField') && ...
+                   isprop(obj.uiManager, 'vehicle1TirePressureCommandsField')
+                    obj.vehicleSim1.simParams.steeringCommands = obj.uiManager.vehicle1SteeringCommandsField.Value;
+                    obj.vehicleSim1.simParams.accelerationCommands = obj.uiManager.vehicle1AccelerationCommandsField.Value;
+                    obj.vehicleSim1.simParams.tirePressureCommands = obj.uiManager.vehicle1TirePressureCommandsField.Value;
+                elseif isprop(obj.uiManager, 'steeringCommandsField') && ...
+                       isprop(obj.uiManager, 'accelerationCommandsField') && ...
+                       isprop(obj.uiManager, 'tirePressureCommandsField')
+                    obj.vehicleSim1.simParams.steeringCommands = obj.uiManager.steeringCommandsField.Value;
+                    obj.vehicleSim1.simParams.accelerationCommands = obj.uiManager.accelerationCommandsField.Value;
+                    obj.vehicleSim1.simParams.tirePressureCommands = obj.uiManager.tirePressureCommandsField.Value;
+                end
+
+                if isprop(obj.uiManager, 'vehicle2SteeringCommandsField') && ...
+                   isprop(obj.uiManager, 'vehicle2AccelerationCommandsField') && ...
+                   isprop(obj.uiManager, 'vehicle2TirePressureCommandsField')
+                    obj.vehicleSim2.simParams.steeringCommands = obj.uiManager.vehicle2SteeringCommandsField.Value;
+                    obj.vehicleSim2.simParams.accelerationCommands = obj.uiManager.vehicle2AccelerationCommandsField.Value;
+                    obj.vehicleSim2.simParams.tirePressureCommands = obj.uiManager.vehicle2TirePressureCommandsField.Value;
+                end
+
                 % Set vehicleType fields dynamically
                 obj.vehicleSim1.simParams.vehicleType = 'Truck';
                 obj.vehicleSim2.simParams.vehicleType = 'Tractor';
