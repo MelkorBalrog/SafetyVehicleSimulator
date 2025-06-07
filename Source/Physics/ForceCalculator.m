@@ -179,6 +179,7 @@ classdef ForceCalculator
             %
             % Preserves all original parameters, plus optional 'wheelSpeeds, wheelRadius, wheelInertia'
             % if given via varargin.
+
             % Validate vehicleType using codegen friendly syntax
             validTractorTrailer   = strcmp(vehicleType, 'tractor-trailer');
             validTractor          = strcmp(vehicleType, 'tractor');
@@ -378,7 +379,12 @@ classdef ForceCalculator
         
         %% computeTireForces (vectorized lateral forces and yaw moment)
         function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r)
-
+            % Allow calling a compiled MEX wrapper if available
+            if exist('ForceCalculator_computeTireForces_wrapper_mex','file') == 3
+                [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper_mex( ...
+                    loads, contactAreas, u, v, r);
+                return;
+            end
             numTires = numel(loads);
             xPos = obj.loadDistribution(:,1);
             a = obj.wheelbase/2;

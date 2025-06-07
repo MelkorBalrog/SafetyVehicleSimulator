@@ -7,7 +7,6 @@ function [dydt, accelerations] = DynamicsUpdater_stateDerivative_wrapper(stateVe
 
     persistent dyn
     if isempty(dyn)
-        % TODO: Initialize DynamicsUpdater with actual instances and initial state
         % Placeholder initialState struct
         initialState.position = [0;0];
         initialState.orientation = 0;
