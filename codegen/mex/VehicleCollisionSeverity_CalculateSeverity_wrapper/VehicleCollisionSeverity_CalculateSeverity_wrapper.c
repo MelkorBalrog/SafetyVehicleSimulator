@@ -57,8 +57,8 @@ static emlrtRSInfo e_emlrtRSI = {
     "Simulator\\Source\\Physics\\VehicleCollisionSeverity.m" /* pathName */
 };
 
-static emlrtRSInfo j_emlrtRSI = {
-    283,                                           /* lineNo */
+static emlrtRSInfo i_emlrtRSI = {
+    327,                                           /* lineNo */
     "VehicleCollisionSeverity/determine_severity", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\VehicleCollisionSeverity.m" /* pathName */
@@ -238,7 +238,7 @@ void VehicleCollisionSeverity_CalculateSeverity_wrapper(
     if (i < 4) {
       if ((b_a > thresholds_vehicle1[i]) &&
           (b_a <= thresholds_vehicle1[i + 4])) {
-        c_st.site = &j_emlrtRSI;
+        c_st.site = &i_emlrtRSI;
         num2str(&c_st, ((real_T)i + 1.0) - 1.0, tmp_data, tmp_size);
         severity1_size[0] = 1;
         severity1_size[1] = tmp_size[1] + 1;
@@ -299,7 +299,7 @@ void VehicleCollisionSeverity_CalculateSeverity_wrapper(
     if (i < 4) {
       if ((v_rel_normal > thresholds_vehicle2[i]) &&
           (v_rel_normal <= thresholds_vehicle2[i + 4])) {
-        c_st.site = &j_emlrtRSI;
+        c_st.site = &i_emlrtRSI;
         num2str(&c_st, ((real_T)i + 1.0) - 1.0, tmp_data, tmp_size);
         severity2_size[0] = 1;
         severity2_size[1] = tmp_size[1] + 1;

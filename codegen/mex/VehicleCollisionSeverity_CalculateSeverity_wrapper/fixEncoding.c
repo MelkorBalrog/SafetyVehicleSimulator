@@ -28,7 +28,7 @@ void fixEncoding(const emlrtStack *sp, char_T out_data[], int32_T out_size[2])
   outLength =
       emlrtEncoding2Encoding((char_T *)&cv[0], (char_T *)&destEncoding[0], 0, 3,
                              (char_T *)&str[0], &outBuff[0]);
-  st.site = &cb_emlrtRSI;
+  st.site = &bb_emlrtRSI;
   if (outLength == -1) {
     emlrtErrorWithMessageIdR2018a(&st, &b_emlrtRTEI,
                                   "Coder:toolbox:EncodingInvalidEncoding",

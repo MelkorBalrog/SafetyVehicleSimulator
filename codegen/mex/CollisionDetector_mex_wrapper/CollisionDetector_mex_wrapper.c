@@ -29,49 +29,49 @@ static emlrtRSInfo emlrtRSI = {
 };
 
 static emlrtRSInfo b_emlrtRSI = {
-    92,                                 /* lineNo */
+    93,                                 /* lineNo */
     "CollisionDetector/checkCollision", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
 };
 
 static emlrtRSInfo c_emlrtRSI = {
-    95,                                 /* lineNo */
+    96,                                 /* lineNo */
     "CollisionDetector/checkCollision", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
 };
 
 static emlrtRSInfo d_emlrtRSI = {
-    98,                                 /* lineNo */
+    99,                                 /* lineNo */
     "CollisionDetector/checkCollision", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
 };
 
 static emlrtRSInfo e_emlrtRSI = {
-    103,                                /* lineNo */
+    104,                                /* lineNo */
     "CollisionDetector/checkCollision", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
 };
 
 static emlrtRSInfo f_emlrtRSI = {
-    194,                         /* lineNo */
+    195,                         /* lineNo */
     "CollisionDetector/getAxes", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
 };
 
 static emlrtRSInfo g_emlrtRSI = {
-    196,                         /* lineNo */
+    197,                         /* lineNo */
     "CollisionDetector/getAxes", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
 };
 
 static emlrtRSInfo h_emlrtRSI = {
-    203,                         /* lineNo */
+    204,                         /* lineNo */
     "CollisionDetector/getAxes", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\CollisionDetector.m" /* pathName */
@@ -106,7 +106,7 @@ static emlrtRSInfo o_emlrtRSI =
 static emlrtBCInfo emlrtBCI = {
     -1,                          /* iFirst */
     -1,                          /* iLast */
-    200,                         /* lineNo */
+    201,                         /* lineNo */
     49,                          /* colNo */
     "axes_norm",                 /* aName */
     "CollisionDetector/getAxes", /* fName */
@@ -118,7 +118,7 @@ static emlrtBCInfo emlrtBCI = {
 static emlrtBCInfo b_emlrtBCI = {
     -1,                          /* iFirst */
     -1,                          /* iLast */
-    200,                         /* lineNo */
+    201,                         /* lineNo */
     23,                          /* colNo */
     "axes_norm",                 /* aName */
     "CollisionDetector/getAxes", /* fName */
@@ -129,7 +129,7 @@ static emlrtBCInfo b_emlrtBCI = {
 
 static emlrtECInfo emlrtECI = {
     2,                                  /* nDims */
-    103,                                /* lineNo */
+    104,                                /* lineNo */
     20,                                 /* colNo */
     "CollisionDetector/checkCollision", /* fName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
@@ -138,7 +138,7 @@ static emlrtECInfo emlrtECI = {
 
 static emlrtECInfo b_emlrtECI = {
     2,                                  /* nDims */
-    103,                                /* lineNo */
+    104,                                /* lineNo */
     36,                                 /* colNo */
     "CollisionDetector/checkCollision", /* fName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
@@ -147,7 +147,7 @@ static emlrtECInfo b_emlrtECI = {
 
 static emlrtECInfo c_emlrtECI = {
     -1,                          /* nDims */
-    200,                         /* lineNo */
+    201,                         /* lineNo */
     13,                          /* colNo */
     "CollisionDetector/getAxes", /* fName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"

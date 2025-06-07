@@ -24,7 +24,7 @@ classdef pid_SpeedController < handle
     %           'Verbose', false);
     %
     %       % In your main loop:
-    %       acceleration = controller.computeAcceleration(currentSpeed, currentTime, turnRadius, upcomingRadii);
+    %       acceleration = controller.computeAcceleration(currentSpeed, currentTime, turnRadius);
     %
     %   Author: [Your Name]
     %   Date:   [Date]
@@ -65,10 +65,6 @@ classdef pid_SpeedController < handle
 
         % ------------------------ Control Flags ---------------------------
         verbose        % Flag to control verbosity of logs
-
-        % -------------------- Speed Profile Props -----------------------
-        speedSmoothing     % Smoothing factor (0-1) for target speed updates
-        currentTargetSpeed % Internally smoothed target speed
     end
 
     methods
@@ -100,9 +96,6 @@ classdef pid_SpeedController < handle
             addParameter(p, 'SMAWindowSize', 5, @(x) isnumeric(x) && x>0 && floor(x)==x);
             addParameter(p, 'GaussianWindowSize', 5, @(x) isnumeric(x) && x>0 && mod(x,2)==1);
             addParameter(p, 'GaussianStd', 1, @(x) isnumeric(x) && x>0);
-
-            % ---- Speed smoothing when updating target speed -----
-            addParameter(p, 'SpeedSmoothing', 0.2, @(x) isnumeric(x) && x>0 && x<=1);
 
             % ---- New parameters for friction-based cornering speed  -----
             addParameter(p, 'FrictionCoeff', 0.7, @(x) isnumeric(x) && x>0 && x<=1);
@@ -139,10 +132,6 @@ classdef pid_SpeedController < handle
             obj.gravity       = p.Results.Gravity;
             obj.safetyFactor  = p.Results.SafetyFactor;
 
-            % Speed smoothing factor and current target speed
-            obj.speedSmoothing     = p.Results.SpeedSmoothing;
-            obj.currentTargetSpeed = desiredSpeed;
-
             % Verbosity flag
             obj.verbose = logical(p.Results.Verbose);
 
@@ -155,38 +144,28 @@ classdef pid_SpeedController < handle
         %  Now accepts an optional 'turnRadius' input. If you have a 
         %  real-time estimate of turn radius, pass it here. If not 
         %  used, you can keep it as `[]` or skip it in calls.
-        function acceleration = computeAcceleration(obj, currentSpeed, currentTime, turnRadius, upcomingRadii)
+        function acceleration = computeAcceleration(obj, currentSpeed, currentTime, turnRadius)
             if nargin < 4 || isempty(turnRadius)
                 % If turnRadius not provided, assume no cornering limit needed
-                turnRadius = Inf;
-            end
-            if nargin < 5
-                upcomingRadii = [];
+                turnRadius = Inf; 
             end
 
             % ---------------- 1) Adjust desired speed for cornering ----------------
             corneringSpeed = obj.computeCorneringSpeed(turnRadius);
-            if ~isempty(upcomingRadii)
-                % Use the tightest upcoming radius to further limit speed
-                validR = upcomingRadii(~isinf(upcomingRadii) & ~isnan(upcomingRadii));
-                if ~isempty(validR)
-                    minR = min(validR);
-                else
-                    minR = Inf;
+            % Ensure we do not exceed the cornering speed
+            if corneringSpeed < obj.desiredSpeed
+                obj.desiredSpeed = corneringSpeed;
+                if obj.verbose
+                    fprintf('[pid_SpeedController] Reducing desired speed to %.2f m/s due to turn radius = %.2f m\n',...
+                            corneringSpeed, turnRadius);
                 end
-                upcomingSpeed = obj.computeCorneringSpeed(minR);
-                corneringSpeed = min(corneringSpeed, upcomingSpeed);
             end
-
-            % Compute smoothed target speed
-            targetSpeed = min(obj.desiredSpeed, corneringSpeed);
-            obj.currentTargetSpeed = obj.currentTargetSpeed + obj.speedSmoothing*(targetSpeed - obj.currentTargetSpeed);
 
             % ---------------- 2) Filter the current speed reading ------------------
             filteredSpeed = obj.applyFilter(currentSpeed);
 
             % ---------------- 3) Check if we need to decelerate --------------------
-            if filteredSpeed > obj.currentTargetSpeed
+            if filteredSpeed > obj.desiredSpeed
                 % Deceleration is required => let the brakes handle it
                 obj.controllerActive = false;
                 acceleration = 0;
@@ -207,7 +186,7 @@ classdef pid_SpeedController < handle
                 filteredSpeed = 0;
             end
 
-            if obj.currentTargetSpeed <= 0
+            if obj.desiredSpeed <= 0
                 % No movement needed
                 acceleration = 0;
                 obj.controllerActive = false;
@@ -218,7 +197,7 @@ classdef pid_SpeedController < handle
             end
 
             % ---------------- 4) PID control for Acceleration ----------------------
-            error = obj.currentTargetSpeed - filteredSpeed;
+            error = obj.desiredSpeed - filteredSpeed;
             dt    = currentTime - obj.previousTime;
             if dt <= 0
                 dt = 1e-6; % Prevent division by zero or negative dt
@@ -309,7 +288,6 @@ classdef pid_SpeedController < handle
             obj.previousError   = 0;
             obj.previousTime    = 0;
             obj.controllerActive = true;
-            obj.currentTargetSpeed = obj.desiredSpeed;
 
             % Reset buffers if needed
             if strcmp(obj.filterType, 'sma')

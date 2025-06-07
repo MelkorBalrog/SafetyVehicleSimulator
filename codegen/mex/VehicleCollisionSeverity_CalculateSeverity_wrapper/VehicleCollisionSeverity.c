@@ -14,44 +14,23 @@
 #include "rt_nonfinite.h"
 #include <string.h>
 
-/* Type Definitions */
-#ifndef typedef_struct_T
-#define typedef_struct_T
-typedef struct {
-  real_T HeadOnCollision[8];
-  real_T RearEndCollision[8];
-  real_T SideCollision[8];
-  real_T ObliqueCollision[8];
-} struct_T;
-#endif /* typedef_struct_T */
-
-#ifndef typedef_b_struct_T
-#define typedef_b_struct_T
-typedef struct {
-  struct_T LowerBound;
-  struct_T HigherBound;
-  struct_T Average;
-} b_struct_T;
-#endif /* typedef_b_struct_T */
-
 /* Variable Definitions */
-static b_struct_T KE_tables;
+static real_T AV_HeadOn[8];
+
+static real_T AV_RearEnd[8];
+
+static real_T AV_Side[8];
+
+static real_T AV_Oblique[8];
 
 static emlrtRSInfo f_emlrtRSI = {
-    241,                                       /* lineNo */
+    286,                                       /* lineNo */
     "VehicleCollisionSeverity/get_thresholds", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\VehicleCollisionSeverity.m" /* pathName */
 };
 
 static emlrtRSInfo g_emlrtRSI = {
-    242,                                       /* lineNo */
-    "VehicleCollisionSeverity/get_thresholds", /* fcnName */
-    "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
-    "Simulator\\Source\\Physics\\VehicleCollisionSeverity.m" /* pathName */
-};
-
-static emlrtRSInfo h_emlrtRSI = {
     62,       /* lineNo */
     "strrep", /* fcnName */
     "C:\\Program "
@@ -59,7 +38,7 @@ static emlrtRSInfo h_emlrtRSI = {
                                                                           */
 };
 
-static emlrtRSInfo i_emlrtRSI = {
+static emlrtRSInfo h_emlrtRSI = {
     87,                      /* lineNo */
     "compute_str_or_length", /* fcnName */
     "C:\\Program "
@@ -99,8 +78,8 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
   int32_T out_len;
   int32_T patt_idx;
   int32_T tmp_in_idx;
-  char_T ct_data[17];
-  char_T source_str_data[17];
+  char_T b_str_data[17];
+  char_T str_data[17];
   boolean_T result;
   st.prev = sp;
   st.tls = sp->tls;
@@ -137,8 +116,13 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
   /*  Vectorized delta-V thresholds lookup based on SAE J2980 tables */
   /*  MATLAB Coder does not allow dynamic field names, so select the */
   /*  appropriate table explicitly using switch statements */
+  /*  Vectorized delta-V thresholds lookup based on SAE J2980 tables */
+  /*  Use separate persistent arrays for each lookup table so codegen */
+  /*  does not interpret dynamic struct expansion */
+  /*  MATLAB Coder does not allow dynamic field names, so select the */
+  /*  appropriate table explicitly using switch statements */
   st.site = &f_emlrtRSI;
-  b_st.site = &h_emlrtRSI;
+  b_st.site = &g_emlrtRSI;
   in_idx = 0;
   copyfrom = 1;
   out_idx = 0;
@@ -164,11 +148,10 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
                                   "Coder:builtins:AssertionFailed",
                                   "Coder:builtins:AssertionFailed", 0);
   }
-  c_st.site = &i_emlrtRSI;
+  c_st.site = &h_emlrtRSI;
   if ((int8_T)out_len < 0) {
     emlrtNonNegativeCheckR2012b((int8_T)out_len, &emlrtDCI, &c_st);
   }
-  patt_idx = (int8_T)out_len;
   while (in_idx < 17) {
     char_T c;
     in_idx++;
@@ -182,16 +165,16 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
     if (b_in_idx > 1) {
       copyfrom = b_copyfrom;
     } else if (in_idx >= copyfrom) {
-      ct_data[out_idx] = c;
+      str_data[out_idx] = c;
       out_idx++;
     }
   }
-  st.site = &g_emlrtRSI;
-  if ((int8_T)out_len != 0) {
+  st.site = &f_emlrtRSI;
+  if ((int8_T)out_len == 0) {
+    patt_idx = 0;
+  } else {
     int32_T b_out_idx;
-    b_st.site = &h_emlrtRSI;
-    memcpy(&source_str_data[0], &ct_data[0],
-           (uint32_T)patt_idx * sizeof(char_T));
+    b_st.site = &g_emlrtRSI;
     copyfrom = 0;
     out_idx = 1;
     b_out_idx = 0;
@@ -202,7 +185,7 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
       b_in_idx++;
       tmp_in_idx = 1;
       in_idx = b_in_idx;
-      if ((b_in_idx <= (int8_T)out_len) && (ct_data[b_in_idx - 1] == ' ')) {
+      if ((b_in_idx <= (int8_T)out_len) && (str_data[b_in_idx - 1] == ' ')) {
         in_idx = b_in_idx + 1;
         tmp_in_idx = 2;
       }
@@ -217,7 +200,7 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
                                     "Coder:builtins:AssertionFailed",
                                     "Coder:builtins:AssertionFailed", 0);
     }
-    c_st.site = &i_emlrtRSI;
+    c_st.site = &h_emlrtRSI;
     if ((int8_T)patt_idx < 0) {
       emlrtNonNegativeCheckR2012b((int8_T)patt_idx, &emlrtDCI, &c_st);
     }
@@ -226,15 +209,14 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
       copyfrom++;
       b_in_idx = 1;
       b_copyfrom = copyfrom;
-      if ((copyfrom <= (int8_T)out_len) &&
-          (source_str_data[copyfrom - 1] == ' ')) {
+      if ((copyfrom <= (int8_T)out_len) && (str_data[copyfrom - 1] == ' ')) {
         b_copyfrom = copyfrom + 1;
         b_in_idx = 2;
       }
       if (b_in_idx > 1) {
         out_idx = b_copyfrom;
       } else if (copyfrom >= out_idx) {
-        ct_data[b_out_idx] = source_str_data[copyfrom - 1];
+        b_str_data[b_out_idx] = str_data[copyfrom - 1];
         b_out_idx++;
       }
     }
@@ -245,7 +227,7 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
     do {
       exitg1 = 0;
       if (b_in_idx < 15) {
-        if (b_cv[b_in_idx] != ct_data[b_in_idx]) {
+        if (b_cv[b_in_idx] != b_str_data[b_in_idx]) {
           exitg1 = 1;
         } else {
           b_in_idx++;
@@ -265,7 +247,7 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
       do {
         exitg1 = 0;
         if (b_in_idx < 16) {
-          if (cv1[b_in_idx] != ct_data[b_in_idx]) {
+          if (cv1[b_in_idx] != b_str_data[b_in_idx]) {
             exitg1 = 1;
           } else {
             b_in_idx++;
@@ -285,7 +267,7 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
         do {
           exitg1 = 0;
           if (b_in_idx < 13) {
-            if (cv2[b_in_idx] != ct_data[b_in_idx]) {
+            if (cv2[b_in_idx] != b_str_data[b_in_idx]) {
               exitg1 = 1;
             } else {
               b_in_idx++;
@@ -305,20 +287,16 @@ void c_VehicleCollisionSeverity_get_(const emlrtStack *sp,
   }
   switch (b_in_idx) {
   case 0:
-    memcpy(&thresholds[0], &KE_tables.Average.HeadOnCollision[0],
-           8U * sizeof(real_T));
+    memcpy(&thresholds[0], &AV_HeadOn[0], 8U * sizeof(real_T));
     break;
   case 1:
-    memcpy(&thresholds[0], &KE_tables.Average.RearEndCollision[0],
-           8U * sizeof(real_T));
+    memcpy(&thresholds[0], &AV_RearEnd[0], 8U * sizeof(real_T));
     break;
   case 2:
-    memcpy(&thresholds[0], &KE_tables.Average.SideCollision[0],
-           8U * sizeof(real_T));
+    memcpy(&thresholds[0], &AV_Side[0], 8U * sizeof(real_T));
     break;
   default:
-    memcpy(&thresholds[0], &KE_tables.Average.ObliqueCollision[0],
-           8U * sizeof(real_T));
+    memcpy(&thresholds[0], &AV_Oblique[0], 8U * sizeof(real_T));
     break;
   }
 }
@@ -328,41 +306,13 @@ void d_VehicleCollisionSeverity_get_(void)
   static real_T dv[8] = {0.0, 4.75, 20.5, 47.5, 4.75, 20.5, 47.5, 0.0};
   static real_T dv1[8] = {0.0, 2.5, 6.0, 39.0, 2.5, 6.0, 39.0, 0.0};
   static real_T dv2[8] = {0.0, 7.0, 35.0, 52.5, 7.0, 35.0, 52.5, 0.0};
-  static real_T dv3[8] = {0.0, 10.0, 40.0, 50.0, 6.5, 40.0, 50.0, 0.0};
-  static real_T dv4[8] = {0.0, 10.0, 30.0, 40.0, 3.0, 30.0, 40.0, 0.0};
-  static real_T dv5[8] = {0.0, 10.0, 50.0, 60.0, 10.0, 50.0, 60.0, 0.0};
-  static real_T dv6[8] = {0.0, 10.0, 50.0, 65.0, 10.0, 50.0, 65.0, 0.0};
-  static real_T dv7[8] = {0.0, 3.0, 14.0, 28.0, 3.0, 14.0, 28.0, 0.0};
-  static real_T dv8[8] = {0.0, 2.0, 8.0, 16.0, 2.0, 8.0, 16.0, 0.0};
-  static real_T dv9[8] = {0.0, 4.0, 20.0, 40.0, 4.0, 20.0, 40.0, 0.0};
-  dv[7] = rtInf;
-  dv1[7] = rtInf;
-  dv2[7] = rtInf;
-  dv3[7] = rtInf;
-  dv4[7] = rtInf;
-  dv5[7] = rtInf;
-  dv6[7] = rtInf;
-  dv7[7] = rtInf;
-  dv8[7] = rtInf;
-  dv9[7] = rtInf;
-  memcpy(&KE_tables.LowerBound.HeadOnCollision[0], &dv9[0],
-         8U * sizeof(real_T));
-  memcpy(&KE_tables.LowerBound.RearEndCollision[0], &dv9[0],
-         8U * sizeof(real_T));
-  memcpy(&KE_tables.LowerBound.SideCollision[0], &dv8[0], 8U * sizeof(real_T));
-  memcpy(&KE_tables.LowerBound.ObliqueCollision[0], &dv7[0],
-         8U * sizeof(real_T));
-  memcpy(&KE_tables.HigherBound.HeadOnCollision[0], &dv6[0],
-         8U * sizeof(real_T));
-  memcpy(&KE_tables.HigherBound.RearEndCollision[0], &dv5[0],
-         8U * sizeof(real_T));
-  memcpy(&KE_tables.HigherBound.SideCollision[0], &dv4[0], 8U * sizeof(real_T));
-  memcpy(&KE_tables.HigherBound.ObliqueCollision[0], &dv3[0],
-         8U * sizeof(real_T));
-  memcpy(&KE_tables.Average.HeadOnCollision[0], &dv2[0], 8U * sizeof(real_T));
-  memcpy(&KE_tables.Average.RearEndCollision[0], &dv2[0], 8U * sizeof(real_T));
-  memcpy(&KE_tables.Average.SideCollision[0], &dv1[0], 8U * sizeof(real_T));
-  memcpy(&KE_tables.Average.ObliqueCollision[0], &dv[0], 8U * sizeof(real_T));
+  dv[7U] = rtInf;
+  dv1[7U] = rtInf;
+  dv2[7U] = rtInf;
+  memcpy(&AV_HeadOn[0], &dv2[0], 8U * sizeof(real_T));
+  memcpy(&AV_Side[0], &dv1[0], 8U * sizeof(real_T));
+  memcpy(&AV_Oblique[0], &dv[0], 8U * sizeof(real_T));
+  memcpy(&AV_RearEnd[0], &AV_HeadOn[0], 8U * sizeof(real_T));
 }
 
 /* End of code generation (VehicleCollisionSeverity.c) */

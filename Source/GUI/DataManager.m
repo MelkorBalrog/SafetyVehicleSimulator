@@ -223,8 +223,6 @@ classdef DataManager < handle
                 boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
                 massVal = sum(boxMasses);
             end
-            totalVehicleMass = simParams.tractorMass + massVal;
-            fprintf('Total vehicle mass updated: %.2f kg\n', totalVehicleMass);
 
             trailerParams = struct(...
                 'isTractor', false, ...

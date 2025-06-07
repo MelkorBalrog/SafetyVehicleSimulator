@@ -623,22 +623,18 @@ classdef VehicleModel < handle
                     for j = 1:4
                         weightsKg(j) = obj.guiManager.trailerBoxWeightFields{b,j}.Value;
                     end
-                    extraKgPerCorner = 6000/4;
-                    weightsKgWithExtra = weightsKg + extraKgPerCorner;
                     positions = [ ...
                         -wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                         -wheelbase/2,  track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2, -track/2, simParams.trailerCoGHeight; ...
                          wheelbase/2,  track/2, simParams.trailerCoGHeight];
-                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKgWithExtra*9.81];
+                    simParams.trailerBoxWeightDistributions{b} = [positions, weightsKg*9.81];
                     if b == 1
                         totalMass = 0;
                     end
-                    boxMass = sum(weightsKgWithExtra);
-                    totalMass = totalMass + boxMass;
+                    totalMass = totalMass + sum(weightsKg);
                 end
                 simParams.trailerMass = totalMass;
-                fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -1310,7 +1306,6 @@ classdef VehicleModel < handle
                     else
                         trailerMass = simParams.trailerMass;
                     end
-                    fprintf('Total vehicle mass updated: %.2f kg\n', tractorMass + trailerMass);
                     trailerWheelbase = simParams.trailerWheelbase; % Defined when trailer is included
                 else
                     trailerMass = 0;
@@ -2826,11 +2821,7 @@ classdef VehicleModel < handle
                         desired_acceleration_sim(i) = desired_acceleration;
                         logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
                     else
-                        % Obtain upcoming path geometry for speed planning
-                        curIdx = purePursuitPathFollower.currentWaypointIndex;
-                        lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
-                        upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
-                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
+                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
@@ -3708,38 +3699,12 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
     %   accelerationEnded  = Nx1
     %   tirePressureEnded  = Nx1
 
-    %% 1) Steering, Acceleration and Tire Pressure Parsing in Parallel
+    %% 1) Steering
     initialSteerAngle = 0;  % single scalar
-    initialAcceleration = 0;
-
-    pool = gcp('nocreate');
-    if isempty(pool)
-        pool = backgroundPool;
-    end
-
-    futures = parallel.FevalFuture.empty(3,0);
-
     if ~isempty(steeringCommands)
-        futures(1) = parfeval(pool, @processSignalColumn, 3, ...
+        [timeSteer, sVal, freeSteerFlag] = processSignalColumn(...
             steeringCommands, initialSteerAngle, 'SteeringAngle', dt);
-    end
-
-    if ~isempty(accelerationCommands)
-        futures(2) = parfeval(pool, @processSignalColumn, 3, ...
-            accelerationCommands, initialAcceleration, 'Acceleration', dt);
-    end
-
-    if ~isempty(tirePressureCommands)
-        futures(3) = parfeval(pool, @processSignalColumn, 3, ...
-            tirePressureCommands, defaultTirePressures, 'TirePressure', dt);
-    end
-
-    % Gather results (fetch in the order futures were created)
-    idx = 1;
-    if ~isempty(steeringCommands)
-        [timeSteer, sVal, freeSteerFlag] = fetchOutputs(futures(idx));
         endTimeSteer = timeSteer(end);
-        idx = idx + 1;
     else
         timeSteer = 0;
         sVal = initialSteerAngle;
@@ -3747,10 +3712,12 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
         endTimeSteer = 0;
     end
 
+    %% 2) Acceleration
+    initialAcceleration = 0;
     if ~isempty(accelerationCommands)
-        [timeAccel, aVal, freeAccelFlag] = fetchOutputs(futures(idx));
+        [timeAccel, aVal, freeAccelFlag] = processSignalColumn(...
+            accelerationCommands, initialAcceleration, 'Acceleration', dt);
         endTimeAccel = timeAccel(end);
-        idx = idx + 1;
     else
         timeAccel = 0;
         aVal = initialAcceleration;
@@ -3758,12 +3725,15 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
         endTimeAccel = 0;
     end
 
+    %% 3) Tire Pressures
+    % Use the provided defaultTirePressures for the initial multi-tire state
     if ~isempty(tirePressureCommands)
-        [timeTire, pVal, freePressFlag] = fetchOutputs(futures(idx));
+        [timeTire, pVal, freePressFlag] = processSignalColumn(...
+            tirePressureCommands, defaultTirePressures, 'TirePressure', dt);
         endTimeTire = timeTire(end);
     else
         timeTire = 0;
-        pVal = defaultTirePressures;  % 1×M
+        pVal = defaultTirePressures;  % 1×M 
         freePressFlag = false;
         endTimeTire = 0;
     end

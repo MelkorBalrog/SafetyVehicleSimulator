@@ -1208,4 +1208,3 @@ function closeIfOpen(h)
         close(h);
     end
 end
-

@@ -56,56 +56,56 @@ static emlrtRSInfo c_emlrtRSI = {
 };
 
 static emlrtRSInfo d_emlrtRSI = {
-    321,                               /* lineNo */
+    322,                               /* lineNo */
     "ForceCalculator/ForceCalculator", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
 static emlrtRSInfo e_emlrtRSI = {
-    339,                               /* lineNo */
-    "ForceCalculator/ForceCalculator", /* fcnName */
-    "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
-    "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
-};
-
-static emlrtRSInfo f_emlrtRSI = {
     340,                               /* lineNo */
     "ForceCalculator/ForceCalculator", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo g_emlrtRSI = {
-    497,                                   /* lineNo */
-    "ForceCalculator/calculateAxleMasses", /* fcnName */
+static emlrtRSInfo f_emlrtRSI = {
+    341,                               /* lineNo */
+    "ForceCalculator/ForceCalculator", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo h_emlrtRSI = {
+static emlrtRSInfo g_emlrtRSI = {
     498,                                   /* lineNo */
     "ForceCalculator/calculateAxleMasses", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo j_emlrtRSI = {
-    518,                                /* lineNo */
-    "ForceCalculator/calculateInertia", /* fcnName */
+static emlrtRSInfo h_emlrtRSI = {
+    499,                                   /* lineNo */
+    "ForceCalculator/calculateAxleMasses", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo k_emlrtRSI = {
+static emlrtRSInfo j_emlrtRSI = {
     519,                                /* lineNo */
     "ForceCalculator/calculateInertia", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
 };
 
-static emlrtRSInfo l_emlrtRSI = {
+static emlrtRSInfo k_emlrtRSI = {
     520,                                /* lineNo */
+    "ForceCalculator/calculateInertia", /* fcnName */
+    "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
+    "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
+};
+
+static emlrtRSInfo l_emlrtRSI = {
+    521,                                /* lineNo */
     "ForceCalculator/calculateInertia", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
@@ -120,7 +120,7 @@ static emlrtRSInfo m_emlrtRSI = {
 };
 
 static emlrtRSInfo o_emlrtRSI = {
-    400,                                 /* lineNo */
+    401,                                 /* lineNo */
     "ForceCalculator/computeTireForces", /* fcnName */
     "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-"
     "Simulator\\Source\\Physics\\ForceCalculator.m" /* pathName */
