@@ -276,11 +276,15 @@ classdef ForceCalculator
                 obj.trailerPsi       = [];
                 obj.trailerOmega     = [];
                 obj.trailerPosition  = [];
-                obj.trailerInertia   = [];
-                obj.dt               = [];
-                obj.trailerMass      = [];
-                obj.trailerWheelbase = [];
-                obj.numTrailerTires  = [];
+                obj.trailerInertia   = 0;
+                obj.dt               = 0;
+                obj.trailerMass      = 0;
+                obj.trailerWheelbase = 0;
+                if nargin >= 24
+                    obj.numTrailerTires = numTrailerTires;
+                else
+                    obj.numTrailerTires = 0;
+                end
                 obj.trailerBoxMasses = [];
                 if strcmp(vehicleType, 'passenger')
                     obj.jointForce = [0; 0; 0];
