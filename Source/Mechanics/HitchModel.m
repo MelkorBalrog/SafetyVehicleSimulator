@@ -75,11 +75,15 @@ classdef HitchModel
 
         %! \var dt
         %! \brief Time step for integration (seconds).
-        dt                     
+        dt
+
+        %! \var trailingCoefficient
+        %! \brief Lever arm coefficient converting pulling force to yaw correcting torque (meters).
+        trailingCoefficient
     end
 
     methods
-        function obj = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, maxDelta, trailerWheelbase, loadDistribution, dt)
+        function obj = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, maxDelta, trailerWheelbase, loadDistribution, dt, trailingCoefficient)
             %! \brief Constructor for HitchModel.
             %!
             %! Initializes the HitchModel object with the specified parameters.
@@ -92,6 +96,7 @@ classdef HitchModel
             %! \param trailerWheelbase Trailer wheelbase for position calculation (meters).
             %! \param loadDistribution [Nx4] Matrix: [x, y, z, load] for each load point.
             %! \param dt Time step for integration (seconds).
+            %! \param trailingCoefficient Lever arm coefficient for trailing torque (meters).
             %
             %! \throws Error if input vectors are not 3-dimensional.
             %! \throws Error if stiffness or damping structs lack required fields.
@@ -111,6 +116,12 @@ classdef HitchModel
             obj.dampingCoefficients = damping;
             obj.maxDelta = maxDelta;
             obj.trailerWheelbase = trailerWheelbase;
+
+            if nargin < 9 || isempty(trailingCoefficient)
+                obj.trailingCoefficient = trailerWheelbase/2;
+            else
+                obj.trailingCoefficient = trailingCoefficient;
+            end
 
             % Validate 'stiffness' struct
             requiredFields = {'x', 'y', 'z', 'roll', 'pitch', 'yaw'};
@@ -171,7 +182,7 @@ classdef HitchModel
             trailerInertia = sum(masses .* r_squared); % [kg·m²]
         end
 
-        function [obj, F_total, M_total] = calculateForces(obj, tractorState, trailerState)
+        function [obj, F_total, M_total] = calculateForces(obj, tractorState, trailerState, pullingForce)
             %! \brief Computes the total forces and moments exerted by the hitch.
             %!
             %! Updates the internal angular state of the trailer using Runge-Kutta integration.
@@ -179,10 +190,15 @@ classdef HitchModel
             %!
             %! \param tractorState Struct containing tractor's state.
             %! \param trailerState Struct containing trailer's state.
+            %! \param pullingForce Longitudinal force pulling the trailer (N).
             %!
             %! \return obj Updated HitchModel object with new angular state.
             %! \return F_total [Fx; Fy; Fz] Total force vector (N).
             %! \return M_total [Mx; My; Mz] Total moment vector (N·m).
+
+            if nargin < 4
+                pullingForce = 0;
+            end
             %
             %! \details
             %! The method extracts the angular velocities of the tractor and trailer,
@@ -220,14 +236,15 @@ classdef HitchModel
             %% Calculate forces using spring-damper model
             stiff = obj.stiffnessCoefficients;
             damp  = obj.dampingCoefficients;
-            F_total = [0;0;0];
+            F_total = [-pullingForce; 0; 0];
 
             %% Calculate torques around all axes
             M_roll  = -stiff.roll  * deltaAngles(1) - damp.roll  * deltaOmega(1);
             M_pitch = -stiff.pitch * deltaAngles(2) - damp.pitch * deltaOmega(2);
             M_yaw_spring  = -obj.fifthWheelStiffnessYaw * deltaYaw;
             M_yaw_damping = -obj.fifthWheelDampingYaw   * (omega_trailer - omega_tractor);
-            torque_hitch  = M_yaw_spring + M_yaw_damping;
+            M_trailing    = obj.trailingCoefficient * pullingForce * sin(deltaYaw);
+            torque_hitch  = M_yaw_spring + M_yaw_damping + M_trailing;
             M_total = [M_roll; M_pitch; torque_hitch];
 
             % Angular acceleration

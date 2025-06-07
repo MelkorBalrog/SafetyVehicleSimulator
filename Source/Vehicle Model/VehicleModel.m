@@ -2350,7 +2350,7 @@ classdef VehicleModel < handle
         
                     % Instantiate HitchModel for tractor to first trailer box
                     dt_hitch = dt; % Use the same time step
-                    hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch);
+                    hitchModel = HitchModel(tractorHitchPoint, trailerKingpinPoint, stiffness, damping, max_delta, wheelbase_trailer, loadDistributionTrailer, dt_hitch, wheelbase_trailer/2);
                     % Instantiate Spinner HitchModels for additional trailer boxes
                     spinnerModels = {};
                     nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -2360,7 +2360,7 @@ classdef VehicleModel < handle
                         damp_sp = spCfg.damping;
                         tractorHitchPoint_sp = [simParams.trailerBoxSpacing; 0; simParams.trailerCoGHeight];
                         trailerKingpinPoint_sp = [0; 0; simParams.trailerCoGHeight];
-                        spinnerModels{iSpinner} = HitchModel(tractorHitchPoint_sp, trailerKingpinPoint_sp, stiff_sp, damp_sp, max_delta, simParams.trailerWheelbase, loadDistributionTrailer, dt_hitch);
+                        spinnerModels{iSpinner} = HitchModel(tractorHitchPoint_sp, trailerKingpinPoint_sp, stiff_sp, damp_sp, max_delta, simParams.trailerWheelbase, loadDistributionTrailer, dt_hitch, simParams.trailerWheelbase/2);
                     end
                     % Preallocate per-box trailer orientations for multi-box articulation
                     nBoxes = simParams.trailerNumBoxes;
@@ -3014,7 +3014,7 @@ classdef VehicleModel < handle
                                                'angularVelocity', [0; 0; r_trailer]);
         
                         % Calculate Hitch Forces and Moments
-                        [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState);
+                        [hitchModel, F_hitch, M_hitch] = hitchModel.calculateForces(tractorState, trailerState, F_traction);
                         % [stabilityChecker, hitchModel.stiffnessCoefficients.yaw] = stabilityChecker.recommendHitchUpdates(dt);
                         dynamicsUpdater.forceCalculator.calculatedForces.hitchMomentZ = M_hitch;
                         dynamicsUpdater.forceCalculator.calculatedForces.hitch = F_hitch;
@@ -3182,7 +3182,7 @@ classdef VehicleModel < handle
                             );
 
                             % Update spinner model dynamics
-                            [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
+                            [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp, F_traction);
 
                             % Store updated box orientation
                             trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
