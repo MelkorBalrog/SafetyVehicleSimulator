@@ -212,24 +212,62 @@ classdef VehicleCollisionSeverity
             %   thresholds - Nx2 matrix of [min, max] delta-V values in kph
 
             % Vectorized delta-V thresholds lookup based on SAE J2980 tables
-            persistent KE_tables
-            if isempty(KE_tables)
-                KE_tables.LowerBound.HeadOnCollision   = [0,4;4,20;20,40;40,Inf];
-                KE_tables.LowerBound.RearEndCollision  = [0,4;4,20;20,40;40,Inf];
-                KE_tables.LowerBound.SideCollision     = [0,2;2,8;8,16;16,Inf];
-                KE_tables.LowerBound.ObliqueCollision  = [0,3;3,14;14,28;28,Inf];
-                KE_tables.HigherBound.HeadOnCollision  = [0,10;10,50;50,65;65,Inf];
-                KE_tables.HigherBound.RearEndCollision = [0,10;10,50;50,60;60,Inf];
-                KE_tables.HigherBound.SideCollision    = [0,3;10,30;30,40;40,Inf];
-                KE_tables.HigherBound.ObliqueCollision = [0,6.5;10,40;40,50;50,Inf];
-                KE_tables.Average.HeadOnCollision      = [0,7;7,35;35,52.5;52.5,Inf];
-                KE_tables.Average.RearEndCollision     = [0,7;7,35;35,52.5;52.5,Inf];
-                KE_tables.Average.SideCollision        = [0,2.5;2.5,6;6,39;39,Inf];
-                KE_tables.Average.ObliqueCollision     = [0,4.75;4.75,20.5;20.5,47.5;47.5,Inf];
+            % Use separate persistent arrays for each lookup table so codegen
+            % does not interpret dynamic struct expansion
+            persistent LB_HeadOn LB_RearEnd LB_Side LB_Oblique
+            persistent HB_HeadOn HB_RearEnd HB_Side HB_Oblique
+            persistent AV_HeadOn AV_RearEnd AV_Side AV_Oblique
+            if isempty(LB_HeadOn)
+                LB_HeadOn   = [0,4;4,20;20,40;40,Inf];
+                LB_RearEnd  = [0,4;4,20;20,40;40,Inf];
+                LB_Side     = [0,2;2,8;8,16;16,Inf];
+                LB_Oblique  = [0,3;3,14;14,28;28,Inf];
+                HB_HeadOn   = [0,10;10,50;50,65;65,Inf];
+                HB_RearEnd  = [0,10;10,50;50,60;60,Inf];
+                HB_Side     = [0,3;10,30;30,40;40,Inf];
+                HB_Oblique  = [0,6.5;10,40;40,50;50,Inf];
+                AV_HeadOn   = [0,7;7,35;35,52.5;52.5,Inf];
+                AV_RearEnd  = [0,7;7,35;35,52.5;52.5,Inf];
+                AV_Side     = [0,2.5;2.5,6;6,39;39,Inf];
+                AV_Oblique  = [0,4.75;4.75,20.5;20.5,47.5;47.5,Inf];
             end
-            bt = bound_type_str;
-            ct = regexprep(collision_type, '[- ]', '');
-            baseDV = KE_tables.(bt).(ct);
+            % MATLAB Coder does not allow dynamic field names, so select the
+            % appropriate table explicitly using switch statements
+            switch bound_type_str
+                case 'LowerBound'
+                    switch strrep(strrep(collision_type,'-',''),' ','')
+                        case 'HeadOnCollision'
+                            baseDV = LB_HeadOn;
+                        case 'RearEndCollision'
+                            baseDV = LB_RearEnd;
+                        case 'SideCollision'
+                            baseDV = LB_Side;
+                        otherwise
+                            baseDV = LB_Oblique;
+                    end
+                case 'HigherBound'
+                    switch strrep(strrep(collision_type,'-',''),' ','')
+                        case 'HeadOnCollision'
+                            baseDV = HB_HeadOn;
+                        case 'RearEndCollision'
+                            baseDV = HB_RearEnd;
+                        case 'SideCollision'
+                            baseDV = HB_Side;
+                        otherwise
+                            baseDV = HB_Oblique;
+                    end
+                otherwise
+                    switch strrep(strrep(collision_type,'-',''),' ','')
+                        case 'HeadOnCollision'
+                            baseDV = AV_HeadOn;
+                        case 'RearEndCollision'
+                            baseDV = AV_RearEnd;
+                        case 'SideCollision'
+                            baseDV = AV_Side;
+                        otherwise
+                            baseDV = AV_Oblique;
+                    end
+            end
             scale = sqrt(J2980MaxAssumedMass / vehicle_mass);
             thresholds = baseDV * scale;
         end
@@ -260,14 +298,14 @@ classdef VehicleCollisionSeverity
                 min_val = collision_thresholds(i, 1);
                 max_val = collision_thresholds(i, 2);
                 if delta_v > min_val && delta_v <= max_val
-                    severity = "S" + num2str(i - 1);
+                    severity = ['S', num2str(i - 1)];
                     return;
                 end
             end
 
             if delta_v > 0
                 % If delta_v exceeds all thresholds, assign the highest severity
-                severity = "S" + num2str(size(collision_thresholds, 1) - 1);
+                severity = ['S', num2str(size(collision_thresholds, 1) - 1)];
             end
         end
     end
