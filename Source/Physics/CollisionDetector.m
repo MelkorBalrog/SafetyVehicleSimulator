@@ -88,6 +88,7 @@ classdef CollisionDetector
                 error('corners2 must be a 4x2 matrix of (X, Y) coordinates.');
             end
 
+
             % Get the axes (normals) to be tested
             axes = obj.getAxes(corners1, corners2);
 

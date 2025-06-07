@@ -1,0 +1,74 @@
+[
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  DynamicsUpdater_stateDerivative_wrapper_data.c -o build/win64/DynamicsUpdater_stateDerivative_wrapper_data.o",
+    "file": "DynamicsUpdater_stateDerivative_wrapper_data.c",
+    "output": "build/win64/DynamicsUpdater_stateDerivative_wrapper_data.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  rt_nonfinite.c -o build/win64/rt_nonfinite.o",
+    "file": "rt_nonfinite.c",
+    "output": "build/win64/rt_nonfinite.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  DynamicsUpdater_stateDerivative_wrapper_initialize.c -o build/win64/DynamicsUpdater_stateDerivative_wrapper_initialize.o",
+    "file": "DynamicsUpdater_stateDerivative_wrapper_initialize.c",
+    "output": "build/win64/DynamicsUpdater_stateDerivative_wrapper_initialize.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  DynamicsUpdater_stateDerivative_wrapper_terminate.c -o build/win64/DynamicsUpdater_stateDerivative_wrapper_terminate.o",
+    "file": "DynamicsUpdater_stateDerivative_wrapper_terminate.c",
+    "output": "build/win64/DynamicsUpdater_stateDerivative_wrapper_terminate.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  DynamicsUpdater_stateDerivative_wrapper.c -o build/win64/DynamicsUpdater_stateDerivative_wrapper.o",
+    "file": "DynamicsUpdater_stateDerivative_wrapper.c",
+    "output": "build/win64/DynamicsUpdater_stateDerivative_wrapper.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  sum.c -o build/win64/sum.o",
+    "file": "sum.c",
+    "output": "build/win64/sum.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  interface/_coder_DynamicsUpdater_stateDerivative_wrapper_api.c -o build/win64/_coder_DynamicsUpdater_stateDerivative_wrapper_api.o",
+    "file": "interface/_coder_DynamicsUpdater_stateDerivative_wrapper_api.c",
+    "output": "build/win64/_coder_DynamicsUpdater_stateDerivative_wrapper_api.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  interface/_coder_DynamicsUpdater_stateDerivative_wrapper_mex.c -o build/win64/_coder_DynamicsUpdater_stateDerivative_wrapper_mex.o",
+    "file": "interface/_coder_DynamicsUpdater_stateDerivative_wrapper_mex.c",
+    "output": "build/win64/_coder_DynamicsUpdater_stateDerivative_wrapper_mex.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  KinematicsCalculator.c -o build/win64/KinematicsCalculator.o",
+    "file": "KinematicsCalculator.c",
+    "output": "build/win64/KinematicsCalculator.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  ForceCalculator.c -o build/win64/ForceCalculator.o",
+    "file": "ForceCalculator.c",
+    "output": "build/win64/ForceCalculator.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  interface/_coder_DynamicsUpdater_stateDerivative_wrapper_info.c -o build/win64/_coder_DynamicsUpdater_stateDerivative_wrapper_info.o",
+    "file": "interface/_coder_DynamicsUpdater_stateDerivative_wrapper_info.c",
+    "output": "build/win64/_coder_DynamicsUpdater_stateDerivative_wrapper_info.o"
+  },
+  {
+    "directory": "C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2025a\\3P.instrset\\mingw_w64.instrset\\bin\\gcc -c -fexceptions -fno-omit-frame-pointer -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c99 -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\" -I \"C:\\Users\\migue\\codex\\z\\VDSS---Vehicle-Dynamics-Safety-Simulator\\codegen\\mex\\DynamicsUpdater_stateDerivative_wrapper\\interface\" -I \"C:\\Program Files\\MATLAB\\R2025a\\extern\\include\" -I \".\" -DMODEL=DynamicsUpdater_stateDerivative_wrapper_mex -D__USE_MINGW_ANSI_STDIO=1 -msse2 -fno-predictive-commoning -Wno-stringop-overflow -Wno-maybe-uninitialized  \"C:/Program Files/MATLAB/R2025a/extern/version/c_mexapi_version.c\" -o build/win64/c_mexapi_version.o",
+    "file": "C:/Program Files/MATLAB/R2025a/extern/version/c_mexapi_version.c",
+    "output": "build/win64/c_mexapi_version.o"
+  }
+]
