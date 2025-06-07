@@ -169,9 +169,27 @@ classdef HitchModel
             obj.trailerInertia = obj.calculateTrailerInertia();
 
             % Initialize angular state
-            obj.angularState.psi = 0;     % Initial yaw angle
-            obj.angularState.omega = 0;   % Initial yaw rate
-            obj.dt = dt;                  % Time step for integration
+        obj.angularState.psi = 0;     % Initial yaw angle
+        obj.angularState.omega = 0;   % Initial yaw rate
+        obj.dt = dt;                  % Time step for integration
+        end
+
+        function obj = initializeState(obj, psi, omega)
+            %INITIALIZESTATE Set initial yaw angle and rate for the hitch model.
+            %   OBJ = INITIALIZESTATE(OBJ, PSI, OMEGA) sets the internal
+            %   angular state of the hitch to the provided yaw angle PSI and yaw
+            %   rate OMEGA. If omitted, PSI defaults to 0 and OMEGA defaults to
+            %   0.
+
+            if nargin < 2 || isempty(psi)
+                psi = 0;
+            end
+            if nargin < 3 || isempty(omega)
+                omega = 0;
+            end
+
+            obj.angularState.psi = psi;
+            obj.angularState.omega = omega;
         end
 
         function trailerInertia = calculateTrailerInertia(obj)
