@@ -608,6 +608,14 @@ classdef VehicleModel < handle
             simParams.trailerNumBoxes = obj.guiManager.trailerNumBoxesField.Value;
             simParams.trailerAxlesPerBox = str2num(obj.guiManager.trailerAxlesPerBoxField.Value);
             simParams.trailerBoxSpacing = obj.guiManager.trailerBoxSpacingField.Value;
+
+            % If no trailer boxes are configured, disable the trailer entirely
+            if simParams.trailerNumBoxes <= 0
+                simParams.includeTrailer = false;
+                simParams.trailerMass = 0;
+                simParams.trailerAxlesPerBox = [];
+                simParams.trailerNumAxles = 0;
+            end
             % If multiple trailer boxes are configured, compute the total number of
             % axles as the sum across boxes. This ensures tire pressure and load
             % calculations account for every box.
