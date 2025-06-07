@@ -14,3 +14,11 @@ codegen -config:mex ForceCalculator_computeTireForces_wrapper -args {zeros(4,1,'
 % Generate MEX for DynamicsUpdater.stateDerivative
 fprintf('Generating MEX for DynamicsUpdater.stateDerivative...\n');
 codegen -config:mex DynamicsUpdater_stateDerivative_wrapper -args {zeros(8,1,'double')} -report;
+
+% Generate MEX for StabilityChecker.checkStability
+fprintf('Generating MEX for StabilityChecker.checkStability...\n');
+codegen -config:mex StabilityChecker_checkStability_wrapper -args {} -report;
+
+% Generate MEX for VehicleCollisionSeverity.CalculateSeverity
+fprintf('Generating MEX for VehicleCollisionSeverity.CalculateSeverity...\n');
+codegen -config:mex VehicleCollisionSeverity_CalculateSeverity_wrapper -args {} -report;
