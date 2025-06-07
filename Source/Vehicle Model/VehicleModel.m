@@ -2821,7 +2821,11 @@ classdef VehicleModel < handle
                         desired_acceleration_sim(i) = desired_acceleration;
                         logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
                     else
-                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius);
+                        % Obtain upcoming path geometry for speed planning
+                        curIdx = purePursuitPathFollower.currentWaypointIndex;
+                        lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
+                        upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
+                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
