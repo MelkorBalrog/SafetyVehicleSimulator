@@ -1,39 +1,39 @@
 %{
  @file curveSpeed_Limiter.m
  @brief Limits commanded speed when approaching a curve.
-        Ramps the target speed down to a fraction of the PID commanded
-        speed as the vehicle gets within a specified time to a curve
-        and ramps it back up smoothly after the curve.
+        Applies a predefined deceleration profile when approaching a
+        curve: -1 m/s^2 for 0.5 s followed by -4.5 m/s^2 for 1 s.
+        After the curve it ramps the speed back up using +6 m/s^2.
 %}
 
 classdef curveSpeed_Limiter < handle
     properties
         % Reduction factor applied at the centre of the curve (0-1)
         reductionFactor
-        % Time in seconds to ramp from full speed to the reduced speed
+        % Time in seconds prior to a curve when ramping begins
         rampDownTime
         % Maximum acceleration used when ramping back up (m/s^2)
-        maxAccel
+        rampUpAccel
 
         % Internal state: current reduction multiplier (0-1)
         currentFactor
     end
 
     methods
-        function obj = curveSpeed_Limiter(reductionFactor, rampDownTime, maxAccel)
+        function obj = curveSpeed_Limiter(reductionFactor, rampDownTime, rampUpAccel)
             if nargin < 1 || isempty(reductionFactor)
                 reductionFactor = 0.75; % 25% reduction
             end
             if nargin < 2 || isempty(rampDownTime)
-                rampDownTime = 5.5; % seconds
+                rampDownTime = 1.5; % seconds (0.5s at -1 m/s^2, 1s at -4.5 m/s^2)
             end
-            if nargin < 3 || isempty(maxAccel)
-                maxAccel = 2; % m/s^2 for ramp up
+            if nargin < 3 || isempty(rampUpAccel)
+                rampUpAccel = 6; % m/s^2 for ramp up phase
             end
 
             obj.reductionFactor = reductionFactor;
             obj.rampDownTime    = rampDownTime;
-            obj.maxAccel        = maxAccel;
+            obj.rampUpAccel     = rampUpAccel;
             obj.currentFactor   = 1.0;
         end
 
@@ -60,13 +60,23 @@ classdef curveSpeed_Limiter < handle
                 obj.currentFactor = obj.reductionFactor;
             else
                 timeToCurve = distToCurve / max(currentSpeed, eps);
+                % Piecewise deceleration profile when approaching a curve
                 if timeToCurve <= obj.rampDownTime && distToCurve >= 0
-                    factor = obj.reductionFactor + ...
-                        (1 - obj.reductionFactor) * (timeToCurve / obj.rampDownTime);
+                    if timeToCurve > 1.0
+                        % First 0.5 s: -1 m/s^2
+                        elapsed = obj.rampDownTime - timeToCurve;
+                        deltaV = 1 * elapsed;
+                    else
+                        % Second 1 s: -4.5 m/s^2
+                        elapsed = obj.rampDownTime - 1.0;
+                        deltaV = 1 * 0.5 + 4.5 * (1.0 - timeToCurve);
+                    end
+                    factor = 1 - deltaV / max(targetSpeed, eps);
+                    factor = max(obj.reductionFactor, min(1, factor));
                     obj.currentFactor = min(obj.currentFactor, factor);
                 else
-                    % Ramp up towards 1 using maxAccel constraint
-                    rate = obj.maxAccel * dt / max(targetSpeed, eps);
+                    % Ramp up using specified acceleration
+                    rate = obj.rampUpAccel * dt / max(targetSpeed, eps);
                     obj.currentFactor = min(1, obj.currentFactor + rate);
                 end
             end
