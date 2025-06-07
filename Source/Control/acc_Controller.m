@@ -1,14 +1,16 @@
 classdef acc_Controller < handle
     % ACC Controller that modulates acceleration output from a PID controller
-    % when approaching a curve. It computes the stopping distance required to
-    % reduce speed from the current value to a fraction of it and predicts the
-    % trailer rotation assuming simple bicycle model kinematics.
+    % when approaching a curve. It reduces speed to a fraction of the
+    % approach speed and predicts trailer rotation assuming simple bicycle
+    % model kinematics. Deceleration begins when the vehicle is within a
+    % configurable time of the next curve, determined via map localization.
 
     properties
         speedReduction (1,1) double {mustBePositive} = 0.75
         maxDecel (1,1) double {mustBePositive} = 2.0
         trailerLength (1,1) double {mustBeNonnegative} = 12.0
         wheelbase (1,1) double {mustBePositive} = 3.0
+        decelLookaheadTime (1,1) double {mustBePositive} = 5.5
     end
 
     properties(Access=private)
@@ -17,11 +19,12 @@ classdef acc_Controller < handle
     end
 
     methods
-        function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase)
+        function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase, lookaheadTime)
             if nargin >= 1 && ~isempty(speedReduction); obj.speedReduction = speedReduction; end
             if nargin >= 2 && ~isempty(maxDecel); obj.maxDecel = maxDecel; end
             if nargin >= 3 && ~isempty(trailerLength); obj.trailerLength = trailerLength; end
             if nargin >= 4 && ~isempty(wheelbase); obj.wheelbase = wheelbase; end
+            if nargin >= 5 && ~isempty(lookaheadTime); obj.decelLookaheadTime = lookaheadTime; end
         end
 
         function [accelOut, predictedRotation] = adjust(obj, currentSpeed, pidAccel, distToCurve, turnRadius, dt)
@@ -38,9 +41,9 @@ classdef acc_Controller < handle
 
             decel = max(obj.maxDecel, -pidAccel); % use pid accel if stronger braking
             targetSpeed = obj.speedReduction * obj.baseSpeed;
-            stopDist = obj.computeStoppingDistance(currentSpeed, targetSpeed, decel);
 
-            if distToCurve <= stopDist
+            triggerDist = currentSpeed * obj.decelLookaheadTime;
+            if distToCurve <= triggerDist
                 obj.decelActive = true;
             elseif isinf(turnRadius)
                 % reset when road straightens and far from curve

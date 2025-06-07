@@ -8,6 +8,7 @@ end
 
 function testStartDecel(testCase)
     ctrl = testCase.TestData.ctrl;
+    % Distance corresponds to less than 5.5 s lookahead at 20 m/s
     curSpeed = 20; pidAccel = 1; dist = 40; radius = 50; dt = 1;
     [accelOut, rot] = ctrl.adjust(curSpeed, pidAccel, dist, radius, dt);
     verifyEqual(testCase, accelOut, -2, 'AbsTol', 1e-10);
@@ -16,7 +17,8 @@ end
 
 function testNoDecelWhenFar(testCase)
     ctrl = testCase.TestData.ctrl;
-    curSpeed = 20; pidAccel = 1; dist = 60; radius = 50; dt = 1;
+    % Distance beyond 5.5 s lookahead should not trigger decel
+    curSpeed = 20; pidAccel = 1; dist = 120; radius = 50; dt = 1;
     [accelOut, rot] = ctrl.adjust(curSpeed, pidAccel, dist, radius, dt);
     verifyEqual(testCase, accelOut, pidAccel, 'AbsTol', 1e-10);
     verifyGreaterThan(testCase, rot, 0);
