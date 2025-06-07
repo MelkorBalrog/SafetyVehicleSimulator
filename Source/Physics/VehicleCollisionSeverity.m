@@ -161,6 +161,11 @@ classdef VehicleCollisionSeverity
         
         %% Calculate Severity
         function [deltaV_vehicle1, deltaV_vehicle2, Vehicle1Severity, Vehicle2Severity] = CalculateSeverity(obj)
+            % Use compiled MEX version if available
+            if exist('VehicleCollisionSeverity_CalculateSeverity_wrapper_mex','file') == 3
+                [deltaV_vehicle1, deltaV_vehicle2, Vehicle1Severity, Vehicle2Severity] = VehicleCollisionSeverity_CalculateSeverity_wrapper_mex();
+                return;
+            end
             %/**
             % * @brief Calculates the severity of the collision for each vehicle based on delta-V thresholds.
             % *
