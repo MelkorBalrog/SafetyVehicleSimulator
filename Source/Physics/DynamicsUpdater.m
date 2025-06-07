@@ -231,26 +231,26 @@ classdef DynamicsUpdater < handle
             obj.forceCalculator.angularVelocity = [obj.rollRate; 0; obj.yawRate];
             obj.forceCalculator.steeringAngle = obj.steeringAngle;
 
-            % % --- Ensure Longitudinal Speed Does Not Go Below Zero ---
-            % if obj.velocity < 0
-            %     obj.velocity = 0;
-            %     obj.linearMomentum(1) = 0;
-            %     obj.a_long = 0;
-            %     % Optionally, log this event
-            %     % disp('Negative speed detected. Clamped to zero.');
-            % end
+            % --- Ensure Longitudinal Speed Does Not Go Below Zero ---
+            if obj.velocity < 0
+                obj.velocity = 0;
+                % obj.linearMomentum(1) = 0;
+                obj.a_long = 0;
+                % Optionally, log this event
+                % disp('Negative speed detected. Clamped to zero.');
+            end
 
-            % % --- Prevent Movement When Vehicle Is Stationary ---
-            % if obj.velocity == 0 && obj.a_long == 0
-            %     % Set lateral velocity and yaw rate to zero if forces are negligible
-            %     obj.lateralVelocity = 0;
-            %     obj.linearMomentum(2) = 0;
-            %     obj.yawRate = 0;
-            %     obj.angularMomentum = 0;
-            %     obj.rollRate = 0;
-            %     % Prevent position and orientation from changing
-            %     % (Already handled by not updating them)
-            % end
+            % --- Prevent Movement When Vehicle Is Stationary ---
+            if obj.velocity == 0 && obj.a_long == 0
+                % Set lateral velocity and yaw rate to zero if forces are negligible
+                obj.lateralVelocity = 0;
+                obj.linearMomentum(2) = 0;
+                obj.yawRate = 0;
+                obj.angularMomentum = 0;
+                obj.rollRate = 0;
+                % Prevent position and orientation from changing
+                % (Already handled by not updating them)
+            end
         end
 
         % Update state using Runge-Kutta 4 (RK4) integration
