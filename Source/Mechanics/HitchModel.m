@@ -239,7 +239,7 @@ classdef HitchModel
             omega_tractor = tractorState.angularVelocity(3);
 
             %% Calculate forces using spring-damper model
-            stiff = obj.stiffnessCoefficients;
+                M_trailing = -obj.trailingCoefficient * pullingForce * sin(deltaYaw);
             damp  = obj.dampingCoefficients;
             F_total = [0; 0; 0];
 
