@@ -28,7 +28,7 @@ classdef curveSpeed_Limiter < handle
                 rampDownTime = 1.5; % seconds (0.5s at -1 m/s^2, 1s at -4.5 m/s^2)
             end
             if nargin < 3 || isempty(rampUpAccel)
-                rampUpAccel = 6; % m/s^2 for ramp up phase
+                rampUpAccel = 1; % m/s^2 for ramp up phase
             end
 
             obj.reductionFactor = reductionFactor;
@@ -104,9 +104,12 @@ classdef curveSpeed_Limiter < handle
                     if elapsed <= 0.5
                         deltaV = 1 * elapsed;
                         accelOverride = -1;
-                    else
+                    elseif elapsed > 0.5 && elapsed <= 1.5
                         deltaV = 1 * 0.5 + 4.5 * min(elapsed - 0.5, 1.0);
                         accelOverride = -4.5;
+                    else
+                        deltaV = 1 * 0.5 + 4.5 + 6 * min(elapsed - 1.5, 1.0);
+                        accelOverride = -6;
                     end
                     factor = 1 - deltaV / max(targetSpeed, eps);
                     factor = max(obj.reductionFactor, min(1, factor));
