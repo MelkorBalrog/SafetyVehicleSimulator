@@ -128,6 +128,13 @@ classdef HitchModel
             end
             obj.trailingVelocityThreshold = 0.5; % m/s
 
+            if nargin < 9 || isempty(trailingCoefficient)
+                obj.trailingCoefficient = trailerWheelbase/2;
+            else
+                obj.trailingCoefficient = trailingCoefficient;
+            end
+            obj.trailingVelocityThreshold = 0.5; % m/s
+
             % Validate 'stiffness' struct
             requiredFields = {'x', 'y', 'z', 'roll', 'pitch', 'yaw'};
             if ~isstruct(stiffness) || ~all(isfield(stiffness, requiredFields))
