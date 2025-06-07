@@ -71,10 +71,12 @@ classdef curveSpeed_Limiter < handle
             time = t1 + t2;
         end
 
-        function limitedSpeed = limitSpeed(obj, currentSpeed, targetSpeed, distToCurve, inCurve, dt)
+        function [limitedSpeed, accelOverride] = limitSpeed(obj, currentSpeed, targetSpeed, distToCurve, inCurve, dt)
             % limitSpeed Applies ramping to the target speed based on distance
             % to the upcoming curve and whether the vehicle is currently in a
-            % curve.
+            % curve. When deceleration is required this method also returns an
+            % acceleration value that should override the PID output so the
+            % vehicle follows the predefined profile.
             %
             % Parameters:
             %   currentSpeed - Current vehicle speed (m/s)
@@ -90,6 +92,8 @@ classdef curveSpeed_Limiter < handle
                 dt = 0.01; % default small timestep
             end
 
+            accelOverride = NaN; % default: no override
+            
             if inCurve
                 obj.currentFactor = obj.reductionFactor;
             else
@@ -99,8 +103,10 @@ classdef curveSpeed_Limiter < handle
                     elapsed = max(0, rampTime - timeToCurve);
                     if elapsed <= 0.5
                         deltaV = 1 * elapsed;
+                        accelOverride = -1;
                     else
                         deltaV = 1 * 0.5 + 4.5 * min(elapsed - 0.5, 1.0);
+                        accelOverride = -4.5;
                     end
                     factor = 1 - deltaV / max(targetSpeed, eps);
                     factor = max(obj.reductionFactor, min(1, factor));

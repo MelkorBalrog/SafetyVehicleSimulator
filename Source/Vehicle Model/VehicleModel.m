@@ -2841,10 +2841,13 @@ classdef VehicleModel < handle
                         end
                         inCurve = ~isinf(upcomingRadii(1));
                         baseSpeed = obj.pid_SpeedController.desiredSpeed;
-                        limitedSpeed = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
+                        [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
                         obj.pid_SpeedController.desiredSpeed = limitedSpeed;
                         desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
                         obj.pid_SpeedController.desiredSpeed = baseSpeed;
+                        if ~isnan(accelOverride)
+                            desired_acceleration = accelOverride;
+                        end
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end
