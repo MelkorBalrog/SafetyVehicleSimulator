@@ -179,7 +179,6 @@ classdef ForceCalculator
             %
             % Preserves all original parameters, plus optional 'wheelSpeeds, wheelRadius, wheelInertia'
             % if given via varargin.
-
             % Validate vehicleType using codegen friendly syntax
             validTractorTrailer   = strcmp(vehicleType, 'tractor-trailer');
             validTractor          = strcmp(vehicleType, 'tractor');

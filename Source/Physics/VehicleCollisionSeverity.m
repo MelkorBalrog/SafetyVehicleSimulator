@@ -280,14 +280,14 @@ classdef VehicleCollisionSeverity
                 min_val = collision_thresholds(i, 1);
                 max_val = collision_thresholds(i, 2);
                 if delta_v > min_val && delta_v <= max_val
-                    severity = "S" + num2str(i - 1);
+                    severity = ['S', num2str(i - 1)];
                     return;
                 end
             end
 
             if delta_v > 0
                 % If delta_v exceeds all thresholds, assign the highest severity
-                severity = "S" + num2str(size(collision_thresholds, 1) - 1);
+                severity = ['S', num2str(size(collision_thresholds, 1) - 1)];
             end
         end
     end
