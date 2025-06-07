@@ -19,6 +19,8 @@ classdef VehicleModel < handle
         limiter_LateralControl   % Instance of limiter_LateralControl
         limiter_LongitudinalControl  % Instance of limiter_LongitudinalControl
         jerkController              % Instance of jerk_Controller for jerk limiting
+        accController               % Instance of acc_Controller for ACC
+        localizer                  % Instance of VehicleLocalizer for map-based localization
         % curveSpeedLimiter           % Instance of curveSpeed_Limiter
         simulationName
         uiManager
@@ -1784,6 +1786,8 @@ classdef VehicleModel < handle
                     gaussianStd ...
                     );
                 obj.jerkController = jerk_Controller(0.7 * 9.81);
+                obj.accController = acc_Controller(0.75, 2.0, simParams.trailerLength, tractorWheelbase);
+                obj.localizer = VehicleLocalizer(simParams.waypoints, 1.0);
                 logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
                 % --- End of limiter_LongitudinalControl Initialization ---
 
@@ -2841,7 +2845,7 @@ classdef VehicleModel < handle
                         logMessages{end+1} = sprintf('Step %d: Using Excel-provided acceleration: %.4f m/s^2', i, desired_acceleration);
                     else
                         % Obtain upcoming path geometry for speed planning
-                        curIdx = purePursuitPathFollower.currentWaypointIndex;
+                        curIdx = obj.localizer.localize(dynamicsUpdater.position');
                         lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
                         upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
                         % waypointSpacing = 1.0;
@@ -2855,7 +2859,10 @@ classdef VehicleModel < handle
                         % baseSpeed = obj.pid_SpeedController.desiredSpeed;
                         % [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
                         % obj.pid_SpeedController.desiredSpeed = limitedSpeed;
-                        desired_acceleration = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
+                        desired_acceleration_pid = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
+                        distToCurve = obj.localizer.distanceToNextCurve(curIdx, upcomingRadii);
+                        [desired_acceleration, predictedRotation] = obj.accController.adjust(currentSpeed, desired_acceleration_pid, distToCurve, dynamicsUpdater.forceCalculator.turnRadius, dt);
+                        logMessages{end+1} = sprintf('Step %d: ACC predicted trailer rotation %.4f rad.', i, predictedRotation);
                         % obj.pid_SpeedController.desiredSpeed = baseSpeed;
                         % if ~isnan(accelOverride)
                         %     desired_acceleration = accelOverride;
