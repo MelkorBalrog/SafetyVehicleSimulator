@@ -16,6 +16,7 @@ classdef acc_Controller < handle
     properties(Access=private)
         decelActive(1,1) logical = false
         baseSpeed(1,1) double = NaN
+        prevAccel(1,1) double = 0
     end
 
     methods
@@ -42,6 +43,7 @@ classdef acc_Controller < handle
                 dt = 0.01;
             end
 
+            jerkLimit = 0.7 * 9.81; % m/s^3
             triggerDist = currentSpeed * obj.decelLookaheadTime;
 
             if ~obj.decelActive && distToCurve <= triggerDist
@@ -61,17 +63,28 @@ classdef acc_Controller < handle
 
             if obj.decelActive
                 if currentSpeed > targetSpeed + 0.1
-                    % Decelerate until target reached, limit by maximum rate
-                    accelOut = -min(obj.maxDecel, abs(pidAccel));
+                    decelNeeded = (currentSpeed^2 - targetSpeed^2) / (2*max(distToCurve, 0.01));
+                    decelNeeded = min(obj.maxDecel, max(0, decelNeeded));
+                    desiredAccel = -decelNeeded;
                 elseif currentSpeed < targetSpeed - 0.1
-                    % Small boost if dropping below target but do not exceed
-                    accelOut = max(pidAccel, 0);
+                    desiredAccel = max(pidAccel, 0);
                 else
-                    accelOut = 0; % Hold speed within tolerance
+                    desiredAccel = 0;
                 end
             else
-                accelOut = pidAccel;
+                desiredAccel = pidAccel;
             end
+
+            delta = desiredAccel - obj.prevAccel;
+            maxDelta = jerkLimit * dt;
+            if delta > maxDelta
+                accelOut = obj.prevAccel + maxDelta;
+            elseif delta < -maxDelta
+                accelOut = obj.prevAccel - maxDelta;
+            else
+                accelOut = desiredAccel;
+            end
+            obj.prevAccel = accelOut;
 
             if isinf(turnRadius)
                 predictedRotation = 0;
