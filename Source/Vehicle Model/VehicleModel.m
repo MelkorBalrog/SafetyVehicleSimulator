@@ -21,7 +21,7 @@ classdef VehicleModel < handle
         jerkController              % Instance of jerk_Controller for jerk limiting
         accController               % Instance of acc_Controller for ACC
         localizer                  % Instance of VehicleLocalizer for map-based localization
-        % curveSpeedLimiter           % Instance of curveSpeed_Limiter
+        curveSpeedLimiter           % Instance of curveSpeed_Limiter
         simulationName
         uiManager
     end
@@ -561,6 +561,11 @@ classdef VehicleModel < handle
         
             % --- Basic Configuration ---
             simParams.includeTrailer = obj.guiManager.includeTrailerCheckbox.Value;
+            if isprop(simParams,'trailerNumBoxes')
+                if simParams.trailerNumBoxes <= 0
+                    simParams.includeTrailer = false;
+                end
+            end
             simParams.tractorMass = obj.guiManager.tractorMassField.Value;
             simParams.initialVelocity = obj.guiManager.velocityField.Value;
             
@@ -624,8 +629,11 @@ classdef VehicleModel < handle
             if ~isempty(simParams.trailerAxlesPerBox)
                 simParams.trailerNumAxles = sum(simParams.trailerAxlesPerBox);
             end
-            % Gather per-box weight distributions
-            if isprop(obj.guiManager, 'trailerBoxWeightFields') && ~isempty(obj.guiManager.trailerBoxWeightFields)
+            % Gather per-box weight distributions only when boxes are present
+            if simParams.trailerNumBoxes > 0 && ...
+               isprop(obj.guiManager, 'trailerBoxWeightFields') && ...
+               ~isempty(obj.guiManager.trailerBoxWeightFields) && ...
+                simParams.includeTrailer
                 nBoxes = size(obj.guiManager.trailerBoxWeightFields,1);
                 simParams.trailerBoxWeightDistributions = cell(1,nBoxes);
                 track = simParams.trailerTrackWidth;
@@ -1792,8 +1800,8 @@ classdef VehicleModel < handle
                 % --- End of limiter_LongitudinalControl Initialization ---
 
                 % --- Instantiate the curveSpeedLimiter ---
-                % obj.curveSpeedLimiter = curveSpeed_Limiter();
-                % logMessages{end+1} = 'curveSpeed_Limiter initialized successfully.';
+                obj.curveSpeedLimiter = curveSpeed_Limiter();
+                logMessages{end+1} = 'curveSpeed_Limiter initialized successfully.';
                 % --- End of curveSpeedLimiter Initialization ---
         
                 time = timeProcessed; % Update time vector
@@ -2848,32 +2856,32 @@ classdef VehicleModel < handle
                         curIdx = obj.localizer.localize(dynamicsUpdater.position');
                         lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
                         upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
-                        % waypointSpacing = 1.0;
-                        % curveIdx = find(~isinf(upcomingRadii),1,'first');
-                        % if isempty(curveIdx)
-                        %     distToCurve = Inf;
-                        % else
-                        %     distToCurve = (curveIdx-1)*waypointSpacing;
-                        % end
-                        % inCurve = ~isinf(upcomingRadii);
-                        % baseSpeed = obj.pid_SpeedController.desiredSpeed;
-                        % [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
-                        % obj.pid_SpeedController.desiredSpeed = limitedSpeed;
-                        inCurve = ~isinf(dynamicsUpdater.forceCalculator.turnRadius);
-                        if inCurve
-                            desired_acceleration_pid = 0;
-                            obj.pid_SpeedController.controllerActive = false;
+                        waypointSpacing = 1.0;
+                        curveIdx = find(~isinf(upcomingRadii),1,'first');
+                        if isempty(curveIdx)
+                            distToCurve = Inf;
                         else
+                            distToCurve = (curveIdx-1)*waypointSpacing;
+                        end
+                        inCurve = ~isinf(upcomingRadii);
+                        baseSpeed = obj.pid_SpeedController.desiredSpeed;
+                        [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
+                        obj.pid_SpeedController.desiredSpeed = limitedSpeed;
+                        inCurve = ~isinf(dynamicsUpdater.forceCalculator.turnRadius);
+                        % if inCurve
+                        %     desired_acceleration_pid = 0;
+                        %     obj.pid_SpeedController.controllerActive = false;
+                        % else
                             desired_acceleration_pid = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
                             obj.pid_SpeedController.controllerActive = true;
-                        end
+                        % end
                         distToCurve = obj.localizer.distanceToNextCurve(curIdx, upcomingRadii);
                         [desired_acceleration, predictedRotation] = obj.accController.adjust(currentSpeed, desired_acceleration_pid, distToCurve, dynamicsUpdater.forceCalculator.turnRadius, dt);
                         logMessages{end+1} = sprintf('Step %d: ACC predicted trailer rotation %.4f rad.', i, predictedRotation);
-                        % obj.pid_SpeedController.desiredSpeed = baseSpeed;
-                        % if ~isnan(accelOverride)
-                        %     desired_acceleration = accelOverride;
-                        % end
+                        obj.pid_SpeedController.desiredSpeed = baseSpeed;
+                        if ~isnan(accelOverride)
+                            desired_acceleration = min(accelOverride,desired_acceleration);
+                        end
                         desired_acceleration_sim(i) = 0;
                         logMessages{end+1} = sprintf('Step %d: Computed acceleration using pid_SpeedController: %.4f m/s^2', i, desired_acceleration);
                     end

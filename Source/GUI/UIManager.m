@@ -547,7 +547,7 @@ classdef UIManager < handle
             lblPlayback.Layout.Row = 3;
             lblPlayback.Layout.Column = 1;
             obj.playbackSpeedField = uieditfield(buttonGrid, 'numeric', ...
-                'Value', 1, 'Limits', [0.1, 100]);
+                'Value', 80, 'Limits', [0.1, 200]);
             obj.playbackSpeedField.Layout.Row = 3;
             obj.playbackSpeedField.Layout.Column = 2;
 

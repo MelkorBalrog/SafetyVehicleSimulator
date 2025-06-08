@@ -6,8 +6,8 @@ classdef acc_Controller < handle
     % configurable time of the next curve, determined via map localization.
 
     properties
-        speedReduction (1,1) double {mustBePositive} = 0.75
-        maxDecel (1,1) double {mustBePositive} = 2.0
+        speedReduction (1,1) double {mustBePositive} = 0.25
+        maxDecel (1,1) double {mustBePositive} = 6.0
         trailerLength (1,1) double {mustBeNonnegative} = 12.0
         wheelbase (1,1) double {mustBePositive} = 3.0
         decelLookaheadTime (1,1) double {mustBePositive} = 5.5
@@ -44,7 +44,6 @@ classdef acc_Controller < handle
             end
 
             jerkLimit = 0.7 * 9.81; % m/s^3
-
             triggerDist = currentSpeed * obj.decelLookaheadTime;
 
             if ~obj.decelActive && distToCurve <= triggerDist

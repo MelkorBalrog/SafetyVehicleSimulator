@@ -71,10 +71,15 @@ classdef SimManager < handle
         function runSimulations(obj)
             try
             %% 1. Prepare parallel pool and clear previous plots
-            % Ensure a parallel pool is available for concurrent execution
-            if isempty(gcp('nocreate'))
-                parpool('local');
+            % Ensure a parallel pool is available for concurrent execution and
+            % close it once this method finishes.
+            pool = gcp('nocreate');
+            poolCreated = false;
+            if isempty(pool)
+                pool = parpool('local');
+                poolCreated = true;
             end
+            poolCleanup = onCleanup(@() closeLocalPool(poolCreated));
                 disp('Clearing previous plots...');
                 obj.plotManager.clearPlots();
 
@@ -826,7 +831,11 @@ classdef SimManager < handle
             collisionData.collisionY        = NaN;
 
             fprintf('--- Starting Collision Detection in Parallel ---\n');
-            for i = 2:totalSteps
+            collisionFlags = false(totalSteps,1);
+            colX = NaN(totalSteps,1);
+            colY = NaN(totalSteps,1);
+            detector = obj.collisionDetector; %#ok<NASGU>
+            parfor i = 2:totalSteps
                 tractorCorners1 = VehiclePlotter.getVehicleCorners(...
                     obj.dataManager.globalVehicle1Data.X(i), ...
                     obj.dataManager.globalVehicle1Data.Y(i), ...
@@ -847,20 +856,18 @@ classdef SimManager < handle
                     vehicleParams2.numTiresPerAxle ...
                 );
 
-                [collisionDetectedNow, ...
-                 collisionXNow, ...
-                 collisionYNow] = ...
+                [collisionFlags(i), colX(i), colY(i)] = ...
                     obj.checkCornersForCollision(i, tractorCorners1, tractorCorners2, ...
-                                                 trailerParams1, trailerParams2);
+                                             trailerParams1, trailerParams2);
+            end
 
-                if collisionDetectedNow
-                    collisionData.collisionDetected = true;
-                    collisionData.collisionStep     = i;
-                    collisionData.collisionX        = collisionXNow;
-                    collisionData.collisionY        = collisionYNow;
-                    fprintf('Collision detected at Step %d.\n', i);
-                    break;
-                end
+            idx = find(collisionFlags, 1, 'first');
+            if ~isempty(idx)
+                collisionData.collisionDetected = true;
+                collisionData.collisionStep     = idx;
+                collisionData.collisionX        = colX(idx);
+                collisionData.collisionY        = colY(idx);
+                fprintf('Collision detected at Step %d.\n', idx);
             end
 
             fprintf('--- Collision Detection in Parallel Completed ---\n');
@@ -1229,5 +1236,14 @@ end
 function closeIfOpen(h)
     if isvalid(h)
         close(h);
+    end
+end
+
+function closeLocalPool(created)
+    if created
+        p = gcp('nocreate');
+        if ~isempty(p)
+            delete(p);
+        end
     end
 end
