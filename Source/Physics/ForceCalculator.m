@@ -600,7 +600,7 @@ classdef ForceCalculator
                     % Update tire friction coefficients
                     pressures = loads ./ contactAreas;
                     P_ref     = mean(pressures);
-                    mu_tires_ = obj.frictionCoefficient * (P_ref ./ pressures);
+                    mu_tires_ = obj.frictionCoefficient * (pressures ./ P_ref);
                     mu_tires_ = max(min(mu_tires_, 1.0), 0.3);
                     if ~isempty(obj.surfaceFrictionManager)
                         pos_local = obj.loadDistribution(:,1:2);
