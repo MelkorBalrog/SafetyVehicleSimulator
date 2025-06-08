@@ -44,7 +44,6 @@ classdef acc_Controller < handle
             end
 
             jerkLimit = 0.7 * 9.81; % m/s^3
-
             triggerDist = currentSpeed * obj.decelLookaheadTime;
 
             if ~obj.decelActive && distToCurve <= triggerDist
