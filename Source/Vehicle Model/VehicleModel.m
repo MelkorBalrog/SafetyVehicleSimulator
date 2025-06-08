@@ -2854,8 +2854,11 @@ classdef VehicleModel < handle
                     else
                         % Obtain upcoming path geometry for speed planning
                         curIdx = obj.localizer.localize(dynamicsUpdater.position');
-                        lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(purePursuitPathFollower.radiusOfCurvature));
-                        upcomingRadii = purePursuitPathFollower.radiusOfCurvature(curIdx:lookAhead);
+                        % Guard against index beyond radius array size
+                        radiusArray = purePursuitPathFollower.radiusOfCurvature;
+                        curIdx = min(curIdx, numel(radiusArray));
+                        lookAhead = min(curIdx + purePursuitPathFollower.planningHorizon - 1, numel(radiusArray));
+                        upcomingRadii = radiusArray(curIdx:lookAhead);
                         waypointSpacing = 1.0;
                         curveIdx = find(~isinf(upcomingRadii),1,'first');
                         if isempty(curveIdx)
@@ -2863,7 +2866,11 @@ classdef VehicleModel < handle
                         else
                             distToCurve = (curveIdx-1)*waypointSpacing;
                         end
-                        currentRadius = purePursuitPathFollower.radiusOfCurvature(curIdx);
+                        if curIdx <= numel(radiusArray)
+                            currentRadius = radiusArray(curIdx);
+                        else
+                            currentRadius = Inf;
+                        end
                         inCurve = ~isinf(currentRadius);
                         baseSpeed = obj.pid_SpeedController.desiredSpeed;
                         [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
