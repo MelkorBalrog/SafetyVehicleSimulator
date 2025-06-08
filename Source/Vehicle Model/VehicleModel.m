@@ -2859,7 +2859,14 @@ classdef VehicleModel < handle
                         % baseSpeed = obj.pid_SpeedController.desiredSpeed;
                         % [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
                         % obj.pid_SpeedController.desiredSpeed = limitedSpeed;
-                        desired_acceleration_pid = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
+                        inCurve = ~isinf(dynamicsUpdater.forceCalculator.turnRadius);
+                        if inCurve
+                            desired_acceleration_pid = 0;
+                            obj.pid_SpeedController.controllerActive = false;
+                        else
+                            desired_acceleration_pid = obj.pid_SpeedController.computeAcceleration(currentSpeed, time(i), dynamicsUpdater.forceCalculator.turnRadius, upcomingRadii);
+                            obj.pid_SpeedController.controllerActive = true;
+                        end
                         distToCurve = obj.localizer.distanceToNextCurve(curIdx, upcomingRadii);
                         [desired_acceleration, predictedRotation] = obj.accController.adjust(currentSpeed, desired_acceleration_pid, distToCurve, dynamicsUpdater.forceCalculator.turnRadius, dt);
                         logMessages{end+1} = sprintf('Step %d: ACC predicted trailer rotation %.4f rad.', i, predictedRotation);
