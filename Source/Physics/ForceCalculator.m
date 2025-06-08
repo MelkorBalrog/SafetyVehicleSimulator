@@ -165,6 +165,9 @@ classdef ForceCalculator
         wheelSpeeds     % wheel angular speeds [rad/s] per wheel
         wheelRadius     % wheel radius (m)
         wheelInertia    % wheel inertia (kg·m²)
+
+        % --- Surface Friction ---
+        surfaceFrictionManager  % Instance managing per-tire friction
     end
 
     methods
@@ -351,6 +354,9 @@ classdef ForceCalculator
                 obj.wheelRadius  = 0.3;               % default
                 obj.wheelInertia = 1.0;               % default
             end
+
+            % Surface friction manager (optional)
+            obj.surfaceFrictionManager = [];
         end
         
         %% computeTireForces (vectorized lateral forces and yaw moment)
@@ -596,6 +602,13 @@ classdef ForceCalculator
                     P_ref     = mean(pressures);
                     mu_tires_ = obj.frictionCoefficient * (P_ref ./ pressures);
                     mu_tires_ = max(min(mu_tires_, 1.0), 0.3);
+                    if ~isempty(obj.surfaceFrictionManager)
+                        pos_local = obj.loadDistribution(:,1:2);
+                        pos_global = (R_veh2glob(1:2,1:2)*pos_local')' + vehicleState.position(1:2)';
+                        surf_mu = obj.surfaceFrictionManager.getMuForTirePositions(pos_global);
+                        ratio = surf_mu ./ obj.frictionCoefficient;
+                        mu_tires_ = mu_tires_ .* ratio;
+                    end
                     obj.mu_tires = mu_tires_;
                     % Compute vectorized lateral forces and yaw moment
                     [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
