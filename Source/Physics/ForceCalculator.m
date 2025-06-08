@@ -209,8 +209,8 @@ classdef ForceCalculator
             obj.wheelbase           = wheelbase;
             obj.gravity             = 9.81;         % m/s²
             % Initialize calculated forces struct with zero values
-            forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',... 
-                         'momentZ_wind','traction','traction_force','M_z','momentZ',...  
+            forceKeys = {'hitch','hitchLateralForce','F_drag_global','F_side_global',...
+                         'momentZ_wind','traction','traction_force','F_long_total','M_z','momentZ',...
                          'F_y_total','momentRoll','totalForce','F_y_trailer','momentZ_trailer',...   
                          'F_total_trailer_local','F_total_trailer_global','yawMoment_trailer',...  
                          'momentRoll_trailer','trailerPsi','trailerOmega','rolloverRiskIndex',...  
@@ -600,7 +600,7 @@ classdef ForceCalculator
                     % Update tire friction coefficients
                     pressures = loads ./ contactAreas;
                     P_ref     = mean(pressures);
-                    mu_tires_ = obj.frictionCoefficient * (P_ref ./ pressures);
+                    mu_tires_ = obj.frictionCoefficient * (pressures ./ P_ref);
                     mu_tires_ = max(min(mu_tires_, 1.0), 0.3);
                     if ~isempty(obj.surfaceFrictionManager)
                         pos_local = obj.loadDistribution(:,1:2);
@@ -610,6 +610,8 @@ classdef ForceCalculator
                         mu_tires_ = mu_tires_ .* ratio;
                     end
                     obj.mu_tires = mu_tires_;
+                    [F_long_total, ~] = obj.computeLongitudinalForces(loads);
+                    obj.calculatedForces.F_long_total = F_long_total;
                     % Compute vectorized lateral forces and yaw moment
                     [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
                     % Add wind moment
@@ -643,7 +645,8 @@ classdef ForceCalculator
                         F_hitch_v = [0;0;0];
                     end
 
-                    totalForce_vehicle = totalForce_vehicle + F_traction_v + F_lat_v + ...
+                    F_long_v = [obj.calculatedForces.F_long_total;0;0];
+                    totalForce_vehicle = totalForce_vehicle + F_traction_v + F_lat_v + F_long_v + ...
                                          F_drag_v + F_rr_v + F_susp_v + F_hitch_v + ...
                                          [obj.brakingForce;0;0];
 
@@ -798,7 +801,7 @@ classdef ForceCalculator
                     contactAreas = obj.loadDistribution(:,5);
                     pressures    = loads ./ contactAreas;
                     P_ref        = mean(pressures);
-                    mu_tires_    = obj.frictionCoefficient * (P_ref ./ pressures);
+                    mu_tires_    = obj.frictionCoefficient * (pressures ./ P_ref);
                     mu_tires_    = max(min(mu_tires_, 1.0), 0.3);
                     if ~isempty(obj.surfaceFrictionManager)
                         pos_local = obj.loadDistribution(:,1:2);
@@ -808,6 +811,8 @@ classdef ForceCalculator
                         mu_tires_ = mu_tires_ .* ratio;
                     end
                     obj.mu_tires = mu_tires_;
+                    [F_long_total, ~] = obj.computeLongitudinalForces(loads);
+                    obj.calculatedForces.F_long_total = F_long_total;
                     [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
                     if isfield(obj.calculatedForces, 'momentZ_wind')
                         M_z = M_z + obj.calculatedForces.momentZ_wind;
@@ -830,7 +835,8 @@ classdef ForceCalculator
                     else
                         F_hitch_v= [0;0;0];
                     end
-                    totalForce_vehicle = totalForce_vehicle + F_traction_v+ F_lat_v +...
+                    F_long_v = [obj.calculatedForces.F_long_total;0;0];
+                    totalForce_vehicle = totalForce_vehicle + F_traction_v+ F_lat_v + F_long_v + ...
                                          F_drag_v + F_rr_v + F_susp_v + F_hitch_v + ...
                                          [obj.brakingForce;0;0];
 
@@ -1266,7 +1272,7 @@ classdef ForceCalculator
                 wheelR=obj.wheelRadius;
             end
 
-            v_vehicle= abs(obj.velocity(1));  % approx forward speed
+            v_vehicle= obj.velocity(1);  % longitudinal speed with sign
             nWheels= length(obj.wheelSpeeds);
             slipRatios= zeros(nWheels,1);
             for i=1:nWheels
@@ -1277,13 +1283,37 @@ classdef ForceCalculator
                     R_i= wheelR;
                 end
                 v_wheel= w_i*R_i;
-                denom= max(v_vehicle, v_wheel);
+                denom= max(abs(v_vehicle), abs(v_wheel));
                 if denom<0.1
                     slipRatios(i)=0;
                 else
-                    slipRatios(i)= (v_vehicle- v_wheel)/ denom;
+                    slipRatios(i)= (v_wheel - v_vehicle)/ denom;
                 end
             end
+        end
+
+        %% computeLongitudinalForces
+        % Calculates total longitudinal tire force using slip ratios
+        function [F_x_total, F_x_per_tire] = computeLongitudinalForces(obj, loads)
+            slipRatios = obj.getSlipRatios();
+            nWheels    = numel(loads);
+            if numel(slipRatios) < nWheels
+                slipRatios = repmat(slipRatios(1), nWheels, 1);
+            end
+            if numel(obj.mu_tires) < nWheels
+                mu = repmat(obj.mu_tires(1), nWheels, 1);
+            else
+                mu = obj.mu_tires(1:nWheels);
+            end
+            F_x_per_tire = zeros(nWheels,1);
+            for i = 1:nWheels
+                kappa = slipRatios(i);
+                Fx_i  = mu(i) * loads(i) * kappa;
+                maxFx = mu(i) * loads(i);
+                Fx_i  = max(min(Fx_i, maxFx), -maxFx);
+                F_x_per_tire(i) = Fx_i;
+            end
+            F_x_total = sum(F_x_per_tire);
         end
 
         %% computeAeroForces
