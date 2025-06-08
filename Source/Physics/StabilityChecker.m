@@ -118,7 +118,7 @@ classdef StabilityChecker
 
         % Use a minimal or minimal-larger threshold if you want to filter out small angles
         minYawAmplitude = 0.005   % optional: ignore tiny differences if < 0.005 rad
-        yawAmplitudeThreshold = 0.02
+        yawAmplitudeThreshold = 0.01
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
