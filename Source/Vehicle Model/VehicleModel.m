@@ -1794,7 +1794,7 @@ classdef VehicleModel < handle
                     gaussianStd ...
                     );
                 obj.jerkController = jerk_Controller(0.7 * 9.81);
-                obj.accController = acc_Controller(0.75, 2.0, simParams.trailerLength, tractorWheelbase, 5.5);
+                obj.accController = acc_Controller(0.75, 2.0, simParams.trailerLength, tractorWheelbase, 5.5, 0.3 * 9.81);
                 obj.localizer = VehicleLocalizer(simParams.waypoints, 1.0);
                 logMessages{end+1} = 'limiter_LongitudinalControl initialized successfully.';
                 % --- End of limiter_LongitudinalControl Initialization ---

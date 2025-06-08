@@ -96,6 +96,10 @@ classdef curveSpeed_Limiter < handle
             
             if inCurve
                 obj.currentFactor = obj.reductionFactor;
+                if currentSpeed > targetSpeed * obj.currentFactor
+                    % Apply gentle decel to hold reduced speed while in the curve
+                    accelOverride = -obj.rampUpAccel;
+                end
             else
                 [stopDist, rampTime] = obj.stoppingDistance(targetSpeed);
                 timeToCurve = distToCurve / max(currentSpeed, eps);
