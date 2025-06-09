@@ -2863,11 +2863,11 @@ classdef VehicleModel < handle
                         else
                             distToCurve = (curveIdx-1)*waypointSpacing;
                         end
-                        currentRadius = purePursuitPathFollower.radiusOfCurvature(curIdx);
-                        inCurve = ~isinf(currentRadius);
+                        inCurve = ~isinf(upcomingRadii);
                         baseSpeed = obj.pid_SpeedController.desiredSpeed;
                         [limitedSpeed, accelOverride] = obj.curveSpeedLimiter.limitSpeed(currentSpeed, baseSpeed, distToCurve, inCurve, dt);
                         obj.pid_SpeedController.desiredSpeed = limitedSpeed;
+                        inCurve = ~isinf(dynamicsUpdater.forceCalculator.turnRadius);
                         % if inCurve
                         %     desired_acceleration_pid = 0;
                         %     obj.pid_SpeedController.controllerActive = false;
@@ -2876,7 +2876,7 @@ classdef VehicleModel < handle
                             obj.pid_SpeedController.controllerActive = true;
                         % end
                         distToCurve = obj.localizer.distanceToNextCurve(curIdx, upcomingRadii);
-                        [desired_acceleration, predictedRotation] = obj.accController.adjust(currentSpeed, desired_acceleration_pid, distToCurve, currentRadius, inCurve, dt);
+                        [desired_acceleration, predictedRotation] = obj.accController.adjust(currentSpeed, desired_acceleration_pid, distToCurve, dynamicsUpdater.forceCalculator.turnRadius, dt);
                         logMessages{end+1} = sprintf('Step %d: ACC predicted trailer rotation %.4f rad.', i, predictedRotation);
                         obj.pid_SpeedController.desiredSpeed = baseSpeed;
                         if ~isnan(accelOverride)
