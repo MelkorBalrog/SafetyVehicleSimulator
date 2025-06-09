@@ -3,7 +3,7 @@ function tests = ACCControllerTest
 end
 
 function setup(testCase)
-    testCase.TestData.ctrl = acc_Controller(0.75, 2.0, 12.0, 3.0, 5.5, 0.3*9.81);
+    testCase.TestData.ctrl = acc_Controller(0.75, 2.0, 12.0, 3.0);
 end
 
 function testStartDecel(testCase)
