@@ -94,6 +94,8 @@ classdef purePursuit_PathFollower
         % Low-Pass Filter Properties
         lowPassAlpha             % Low-pass filter coefficient (e.g., 0.1 for strong smoothing)
         prevLowPassOutput        % Previous output of the low-pass filter
+        % Maximum allowable lateral acceleration (m/s^2)
+        maxLateralAccel
     end
 
     methods
@@ -101,7 +103,7 @@ classdef purePursuit_PathFollower
         function obj = purePursuit_PathFollower(waypoints, wheelbase, lookaheadDistance, maxSteeringAngle, ...
                                      alpha, predictionTime, numPredictions, bufferHorizon, ...
                                      timeStep, R, offsetX, offsetY, historyBufferSize, ...
-                                     transmission, curvatureShiftThreshold, gaussianBufferSize, gaussianSigma)
+                                     transmission, curvatureShiftThreshold, gaussianBufferSize, gaussianSigma, maxLateralAccel)
             % Initialize purePursuit_PathFollower with required parameters.
             %
             % Parameters:
@@ -176,6 +178,9 @@ classdef purePursuit_PathFollower
             end
             if nargin < 17 || isempty(gaussianSigma)
                 gaussianSigma = 1; % Default sigma for Gaussian weights
+            end
+            if nargin < 18 || isempty(maxLateralAccel)
+                maxLateralAccel = 0.3 * 9.81; % 0.3g default lateral limit
             end
 
             if iscell(waypoints)
@@ -258,6 +263,15 @@ classdef purePursuit_PathFollower
             obj.curvatureShiftThreshold = curvatureShiftThreshold;
             obj.shiftedDownForCurrentCurve = false;
             % *** End of New Properties ***
+
+            % Set lateral acceleration limit
+            obj.maxLateralAccel = maxLateralAccel;
+
+            % Pre-compute curvature and steering plan so other modules can
+            % safely query radiusOfCurvature before any predictions are
+            % provided.
+            obj = obj.calculateCurvature();
+            obj = obj.planSteeringAngles();
         end
 
         %% Update Vehicle State
@@ -367,6 +381,16 @@ classdef purePursuit_PathFollower
 
             % Use the low-pass filtered output as the final steering angle
             steeringAngle = filteredAngle;
+
+            % --- Limit lateral acceleration of trailer ---
+            if obj.speed > 0 && abs(steeringAngle) > 0
+                steerRad = deg2rad(steeringAngle);
+                latAccel = (obj.speed^2) * tan(steerRad) / obj.wheelbase;
+                if abs(latAccel) > obj.maxLateralAccel
+                    maxSteerRad = atan(obj.maxLateralAccel * obj.wheelbase / (obj.speed^2));
+                    steeringAngle = sign(steeringAngle) * rad2deg(maxSteerRad);
+                end
+            end
 
             % *** Gear Shifting Logic Based on Curvature ***
             % Analyze upcoming curvatures to determine if a gear shift is needed

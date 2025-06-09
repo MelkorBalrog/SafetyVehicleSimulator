@@ -11,6 +11,7 @@ classdef acc_Controller < handle
         trailerLength (1,1) double {mustBeNonnegative} = 12.0
         wheelbase (1,1) double {mustBePositive} = 3.0
         decelLookaheadTime (1,1) double {mustBePositive} = 5.5
+        maxLateralAccel (1,1) double {mustBePositive} = 0.3 * 9.81
     end
 
     properties(Access=private)
@@ -20,15 +21,16 @@ classdef acc_Controller < handle
     end
 
     methods
-        function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase, lookaheadTime)
+        function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase, lookaheadTime, maxLatAccel)
             if nargin >= 1 && ~isempty(speedReduction); obj.speedReduction = speedReduction; end
             if nargin >= 2 && ~isempty(maxDecel); obj.maxDecel = maxDecel; end
             if nargin >= 3 && ~isempty(trailerLength); obj.trailerLength = trailerLength; end
             if nargin >= 4 && ~isempty(wheelbase); obj.wheelbase = wheelbase; end
             if nargin >= 5 && ~isempty(lookaheadTime); obj.decelLookaheadTime = lookaheadTime; end
+            if nargin >= 6 && ~isempty(maxLatAccel); obj.maxLateralAccel = maxLatAccel; end
         end
 
-        function [accelOut, predictedRotation] = adjust(obj, currentSpeed, pidAccel, distToCurve, turnRadius, dt)
+        function [accelOut, predictedRotation] = adjust(obj, currentSpeed, pidAccel, distToCurve, turnRadius, inCurve, dt)
             %ADJUST Modifies PID acceleration based on upcoming curve distance.
             %   currentSpeed  - current vehicle speed [m/s]
             %   pidAccel      - acceleration request from speed controller [m/s^2]
@@ -39,7 +41,10 @@ classdef acc_Controller < handle
             if nargin < 5 || isempty(turnRadius)
                 turnRadius = inf;
             end
-            if nargin < 6
+            if nargin < 6 || isempty(inCurve)
+                inCurve = ~isinf(turnRadius);
+            end
+            if nargin < 7
                 dt = 0.01;
             end
 
@@ -50,9 +55,8 @@ classdef acc_Controller < handle
                 % Begin ramp down and capture pre-curve speed
                 obj.decelActive = true;
                 obj.baseSpeed = currentSpeed;
-            elseif obj.decelActive && isinf(turnRadius) && distToCurve > triggerDist
-                % Resume normal control when out of the curve and the next one
-                % is sufficiently far away
+            elseif obj.decelActive && ~inCurve && distToCurve > triggerDist
+                % Resume normal control when localization indicates we left the curve
                 obj.decelActive = false;
             elseif ~obj.decelActive
                 % continuously update base speed when cruising
@@ -60,6 +64,10 @@ classdef acc_Controller < handle
             end
 
             targetSpeed = obj.speedReduction * obj.baseSpeed;
+            if ~isinf(turnRadius)
+                latLimitSpeed = sqrt(obj.maxLateralAccel * abs(turnRadius));
+                targetSpeed = min(targetSpeed, latLimitSpeed);
+            end
 
             if obj.decelActive
                 if currentSpeed > targetSpeed + 0.1
