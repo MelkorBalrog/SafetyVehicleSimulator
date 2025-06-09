@@ -266,6 +266,12 @@ classdef purePursuit_PathFollower
 
             % Set lateral acceleration limit
             obj.maxLateralAccel = maxLateralAccel;
+
+            % Pre-compute curvature and steering plan so other modules can
+            % safely query radiusOfCurvature before any predictions are
+            % provided.
+            obj = obj.calculateCurvature();
+            obj = obj.planSteeringAngles();
         end
 
         %% Update Vehicle State
