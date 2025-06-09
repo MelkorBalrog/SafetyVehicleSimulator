@@ -92,13 +92,6 @@ classdef acc_Controller < handle
             else
                 accelOut = desiredAccel;
             end
-
-            % Prevent reversing: do not command more decel than needed to
-            % stop within the current step
-            if accelOut * dt + currentSpeed < 0
-                accelOut = -currentSpeed / dt;
-            end
-
             obj.prevAccel = accelOut;
 
             if isinf(turnRadius)
