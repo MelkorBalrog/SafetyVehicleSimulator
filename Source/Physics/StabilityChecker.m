@@ -118,7 +118,6 @@ classdef StabilityChecker
 
         % Use a minimal or minimal-larger threshold if you want to filter out small angles
         minYawAmplitude = 0.005   % optional: ignore tiny differences if < 0.005 rad
-        yawAmplitudeThreshold = 0.02
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -288,10 +287,8 @@ classdef StabilityChecker
                 wiggleMeasure = 0;
             end
 
-            % 6) Compare wiggleMeasure and amplitude to thresholds
-            amplitude = max(data) - min(data);
-            rawIsExceed = (wiggleMeasure > obj.wigglingThreshold) && ...
-                          (amplitude > obj.yawAmplitudeThreshold);
+            % 6) Compare wiggleMeasure to threshold
+            rawIsExceed = (wiggleMeasure > obj.wigglingThreshold);
 
             % 7) Convert to score update
             if rawIsExceed
