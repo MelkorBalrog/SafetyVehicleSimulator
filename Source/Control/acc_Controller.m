@@ -11,7 +11,6 @@ classdef acc_Controller < handle
         trailerLength (1,1) double {mustBeNonnegative} = 12.0
         wheelbase (1,1) double {mustBePositive} = 3.0
         decelLookaheadTime (1,1) double {mustBePositive} = 5.5
-        maxLateralAccel (1,1) double {mustBePositive} = 0.3 * 9.81
     end
 
     properties(Access=private)
@@ -21,13 +20,12 @@ classdef acc_Controller < handle
     end
 
     methods
-        function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase, lookaheadTime, maxLatAccel)
+        function obj = acc_Controller(speedReduction, maxDecel, trailerLength, wheelbase, lookaheadTime)
             if nargin >= 1 && ~isempty(speedReduction); obj.speedReduction = speedReduction; end
             if nargin >= 2 && ~isempty(maxDecel); obj.maxDecel = maxDecel; end
             if nargin >= 3 && ~isempty(trailerLength); obj.trailerLength = trailerLength; end
             if nargin >= 4 && ~isempty(wheelbase); obj.wheelbase = wheelbase; end
             if nargin >= 5 && ~isempty(lookaheadTime); obj.decelLookaheadTime = lookaheadTime; end
-            if nargin >= 6 && ~isempty(maxLatAccel); obj.maxLateralAccel = maxLatAccel; end
         end
 
         function [accelOut, predictedRotation] = adjust(obj, currentSpeed, pidAccel, distToCurve, turnRadius, dt)
@@ -62,10 +60,6 @@ classdef acc_Controller < handle
             end
 
             targetSpeed = obj.speedReduction * obj.baseSpeed;
-            if ~isinf(turnRadius)
-                latLimitSpeed = sqrt(obj.maxLateralAccel * abs(turnRadius));
-                targetSpeed = min(targetSpeed, latLimitSpeed);
-            end
 
             if obj.decelActive
                 if currentSpeed > targetSpeed + 0.1
