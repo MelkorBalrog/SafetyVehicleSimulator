@@ -96,6 +96,14 @@ classdef curveSpeed_Limiter < handle
             
             if inCurve
                 obj.currentFactor = obj.reductionFactor;
+                if currentSpeed > targetSpeed * obj.currentFactor
+                    % Apply gentle decel to hold reduced speed while in the curve
+                    accelOverride = -obj.rampUpAccel;
+                    % Do not reverse direction within the time step
+                    if currentSpeed + accelOverride * dt < 0
+                        accelOverride = -currentSpeed / dt;
+                    end
+                end
             else
                 [stopDist, rampTime] = obj.stoppingDistance(targetSpeed);
                 timeToCurve = distToCurve / max(currentSpeed, eps);
@@ -111,6 +119,10 @@ classdef curveSpeed_Limiter < handle
                         deltaV = 1 * 0.5 + 4.5 + 6 * min(elapsed - 1.5, 1.0);
                         accelOverride = -6;
                     end
+                    % Prevent negative speed in one step
+                    if currentSpeed + accelOverride * dt < 0
+                        accelOverride = -currentSpeed / dt;
+                    end
                     factor = 1 - deltaV / max(targetSpeed, eps);
                     factor = max(obj.reductionFactor, min(1, factor));
                     obj.currentFactor = min(obj.currentFactor, factor);
@@ -120,7 +132,7 @@ classdef curveSpeed_Limiter < handle
                 end
             end
 
-            limitedSpeed = targetSpeed * obj.currentFactor;
+            limitedSpeed = max(0, targetSpeed * obj.currentFactor);
         end
     end
 end
