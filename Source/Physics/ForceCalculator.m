@@ -424,7 +424,6 @@ classdef ForceCalculator
             F_y_total = sum(F_y_tires);
             M_z = F_y_total*(obj.trailerWheelbase/2);
         end
-
         %% Accessor for filtered forces
         function forces_filtered = getFilteredForces(obj)
             forces_filtered = obj.calculatedForces_filtered;
