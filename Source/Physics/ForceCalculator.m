@@ -110,6 +110,7 @@ classdef ForceCalculator
         % --- Adjusted Tire Parameters ---
         mu_tires                 % Adjusted friction coefficients per tractor tire
         mu_tires_trailer         % Adjusted friction coefficients per trailer tire
+        numTractorTires          % Number of tractor tires (for tractor-trailer)
 
         % Simple tire model parameters
         B_tires
@@ -266,6 +267,8 @@ classdef ForceCalculator
                     else
                         obj.trailerBoxMasses = [];
                     end
+                    % Determine number of tractor tires from load distribution
+                    obj.numTractorTires = size(loadDist,1) - obj.numTrailerTires;
                 else
                     error('Must provide trailer mass, wheelbase, and tire count for tractor-trailer.');
                 end
@@ -279,6 +282,7 @@ classdef ForceCalculator
                 obj.trailerWheelbase = [];
                 obj.numTrailerTires  = [];
                 obj.trailerBoxMasses = [];
+                obj.numTractorTires  = size(loadDist,1);
                 if strcmp(vehicleType, 'passenger')
                     obj.jointForce = [0; 0; 0];
                 end
@@ -360,27 +364,31 @@ classdef ForceCalculator
         end
         
         %% computeTireForces (vectorized lateral forces and yaw moment)
-        function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r)
-            numTires = numel(loads);
-            xPos = obj.loadDistribution(:,1);
+        function [F_y_total, M_z] = computeTireForces(obj, loads, contactAreas, u, v, r, idx)
+            if nargin < 7
+                idx = 1:numel(loads);
+            end
+            numTires = numel(idx);
+            xPos = obj.loadDistribution(idx,1);
             a = obj.wheelbase/2;
             b = obj.wheelbase/2;
             alpha_front = obj.steeringAngle - atan2(v + a*r, u);
             alpha_rear  = -atan2(v - b*r, u);
             alpha = alpha_rear * ones(numTires,1);
             alpha(xPos>0) = alpha_front;
-            mu_t = obj.mu_tires;
+            mu_t = obj.mu_tires(idx);
             if strcmp(obj.tireModelFlag, 'simple')
                 D = mu_t .* loads;
-                B = obj.B_tires;
-                C = obj.C_tires;
-                E = obj.E_tires;
+                B = obj.B_tires(idx);
+                C = obj.C_tires(idx);
+                E = obj.E_tires(idx);
                 Fy = D .* sin(C .* atan(B .* alpha - E .* (B .* alpha - atan(B .* alpha))));
             else
                 % High-fidelity tire model: compute per-tire forces sequentially
                 Fy = zeros(numTires,1);
-                for i = 1:numTires
-                    Fy(i) = obj.highFidelityTireModel.calculateLateralForce(alpha(i), loads(i), i);
+                for k = 1:numTires
+                    tireIndex = idx(k);
+                    Fy(k) = obj.highFidelityTireModel.calculateLateralForce(alpha(k), loads(k), tireIndex);
                 end
             end
             F_y_total = sum(Fy);
@@ -609,8 +617,13 @@ classdef ForceCalculator
                         mu_tires_ = mu_tires_ .* ratio;
                     end
                     obj.mu_tires = mu_tires_;
-                    % Compute vectorized lateral forces and yaw moment
-                    [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
+                    % Compute vectorized lateral forces and yaw moment using tractor tires only
+                    if strcmp(obj.vehicleType,'tractor-trailer')
+                        idxTr = 1:obj.numTractorTires;
+                    else
+                        idxTr = 1:numel(loads);
+                    end
+                    [F_y_total, M_z] = obj.computeTireForces(loads(idxTr), contactAreas(idxTr), u, v, r, idxTr);
                     % Add wind moment
                     if isfield(obj.calculatedForces, 'momentZ_wind')
                         M_z = M_z + obj.calculatedForces.momentZ_wind;
@@ -807,7 +820,12 @@ classdef ForceCalculator
                         mu_tires_ = mu_tires_ .* ratio;
                     end
                     obj.mu_tires = mu_tires_;
-                    [F_y_total, M_z] = obj.computeTireForces(loads, contactAreas, u, v, r);
+                    if strcmp(obj.vehicleType,'tractor-trailer')
+                        idxTr = 1:obj.numTractorTires;
+                    else
+                        idxTr = 1:numel(loads);
+                    end
+                    [F_y_total, M_z] = obj.computeTireForces(loads(idxTr), contactAreas(idxTr), u, v, r, idxTr);
                     if isfield(obj.calculatedForces, 'momentZ_wind')
                         M_z = M_z + obj.calculatedForces.momentZ_wind;
                     end
