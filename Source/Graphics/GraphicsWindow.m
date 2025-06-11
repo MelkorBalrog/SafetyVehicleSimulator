@@ -22,6 +22,7 @@ classdef GraphicsWindow < handle
             if nargin < 2
                 useGPU = false;
             end
+
             if nargin < 3
                 useParallel = false;
             end
