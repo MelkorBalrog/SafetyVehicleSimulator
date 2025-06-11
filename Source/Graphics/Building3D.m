@@ -9,9 +9,7 @@ classdef Building3D < Object3D
             if nargin < 5
                 color = [0.8 0.8 0.8];
             end
-
             obj@Object3D(Boxel.empty, false, false);
-            
             nFloors = max(1, round(height));
             for f = 1:nFloors
                 b = Boxel([0 0 (f-0.5)], [width depth 1], color);

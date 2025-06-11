@@ -28,6 +28,17 @@ classdef Object3D
             obj.UseParallel = useParallel;
         end
 
+        function verts = localVertices(obj)
+            % localVertices Returns all transformed vertices of the object.
+            %   This utility exposes the vertex collection used internally
+            %   for mesh generation so that external code can query the
+            %   object geometry. Vertices are returned in world
+            %   coordinates accounting for the object's position and
+            %   orientation.
+
+            verts = obj.collectMesh();
+        end
+
         function addBoxel(obj, boxel)
             if obj.UseGPU
                 boxel.UseGPU = true;
