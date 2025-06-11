@@ -488,6 +488,22 @@ function VDSS
     % */
     function startSimulation()
         simulationManager.runSimulations();
+        try
+            gw = GraphicsWindow(World3D(), true, true);
+            tractorParams1 = simulationManager.createVehicleParams(vehicleSim1.simParams, ...
+                vehicleSim1.simParams.tractorTireHeight, vehicleSim1.simParams.tractorTireWidth);
+            if vehicleSim1.simParams.includeTrailer
+                trailerParams1 = simulationManager.createTrailerParams(vehicleSim1.simParams, ...
+                    vehicleSim1.simParams.trailerTireHeight, vehicleSim1.simParams.trailerTireWidth, 1);
+            else
+                trailerParams1 = [];
+            end
+            truck = Truck3D(tractorParams1, trailerParams1, true, true);
+            animator = Sim3DAnimator(dataManager, gw, truck, tractorParams1, trailerParams1);
+            animator.run();
+        catch ME
+            disp(['3D Animation failed: ' ME.message]);
+        end
     end
     
     %/**
