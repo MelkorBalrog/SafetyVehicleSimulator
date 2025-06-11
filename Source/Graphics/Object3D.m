@@ -48,7 +48,11 @@ classdef Object3D
 
         function setOrientation(obj, yaw, pitch, roll)
             % setOrientation Sets the object orientation from yaw, pitch, roll (rad).
-            if nargin == 2 && ismatrix(yaw)
+            %   When called with a single matrix argument it assumes a 3x3
+            %   rotation matrix.  Previously the method would also accept a
+            %   scalar which led to invalid orientations and size mismatch
+            %   errors during vertex transformations.
+            if nargin == 2 && ismatrix(yaw) && all(size(yaw) == [3 3])
                 obj.Orientation = yaw;
                 return;
             end
