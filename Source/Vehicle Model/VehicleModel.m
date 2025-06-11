@@ -714,7 +714,8 @@ classdef VehicleModel < handle
             elseif simParams.trailerNumBoxes > 1
                 % No individual weight distributions provided, so scale the
                 % configured trailer mass by the number of boxes only once.
-                % Use the previously stored trailer mass values if available.
+                % Use the previously stored trailer mass values if available so
+                % repeated calls don't keep multiplying the mass.
                 if ~isfield(simParams, 'baseTrailerMass') || isempty(simParams.baseTrailerMass)
                     if isfield(obj.simParams, 'baseTrailerMass')
                         simParams.baseTrailerMass = obj.simParams.baseTrailerMass;
