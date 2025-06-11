@@ -135,6 +135,8 @@ classdef VehicleGUIManager < handle
         lambda2Field
         lambda1JerkField
         lambda2JerkField
+        lambda1VelField
+        lambda2VelField
         enableSpeedControllerCheckbox
 
         % Tires Configuration Fields
@@ -721,9 +723,19 @@ classdef VehicleGUIManager < handle
                 'Position', [320, 220, 100, 20], 'Value', 1.0, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
+            uilabel(obj.pidControllerTab, 'Position', [10, 190, 300, 20], 'Text', 'Lambda1 Velocity:');
+            obj.lambda1VelField = uieditfield(obj.pidControllerTab, 'numeric', ...
+                'Position', [320, 190, 100, 20], 'Value', 1.0, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+
+            uilabel(obj.pidControllerTab, 'Position', [10, 160, 300, 20], 'Text', 'Lambda2 Velocity:');
+            obj.lambda2VelField = uieditfield(obj.pidControllerTab, 'numeric', ...
+                'Position', [320, 160, 100, 20], 'Value', 1.0, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+
             % Checkbox to Enable/Disable Speed Controller
             obj.enableSpeedControllerCheckbox = uicontrol(obj.pidControllerTab, 'Style', 'checkbox', ...
-                'Position', [10, 190, 300, 20], 'String', 'Enable Speed Controller', ...
+                'Position', [10, 130, 300, 20], 'String', 'Enable Speed Controller', ...
                 'Value', 1, 'Callback', @(src, event)obj.configurationChanged());
             % --- End of PID Controller Parameters ---
 

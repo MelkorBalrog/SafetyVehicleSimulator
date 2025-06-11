@@ -96,6 +96,10 @@ classdef pid_SpeedController < handle
         lambda1
         lambda2
         levDiff
+        lambda1Vel
+        lambda2Vel
+        velDiff
+        currentAcceleration
         lambda1Jerk
         lambda2Jerk
         jerkDiff
@@ -142,6 +146,8 @@ classdef pid_SpeedController < handle
             % Levant differentiator parameters
             addParameter(p, 'Lambda1', 1, @(x) isnumeric(x) && x>0);
             addParameter(p, 'Lambda2', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda1Vel', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda2Vel', 1, @(x) isnumeric(x) && x>0);
             addParameter(p, 'Lambda1Jerk', 1, @(x) isnumeric(x) && x>0);
             addParameter(p, 'Lambda2Jerk', 1, @(x) isnumeric(x) && x>0);
 
@@ -186,10 +192,14 @@ classdef pid_SpeedController < handle
             % Levant differentiator setup
             obj.lambda1 = p.Results.Lambda1;
             obj.lambda2 = p.Results.Lambda2;
+            obj.lambda1Vel = p.Results.Lambda1Vel;
+            obj.lambda2Vel = p.Results.Lambda2Vel;
             obj.lambda1Jerk = p.Results.Lambda1Jerk;
             obj.lambda2Jerk = p.Results.Lambda2Jerk;
             obj.levDiff = LevantDifferentiator(obj.lambda1, obj.lambda2);
+            obj.velDiff = LevantDifferentiator(obj.lambda1Vel, obj.lambda2Vel);
             obj.jerkDiff = LevantDifferentiator(obj.lambda1Jerk, obj.lambda2Jerk);
+            obj.currentAcceleration = 0;
             obj.currentJerk = 0;
 
             % Speed smoothing factor and current target speed
@@ -246,13 +256,15 @@ classdef pid_SpeedController < handle
             if dt <= 0
                 dt = 1e-6;
             end
+            currentAccel = obj.velDiff.update(filteredSpeed, dt);
+            obj.currentAcceleration = currentAccel;
 
             % ---------------- 3) Check if we need to decelerate --------------------
             if filteredSpeed > obj.currentTargetSpeed
                 % Deceleration is required => let the brakes handle it
                 obj.controllerActive = false;
                 acceleration = 0;
-                jerk = obj.jerkDiff.update(acceleration, dt);
+                jerk = obj.jerkDiff.update(currentAccel, dt);
                 if obj.verbose
                     fprintf('[pid_SpeedController] Deceleration needed. Controller set to 0.\n');
                 end
@@ -275,7 +287,7 @@ classdef pid_SpeedController < handle
                 % No movement needed
                 acceleration = 0;
                 obj.controllerActive = false;
-                jerk = obj.jerkDiff.update(acceleration, dt);
+                jerk = obj.jerkDiff.update(currentAccel, dt);
                 if obj.verbose
                     fprintf('[pid_SpeedController] Desired speed <= 0. Controller disabled.\n');
                 end
@@ -326,7 +338,7 @@ classdef pid_SpeedController < handle
                 end
             end
 
-            jerk = obj.jerkDiff.update(acceleration, dt);
+            jerk = obj.jerkDiff.update(currentAccel, dt);
             obj.currentJerk = jerk;
         end
 

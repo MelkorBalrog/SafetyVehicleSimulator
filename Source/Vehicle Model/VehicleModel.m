@@ -136,6 +136,8 @@ classdef VehicleModel < handle
             obj.simParams.Kd = 0.1;  % Derivative gain
             obj.simParams.lambda1 = 1.0; % Levant differentiator lambda1
             obj.simParams.lambda2 = 1.0; % Levant differentiator lambda2
+            obj.simParams.lambda1Vel = 1.0; % Levant differentiator lambda1 for velocity
+            obj.simParams.lambda2Vel = 1.0; % Levant differentiator lambda2 for velocity
             obj.simParams.lambda1Jerk = 1.0; % Levant differentiator lambda1 for jerk
             obj.simParams.lambda2Jerk = 1.0; % Levant differentiator lambda2 for jerk
             obj.simParams.enableSpeedController = true;
@@ -394,6 +396,10 @@ classdef VehicleModel < handle
                     if isprop(obj.guiManager, 'lambda1Field') && isprop(obj.guiManager, 'lambda2Field')
                         obj.guiManager.lambda1Field.Value = simParams.lambda1;
                         obj.guiManager.lambda2Field.Value = simParams.lambda2;
+                    end
+                    if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
+                        obj.guiManager.lambda1VelField.Value = simParams.lambda1Vel;
+                        obj.guiManager.lambda2VelField.Value = simParams.lambda2Vel;
                     end
                     if isprop(obj.guiManager, 'lambda1JerkField') && isprop(obj.guiManager, 'lambda2JerkField')
                         obj.guiManager.lambda1JerkField.Value = simParams.lambda1Jerk;
@@ -862,6 +868,13 @@ classdef VehicleModel < handle
                     simParams.lambda1 = obj.simParams.lambda1;
                     simParams.lambda2 = obj.simParams.lambda2;
                 end
+                if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
+                    simParams.lambda1Vel = obj.guiManager.lambda1VelField.Value;
+                    simParams.lambda2Vel = obj.guiManager.lambda2VelField.Value;
+                else
+                    simParams.lambda1Vel = obj.simParams.lambda1Vel;
+                    simParams.lambda2Vel = obj.simParams.lambda2Vel;
+                end
                 if isprop(obj.guiManager, 'lambda1JerkField') && isprop(obj.guiManager, 'lambda2JerkField')
                     simParams.lambda1Jerk = obj.guiManager.lambda1JerkField.Value;
                     simParams.lambda2Jerk = obj.guiManager.lambda2JerkField.Value;
@@ -877,6 +890,8 @@ classdef VehicleModel < handle
                 simParams.Kd = obj.simParams.Kd;
                 simParams.lambda1 = obj.simParams.lambda1;
                 simParams.lambda2 = obj.simParams.lambda2;
+                simParams.lambda1Vel = obj.simParams.lambda1Vel;
+                simParams.lambda2Vel = obj.simParams.lambda2Vel;
                 simParams.lambda1Jerk = obj.simParams.lambda1Jerk;
                 simParams.lambda2Jerk = obj.simParams.lambda2Jerk;
                 simParams.enableSpeedController = obj.simParams.enableSpeedController;
@@ -1809,6 +1824,7 @@ classdef VehicleModel < handle
                     minDecelAtMaxSpeed, ...
                     'FilterType', 'sma', 'SMAWindowSize', 50, ...
                     'Lambda1', simParams.lambda1, 'Lambda2', simParams.lambda2, ...
+                    'Lambda1Vel', simParams.lambda1Vel, 'Lambda2Vel', simParams.lambda2Vel, ...
                     'Lambda1Jerk', simParams.lambda1Jerk, 'Lambda2Jerk', simParams.lambda2Jerk ...
                     ); % maxAccel and minAccel set to 2.0 and -2.0 m/s^2 respectively
                 logMessages{end+1} = 'pid_SpeedController initialized successfully.';
