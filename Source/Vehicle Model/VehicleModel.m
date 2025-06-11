@@ -134,8 +134,8 @@ classdef VehicleModel < handle
             obj.simParams.Kp = 1.0;  % Proportional gain
             obj.simParams.Ki = 0.5;  % Integral gain
             obj.simParams.Kd = 0.1;  % Derivative gain
-            obj.simParams.lambda1 = 1.0; % Levant differentiator lambda1
-            obj.simParams.lambda2 = 1.0; % Levant differentiator lambda2
+            obj.simParams.lambda1Accel = 1.0; % Levant differentiator lambda1 for error derivative
+            obj.simParams.lambda2Accel = 1.0; % Levant differentiator lambda2 for error derivative
             obj.simParams.lambda1Vel = 1.0; % Levant differentiator lambda1 for velocity
             obj.simParams.lambda2Vel = 1.0; % Levant differentiator lambda2 for velocity
             obj.simParams.lambda1Jerk = 1.0; % Levant differentiator lambda1 for jerk
@@ -393,9 +393,9 @@ classdef VehicleModel < handle
                     obj.guiManager.KpField.Value = simParams.Kp;
                     obj.guiManager.KiField.Value = simParams.Ki;
                     obj.guiManager.KdField.Value = simParams.Kd;
-                    if isprop(obj.guiManager, 'lambda1Field') && isprop(obj.guiManager, 'lambda2Field')
-                        obj.guiManager.lambda1Field.Value = simParams.lambda1;
-                        obj.guiManager.lambda2Field.Value = simParams.lambda2;
+                    if isprop(obj.guiManager, 'lambda1AccelField') && isprop(obj.guiManager, 'lambda2AccelField')
+                        obj.guiManager.lambda1AccelField.Value = simParams.lambda1Accel;
+                        obj.guiManager.lambda2AccelField.Value = simParams.lambda2Accel;
                     end
                     if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
                         obj.guiManager.lambda1VelField.Value = simParams.lambda1Vel;
@@ -861,12 +861,12 @@ classdef VehicleModel < handle
                 simParams.Kp = obj.guiManager.KpField.Value;
                 simParams.Ki = obj.guiManager.KiField.Value;
                 simParams.Kd = obj.guiManager.KdField.Value;
-                if isprop(obj.guiManager, 'lambda1Field') && isprop(obj.guiManager, 'lambda2Field')
-                    simParams.lambda1 = obj.guiManager.lambda1Field.Value;
-                    simParams.lambda2 = obj.guiManager.lambda2Field.Value;
+                if isprop(obj.guiManager, 'lambda1AccelField') && isprop(obj.guiManager, 'lambda2AccelField')
+                    simParams.lambda1Accel = obj.guiManager.lambda1AccelField.Value;
+                    simParams.lambda2Accel = obj.guiManager.lambda2AccelField.Value;
                 else
-                    simParams.lambda1 = obj.simParams.lambda1;
-                    simParams.lambda2 = obj.simParams.lambda2;
+                    simParams.lambda1Accel = obj.simParams.lambda1Accel;
+                    simParams.lambda2Accel = obj.simParams.lambda2Accel;
                 end
                 if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
                     simParams.lambda1Vel = obj.guiManager.lambda1VelField.Value;
@@ -888,8 +888,8 @@ classdef VehicleModel < handle
                 simParams.Kp = obj.simParams.Kp;
                 simParams.Ki = obj.simParams.Ki;
                 simParams.Kd = obj.simParams.Kd;
-                simParams.lambda1 = obj.simParams.lambda1;
-                simParams.lambda2 = obj.simParams.lambda2;
+                simParams.lambda1Accel = obj.simParams.lambda1Accel;
+                simParams.lambda2Accel = obj.simParams.lambda2Accel;
                 simParams.lambda1Vel = obj.simParams.lambda1Vel;
                 simParams.lambda2Vel = obj.simParams.lambda2Vel;
                 simParams.lambda1Jerk = obj.simParams.lambda1Jerk;
@@ -1823,7 +1823,7 @@ classdef VehicleModel < handle
                     minAccelAtMaxSpeed, ...
                     minDecelAtMaxSpeed, ...
                     'FilterType', 'sma', 'SMAWindowSize', 50, ...
-                    'Lambda1', simParams.lambda1, 'Lambda2', simParams.lambda2, ...
+                    'Lambda1Accel', simParams.lambda1Accel, 'Lambda2Accel', simParams.lambda2Accel, ...
                     'Lambda1Vel', simParams.lambda1Vel, 'Lambda2Vel', simParams.lambda2Vel, ...
                     'Lambda1Jerk', simParams.lambda1Jerk, 'Lambda2Jerk', simParams.lambda2Jerk ...
                     ); % maxAccel and minAccel set to 2.0 and -2.0 m/s^2 respectively

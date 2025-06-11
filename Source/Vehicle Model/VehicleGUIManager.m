@@ -131,8 +131,8 @@ classdef VehicleGUIManager < handle
         KpField
         KiField
         KdField
-        lambda1Field
-        lambda2Field
+        lambda1AccelField
+        lambda2AccelField
         lambda1JerkField
         lambda2JerkField
         lambda1VelField
@@ -703,13 +703,13 @@ classdef VehicleGUIManager < handle
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             % Levant differentiator parameters
-            uilabel(obj.pidControllerTab, 'Position', [10, 310, 300, 20], 'Text', 'Lambda1 (Levant):');
-            obj.lambda1Field = uieditfield(obj.pidControllerTab, 'numeric', ...
+            uilabel(obj.pidControllerTab, 'Position', [10, 310, 300, 20], 'Text', 'Lambda1 Accel:');
+            obj.lambda1AccelField = uieditfield(obj.pidControllerTab, 'numeric', ...
                 'Position', [320, 310, 100, 20], 'Value', 1.0, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
-            uilabel(obj.pidControllerTab, 'Position', [10, 280, 300, 20], 'Text', 'Lambda2 (Levant):');
-            obj.lambda2Field = uieditfield(obj.pidControllerTab, 'numeric', ...
+            uilabel(obj.pidControllerTab, 'Position', [10, 280, 300, 20], 'Text', 'Lambda2 Accel:');
+            obj.lambda2AccelField = uieditfield(obj.pidControllerTab, 'numeric', ...
                 'Position', [320, 280, 100, 20], 'Value', 1.0, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
 

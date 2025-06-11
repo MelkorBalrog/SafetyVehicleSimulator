@@ -92,9 +92,9 @@ classdef pid_SpeedController < handle
         % Reduction factor (<1) applied to cornering speed limits
         curveSpeedReduction
 
-        % Levant differentiator parameters
-        lambda1
-        lambda2
+        % Levant differentiator parameters for speed error derivative
+        lambda1Accel
+        lambda2Accel
         levDiff
         lambda1Vel
         lambda2Vel
@@ -144,8 +144,8 @@ classdef pid_SpeedController < handle
             addParameter(p, 'CurveSpeedReduction', 0.75, @(x) isnumeric(x) && x>0 && x<=1);
 
             % Levant differentiator parameters
-            addParameter(p, 'Lambda1', 1, @(x) isnumeric(x) && x>0);
-            addParameter(p, 'Lambda2', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda1Accel', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda2Accel', 1, @(x) isnumeric(x) && x>0);
             addParameter(p, 'Lambda1Vel', 1, @(x) isnumeric(x) && x>0);
             addParameter(p, 'Lambda2Vel', 1, @(x) isnumeric(x) && x>0);
             addParameter(p, 'Lambda1Jerk', 1, @(x) isnumeric(x) && x>0);
@@ -190,13 +190,13 @@ classdef pid_SpeedController < handle
             obj.curveSpeedReduction = p.Results.CurveSpeedReduction;
 
             % Levant differentiator setup
-            obj.lambda1 = p.Results.Lambda1;
-            obj.lambda2 = p.Results.Lambda2;
+            obj.lambda1Accel = p.Results.Lambda1Accel;
+            obj.lambda2Accel = p.Results.Lambda2Accel;
             obj.lambda1Vel = p.Results.Lambda1Vel;
             obj.lambda2Vel = p.Results.Lambda2Vel;
             obj.lambda1Jerk = p.Results.Lambda1Jerk;
             obj.lambda2Jerk = p.Results.Lambda2Jerk;
-            obj.levDiff = LevantDifferentiator(obj.lambda1, obj.lambda2);
+            obj.levDiff = LevantDifferentiator(obj.lambda1Accel, obj.lambda2Accel);
             obj.velDiff = LevantDifferentiator(obj.lambda1Vel, obj.lambda2Vel);
             obj.jerkDiff = LevantDifferentiator(obj.lambda1Jerk, obj.lambda2Jerk);
             obj.currentAcceleration = 0;

@@ -124,8 +124,8 @@ function VDSS
     SedanConfig.Ki = 0.5;  % Integral gain
     SedanConfig.Kd = 0.1;  % Derivative gain
     % Levant differentiator lambdas for PID derivatives
-    SedanConfig.lambda1 = 1.0;
-    SedanConfig.lambda2 = 1.0;
+    SedanConfig.lambda1Accel = 1.0;
+    SedanConfig.lambda2Accel = 1.0;
     SedanConfig.lambda1Vel = 1.0;
     SedanConfig.lambda2Vel = 1.0;
     SedanConfig.lambda1Jerk = 1.0;
