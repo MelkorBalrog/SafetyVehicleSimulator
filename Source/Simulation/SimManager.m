@@ -1,3 +1,19 @@
+%--------------------------------------------------------------------------
+% This file is part of VDSS - Vehicle Dynamics Safety Simulator.
+%
+% VDSS is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% VDSS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+%--------------------------------------------------------------------------
 %/**
 % * @class SimManager
 % * @brief Handles running simulations, detecting collisions, and plotting results for Vehicles in parallel.
@@ -1137,11 +1153,17 @@ classdef SimManager < handle
             middleAxleIndex   = ceil(numAxlesTractor / 2);
             middleAxlePosition = axlePositionsTractor(middleAxleIndex);
 
-            massVal = simParams.trailerMass;
+            if isfield(simParams, 'baseTrailerMass')
+                massVal = simParams.baseTrailerMass;
+            else
+                massVal = simParams.trailerMass;
+            end
             boxMasses = [];
             if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                 boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
                 massVal = sum(boxMasses);
+            elseif isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
+                massVal = massVal * simParams.trailerNumBoxes;
             end
             fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + massVal);
 

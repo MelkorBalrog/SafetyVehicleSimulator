@@ -1,3 +1,19 @@
+%--------------------------------------------------------------------------
+% This file is part of VDSS - Vehicle Dynamics Safety Simulator.
+%
+% VDSS is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% VDSS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+%--------------------------------------------------------------------------
 %/**
 % * @brief Sets up the UI, runs vehicle simulations, and plots results.
 % *
@@ -107,6 +123,13 @@ function VDSS
     SedanConfig.Kp = 1.0;  % Proportional gain
     SedanConfig.Ki = 0.5;  % Integral gain
     SedanConfig.Kd = 0.1;  % Derivative gain
+    % Levant differentiator lambdas for PID derivatives
+    SedanConfig.lambda1Accel = 1.0;
+    SedanConfig.lambda2Accel = 1.0;
+    SedanConfig.lambda1Vel = 1.0;
+    SedanConfig.lambda2Vel = 1.0;
+    SedanConfig.lambda1Jerk = 1.0;
+    SedanConfig.lambda2Jerk = 1.0;
     SedanConfig.enableSpeedController = true;
     % --- End of PID Speed Controller Parameters ---
 

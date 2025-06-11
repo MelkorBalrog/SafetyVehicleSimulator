@@ -22,6 +22,7 @@ classdef GraphicsWindow < handle
             if nargin < 2
                 useGPU = false;
             end
+
             if nargin < 3
                 useParallel = false;
             end
@@ -43,6 +44,7 @@ classdef GraphicsWindow < handle
             cla(obj.Axes);
             % Ensure axes limits update to the newly drawn content
             axis(obj.Axes,'auto');
+
             if ~isempty(obj.World)
                 obj.World.UseGPU = obj.UseGPU;
                 obj.World.UseParallel = obj.UseParallel;
