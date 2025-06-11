@@ -1158,12 +1158,6 @@ classdef SimManager < handle
             if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                 boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
                 massVal = sum(boxMasses);
-            elseif isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
-                % When multiple trailer boxes are present but individual weight
-                % distributions are not provided, assume the configured trailer
-                % mass represents a single box. Scale it by the number of boxes
-                % so dynamics correctly account for the additional mass.
-                massVal = simParams.trailerMass * simParams.trailerNumBoxes;
             end
             fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + massVal);
 
