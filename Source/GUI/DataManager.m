@@ -238,6 +238,11 @@ classdef DataManager < handle
             if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                 boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
                 massVal = sum(boxMasses);
+            elseif isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
+                % Assume trailerMass corresponds to a single box when
+                % distributions are absent, scaling by the number of boxes to
+                % maintain realistic mass in the logs and plots.
+                massVal = simParams.trailerMass * simParams.trailerNumBoxes;
             end
 
             trailerParams = struct(...
