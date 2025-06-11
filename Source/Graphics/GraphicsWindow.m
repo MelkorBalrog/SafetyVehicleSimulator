@@ -42,7 +42,6 @@ classdef GraphicsWindow < handle
 
         function render(obj)
             cla(obj.Axes);
-
             % Ensure axes limits update to the newly drawn content
             axis(obj.Axes,'auto');
 

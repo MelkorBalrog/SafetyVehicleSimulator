@@ -10,7 +10,6 @@ classdef World3D < handle
         CameraTarget = [0 0 0]
         UseGPU = false
         UseParallel = false
-        AutoFit = true
     end
 
     methods
@@ -36,9 +35,6 @@ classdef World3D < handle
             % Reset axis limits so new geometry is visible even when hold
             % state is manipulated during drawing.
             axis(ax,'auto');
-            if obj.AutoFit
-                obj.fitCamera();
-            end
             view(ax, 3);
             grid(ax, 'on');
             holdState = ishold(ax);
@@ -51,29 +47,18 @@ classdef World3D < handle
             end
             xlabel(ax,'X'); ylabel(ax,'Y'); zlabel(ax,'Z');
             camproj(ax,'perspective');
-            campos(ax, obj.CameraPosition);
-            camtarget(ax, obj.CameraTarget);
-        end
-
-        function fitCamera(obj)
-            % fitCamera Adjusts the camera to frame all objects in the world
-            if isempty(obj.Objects)
-                return;
+            pos = double(obj.CameraPosition(:).');
+            tgt = double(obj.CameraTarget(:).');
+            if numel(pos) ~= 3
+                error('World3D:InvalidCameraPosition', ...
+                    'CameraPosition must be a 3-element numeric vector.');
             end
-            vertsCell = cell(1,numel(obj.Objects));
-            for i = 1:numel(obj.Objects)
-                vertsCell{i} = obj.Objects(i).localVertices();
+            if numel(tgt) ~= 3
+                error('World3D:InvalidCameraTarget', ...
+                    'CameraTarget must be a 3-element numeric vector.');
             end
-            allVerts = vertcat(vertsCell{:});
-            minV = min(allVerts,[],1);
-            maxV = max(allVerts,[],1);
-            center = (minV + maxV)/2;
-            diagLen = norm(maxV - minV);
-            obj.CameraTarget = center;
-            if diagLen == 0
-                diagLen = 1;
-            end
-            obj.CameraPosition = center + diagLen*[1 1 1];
+            campos(ax, pos);
+            camtarget(ax, tgt);
         end
     end
 end
