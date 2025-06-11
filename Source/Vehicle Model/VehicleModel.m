@@ -708,6 +708,8 @@ classdef VehicleModel < handle
                     totalMass = totalMass + boxMass;
                 end
                 simParams.trailerMass = totalMass;
+                simParams.baseTrailerMass = simParams.trailerMass; % store unscaled mass
+                simParams.trailerMassScaled = false;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             elseif simParams.trailerNumBoxes > 1
                 % No individual weight distributions provided, so scale the
