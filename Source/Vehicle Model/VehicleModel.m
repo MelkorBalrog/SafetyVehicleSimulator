@@ -2547,10 +2547,10 @@ classdef VehicleModel < handle
                 % -------------------------------------------------------------------
                 % %%% NEW LINES %%%: Initialize wheelSpeeds, wheelRadius, wheelInertia
                 % -------------------------------------------------------------------
-                numDriveTires = totalTiresTractor; 
-                if simParams.includeTrailer
-                    numDriveTires = numDriveTires + totalTiresTrailer; 
-                end
+                % Assume only the tractor wheels are driven. Including trailer
+                % tires here would unrealistically multiply available traction
+                % when additional boxes are added.
+                numDriveTires = totalTiresTractor;
                     
                 % %%% NEW LINES for WHEEL INERTIA CALCULATION %%%
                 %
@@ -2576,9 +2576,6 @@ classdef VehicleModel < handle
                 % We have multiple wheels, but "wheelInertia" can be a scalar if all wheels are identical:
                 forceCalc.wheelSpeeds  = zeros(numDriveTires, 1);  % all zeros initially
                 forceCalc.wheelInertia = I_perWheel;               % (kg·m^2) per wheel
-
-                forceCalc.wheelSpeeds  = zeros(numDriveTires, 1);  % all zeros initially
-                forceCalc.wheelInertia = 1.2;     % 1.2 kg·m² example
                 forceCalc.enableSpeedController = simParams.enableSpeedController;
                 % --- Set Flat Tires in ForceCalculator ---
                 if ~isempty(flatTireIndices)
@@ -3133,22 +3130,21 @@ classdef VehicleModel < handle
                     logMessages{end+1} = sprintf('Step %d: Engine Torque: %.2f Nm, Wheel Torque: %.2f Nm.', i, engineTorque, wheelTorque);
         
                     % --- **Account for Number of Drive Tires in F_traction Calculation** ---
-                    % **Assumption:** All tractor and trailer tires are drive tires.
-                    % Adjust these variables if only a subset of tires are drive tires.
-                    numDriveTiresTractor = totalTiresTractor; 
-                    if simParams.includeTrailer
-                        numDriveTiresTrailer = totalTiresTrailer;
-                    else
-                        numDriveTiresTrailer = 0;
-                    end
-        
-                    totalDriveTires = numDriveTiresTractor + numDriveTiresTrailer;
-                    logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor: %d, Trailer: %d)', totalDriveTires, numDriveTiresTractor, numDriveTiresTrailer);
+                    % In practice only the tractor axles are powered. Counting
+                    % trailer tires here would unrealistically increase the
+                    % available traction with additional boxes.
+                    numDriveTiresTractor = totalTiresTractor; % assume all tractor tires are driven
+                    numDriveTiresTrailer = 0;                  % trailer tires free-roll
+
+                    totalDriveTires = numDriveTiresTractor;
+                    logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor only)', totalDriveTires);
                     % --- End of Drive Tires Accounting ---
         
                     % --- Update ForceCalculator with Traction Force ---
-                    F_traction_per_tire = wheelTorque / wheelRadius; % Traction force per tire
-                    F_traction = F_traction_per_tire; % Total traction force
+                    % Engine torque is distributed across the driven tractor
+                    % wheels. Traction force is therefore the total wheel torque
+                    % divided by the wheel radius.
+                    F_traction = wheelTorque / wheelRadius;
                     forceCalc.updateTractionForce(F_traction);
                     logMessages{end+1} = sprintf('Step %d: Traction Force updated in ForceCalculator as %.2f N.', i, F_traction);
         
