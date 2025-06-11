@@ -47,6 +47,5 @@ function [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper(loads, con
             dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, ...
             tireModelFlag, highFidelityModel, windVector, brakeSystem, varargin{:});
     end
-    idx = 1:numel(loads);
-    [F_y_total, M_z] = fc.computeTireForces(loads, contactAreas, u, v, r, idx);
+    [F_y_total, M_z] = fc.computeTireForces(loads, contactAreas, u, v, r);
 end
