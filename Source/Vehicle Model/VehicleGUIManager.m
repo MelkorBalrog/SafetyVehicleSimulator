@@ -131,6 +131,10 @@ classdef VehicleGUIManager < handle
         KpField
         KiField
         KdField
+        lambda1Field
+        lambda2Field
+        lambda1JerkField
+        lambda2JerkField
         enableSpeedControllerCheckbox
 
         % Tires Configuration Fields
@@ -695,12 +699,33 @@ classdef VehicleGUIManager < handle
             obj.KdField = uieditfield(obj.pidControllerTab, 'numeric', ...
                 'Position', [320, 340, 100, 20], 'Value', 0.1, ...
                 'ValueChangedFcn', @(src, event)obj.configurationChanged());
-            % --- End of PID Controller Parameters ---
+
+            % Levant differentiator parameters
+            uilabel(obj.pidControllerTab, 'Position', [10, 310, 300, 20], 'Text', 'Lambda1 (Levant):');
+            obj.lambda1Field = uieditfield(obj.pidControllerTab, 'numeric', ...
+                'Position', [320, 310, 100, 20], 'Value', 1.0, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+
+            uilabel(obj.pidControllerTab, 'Position', [10, 280, 300, 20], 'Text', 'Lambda2 (Levant):');
+            obj.lambda2Field = uieditfield(obj.pidControllerTab, 'numeric', ...
+                'Position', [320, 280, 100, 20], 'Value', 1.0, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+
+            uilabel(obj.pidControllerTab, 'Position', [10, 250, 300, 20], 'Text', 'Lambda1 Jerk:');
+            obj.lambda1JerkField = uieditfield(obj.pidControllerTab, 'numeric', ...
+                'Position', [320, 250, 100, 20], 'Value', 1.0, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
+
+            uilabel(obj.pidControllerTab, 'Position', [10, 220, 300, 20], 'Text', 'Lambda2 Jerk:');
+            obj.lambda2JerkField = uieditfield(obj.pidControllerTab, 'numeric', ...
+                'Position', [320, 220, 100, 20], 'Value', 1.0, ...
+                'ValueChangedFcn', @(src, event)obj.configurationChanged());
 
             % Checkbox to Enable/Disable Speed Controller
             obj.enableSpeedControllerCheckbox = uicontrol(obj.pidControllerTab, 'Style', 'checkbox', ...
-                'Position', [10, 310, 300, 20], 'String', 'Enable Speed Controller', ...
+                'Position', [10, 190, 300, 20], 'String', 'Enable Speed Controller', ...
                 'Value', 1, 'Callback', @(src, event)obj.configurationChanged());
+            % --- End of PID Controller Parameters ---
 
             %% Vehicle Parameters Panel (Tractor)
             % Tractor Parameters Label

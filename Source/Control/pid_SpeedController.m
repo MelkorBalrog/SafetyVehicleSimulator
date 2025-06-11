@@ -91,6 +91,15 @@ classdef pid_SpeedController < handle
 
         % Reduction factor (<1) applied to cornering speed limits
         curveSpeedReduction
+
+        % Levant differentiator parameters
+        lambda1
+        lambda2
+        levDiff
+        lambda1Jerk
+        lambda2Jerk
+        jerkDiff
+        currentJerk
     end
 
     methods
@@ -130,6 +139,12 @@ classdef pid_SpeedController < handle
             addParameter(p, 'JerkLimit', 0.7*9.81, @(x) isnumeric(x) && x>0);
             addParameter(p, 'CurveSpeedReduction', 0.75, @(x) isnumeric(x) && x>0 && x<=1);
 
+            % Levant differentiator parameters
+            addParameter(p, 'Lambda1', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda2', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda1Jerk', 1, @(x) isnumeric(x) && x>0);
+            addParameter(p, 'Lambda2Jerk', 1, @(x) isnumeric(x) && x>0);
+
             % ---- New parameters for friction-based cornering speed  -----
             addParameter(p, 'FrictionCoeff', 0.7, @(x) isnumeric(x) && x>0 && x<=1);
             addParameter(p, 'Gravity', 9.81, @(x) isnumeric(x) && x>0);
@@ -168,6 +183,15 @@ classdef pid_SpeedController < handle
             obj.jerkLimit = p.Results.JerkLimit;
             obj.curveSpeedReduction = p.Results.CurveSpeedReduction;
 
+            % Levant differentiator setup
+            obj.lambda1 = p.Results.Lambda1;
+            obj.lambda2 = p.Results.Lambda2;
+            obj.lambda1Jerk = p.Results.Lambda1Jerk;
+            obj.lambda2Jerk = p.Results.Lambda2Jerk;
+            obj.levDiff = LevantDifferentiator(obj.lambda1, obj.lambda2);
+            obj.jerkDiff = LevantDifferentiator(obj.lambda1Jerk, obj.lambda2Jerk);
+            obj.currentJerk = 0;
+
             % Speed smoothing factor and current target speed
             obj.speedSmoothing     = p.Results.SpeedSmoothing;
             obj.currentTargetSpeed = desiredSpeed;
@@ -184,7 +208,7 @@ classdef pid_SpeedController < handle
         %  Now accepts an optional 'turnRadius' input. If you have a 
         %  real-time estimate of turn radius, pass it here. If not 
         %  used, you can keep it as `[]` or skip it in calls.
-        function acceleration = computeAcceleration(obj, currentSpeed, currentTime, turnRadius, upcomingRadii)
+        function [acceleration, jerk] = computeAcceleration(obj, currentSpeed, currentTime, turnRadius, upcomingRadii)
             if nargin < 4 || isempty(turnRadius)
                 % If turnRadius not provided, assume no cornering limit needed
                 turnRadius = Inf;
@@ -218,12 +242,17 @@ classdef pid_SpeedController < handle
 
             % ---------------- 2) Filter the current speed reading ------------------
             filteredSpeed = obj.applyFilter(currentSpeed);
+            dt = currentTime - obj.previousTime;
+            if dt <= 0
+                dt = 1e-6;
+            end
 
             % ---------------- 3) Check if we need to decelerate --------------------
             if filteredSpeed > obj.currentTargetSpeed
                 % Deceleration is required => let the brakes handle it
                 obj.controllerActive = false;
                 acceleration = 0;
+                jerk = obj.jerkDiff.update(acceleration, dt);
                 if obj.verbose
                     fprintf('[pid_SpeedController] Deceleration needed. Controller set to 0.\n');
                 end
@@ -246,6 +275,7 @@ classdef pid_SpeedController < handle
                 % No movement needed
                 acceleration = 0;
                 obj.controllerActive = false;
+                jerk = obj.jerkDiff.update(acceleration, dt);
                 if obj.verbose
                     fprintf('[pid_SpeedController] Desired speed <= 0. Controller disabled.\n');
                 end
@@ -263,7 +293,7 @@ classdef pid_SpeedController < handle
             obj.integral = obj.integral + error * dt;
 
             % Derivative term
-            derivative = (error - obj.previousError) / dt;
+            derivative = obj.levDiff.update(error, dt);
 
             % PID formula
             acceleration = obj.Kp * error + obj.Ki * obj.integral + obj.Kd * derivative;
@@ -295,6 +325,9 @@ classdef pid_SpeedController < handle
                     fprintf('[pid_SpeedController] Negative accel => letting brakes handle deceleration.\n');
                 end
             end
+
+            jerk = obj.jerkDiff.update(acceleration, dt);
+            obj.currentJerk = jerk;
         end
 
         %% computeCorneringSpeed
