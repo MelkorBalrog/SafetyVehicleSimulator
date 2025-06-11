@@ -707,7 +707,6 @@ classdef VehicleModel < handle
                     boxMass = sum(weightsKgWithExtra);
                     totalMass = totalMass + boxMass;
                 end
-
                 simParams.trailerMass = totalMass;
                 simParams.baseTrailerMass = simParams.trailerMass; % store unscaled mass
                 simParams.trailerMassScaled = false;
@@ -2239,6 +2238,13 @@ classdef VehicleModel < handle
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         % Load distribution is directly provided per trailer box
                         loadDistributionTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
+                        expectedRows = sum(simParams.trailerAxlesPerBox) * simParams.numTiresPerAxleTrailer;
+                        if size(loadDistributionTrailer,1) ~= expectedRows
+                            logMessages{end+1} = sprintf('Expanding trailerBoxWeightDistributions from %d to %d rows.', size(loadDistributionTrailer,1), expectedRows);
+                            reps = ceil(expectedRows / size(loadDistributionTrailer,1));
+                            loadDistributionTrailer = repmat(loadDistributionTrailer, reps, 1);
+                            loadDistributionTrailer = loadDistributionTrailer(1:expectedRows, :);
+                        end
                         % Append computed contact areas to the distribution
                         numRowsTrailer = size(loadDistributionTrailer,1);
                         numAreasTrailer = length(trailerContactAreas);
