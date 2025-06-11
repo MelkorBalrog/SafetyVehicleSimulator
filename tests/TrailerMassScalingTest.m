@@ -18,6 +18,20 @@ function tests = TrailerMassScalingTest
     tests = functiontests(localfunctions);
 end
 
+function testMassScalingWithMultipleBoxes(testCase)
+    vm = VehicleModel([], [], false, 'sim', []);
+    vm.initializeDefaultParameters();
+
+    sp = vm.simParams;
+    sp.baseTrailerMass = sp.trailerMass;
+    sp.trailerNumBoxes = 3;
+    sp.trailerMassScaled = false;
+
+    vm.setSimulationParameters(sp);
+
+    verifyEqual(testCase, vm.simParams.trailerMass, sp.baseTrailerMass * 3, 'AbsTol', 1e-10);
+end
+
 function testSetSimulationParametersIdempotent(testCase)
     vm = VehicleModel([], [], false, 'sim', []);
     vm.initializeDefaultParameters();
