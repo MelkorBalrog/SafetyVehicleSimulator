@@ -693,6 +693,12 @@ classdef VehicleModel < handle
                 end
                 simParams.trailerMass = totalMass;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
+            elseif simParams.trailerNumBoxes > 1
+                % No individual weight distributions provided, so scale the
+                % configured trailer mass by the number of boxes. This prevents
+                % unrealistically low mass when multiple boxes are added.
+                simParams.trailerMass = simParams.trailerMass * simParams.trailerNumBoxes;
+                fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + simParams.trailerMass);
             end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
