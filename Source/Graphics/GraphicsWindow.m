@@ -9,10 +9,11 @@ classdef GraphicsWindow < handle
         Figure
         Axes
         UseGPU = false
+        UseParallel = false
     end
 
     methods
-        function obj = GraphicsWindow(world, useGPU)
+        function obj = GraphicsWindow(world, useGPU, useParallel)
             if nargin < 1 || isempty(world)
                 obj.World = World3D();
             else
@@ -21,8 +22,14 @@ classdef GraphicsWindow < handle
             if nargin < 2
                 useGPU = false;
             end
+
+            if nargin < 3
+                useParallel = false;
+            end
             obj.UseGPU = useGPU;
+            obj.UseParallel = useParallel;
             obj.World.UseGPU = useGPU;
+            obj.World.UseParallel = useParallel;
             obj.Figure = figure('Name','VDSS 3D View');
             obj.Axes = axes('Parent', obj.Figure);
             axis(obj.Axes,'equal');
@@ -37,6 +44,7 @@ classdef GraphicsWindow < handle
             cla(obj.Axes);
             if ~isempty(obj.World)
                 obj.World.UseGPU = obj.UseGPU;
+                obj.World.UseParallel = obj.UseParallel;
                 obj.World.draw(obj.Axes);
             end
             drawnow;

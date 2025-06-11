@@ -8,7 +8,7 @@ classdef VehiclePart3D < Object3D
         Name
     end
     methods
-        function obj = VehiclePart3D(name, boxels, useGPU)
+        function obj = VehiclePart3D(name, boxels, useGPU, useParallel)
             if nargin < 1
                 name = '';
             end
@@ -18,7 +18,10 @@ classdef VehiclePart3D < Object3D
             if nargin < 3
                 useGPU = false;
             end
-            obj@Object3D(boxels, useGPU);
+            if nargin < 4
+                useParallel = false;
+            end
+            obj@Object3D(boxels, useGPU, useParallel);
             obj.Name = name;
         end
     end

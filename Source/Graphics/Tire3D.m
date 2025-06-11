@@ -5,7 +5,7 @@
 
 classdef Tire3D < VehiclePart3D
     methods
-        function obj = Tire3D(radius, width, color, nSegments)
+        function obj = Tire3D(radius, width, color, nSegments, useGPU, useParallel)
             if nargin < 4
                 nSegments = 12;
             end
@@ -18,7 +18,13 @@ classdef Tire3D < VehiclePart3D
             if nargin < 1
                 radius = 0.5;
             end
-            obj@VehiclePart3D('Tire');
+            if nargin < 5
+                useGPU = false;
+            end
+            if nargin < 6
+                useParallel = false;
+            end
+            obj@VehiclePart3D('Tire', Boxel.empty, useGPU, useParallel);
             for k = 1:nSegments
                 ang = 2*pi*(k-1)/nSegments;
                 pos = [radius*cos(ang) radius*sin(ang) 0];

@@ -7,25 +7,29 @@ classdef Sim3DAnimator < handle
     properties
         DataManager
         GraphicsWindow
-        Vehicle1
-        Vehicle2
+        Truck
         Steps
+        TractorParams
+        TrailerParams
     end
 
     methods
-        function obj = Sim3DAnimator(dataManager, graphicsWindow)
+        function obj = Sim3DAnimator(dataManager, graphicsWindow, truck, tractorParams, trailerParams)
             if nargin < 2 || isempty(graphicsWindow)
                 graphicsWindow = GraphicsWindow();
             end
             obj.DataManager = dataManager;
             obj.GraphicsWindow = graphicsWindow;
             obj.Steps = numel(dataManager.globalVehicle1Data.X);
+            obj.TractorParams = tractorParams;
+            obj.TrailerParams = trailerParams;
 
-            % Simple vehicle representations using vehicle parts
-            obj.Vehicle1 = Tractor3D();
-            obj.Vehicle2 = Tractor3D();
-            obj.GraphicsWindow.World.addObject(obj.Vehicle1);
-            obj.GraphicsWindow.World.addObject(obj.Vehicle2);
+            if nargin >= 3 && ~isempty(truck)
+                obj.Truck = truck;
+            else
+                obj.Truck = Truck3D(tractorParams, trailerParams, graphicsWindow.UseGPU, graphicsWindow.UseParallel);
+            end
+            obj.Truck.addToWorld(obj.GraphicsWindow.World);
         end
 
         function run(obj, dt)
@@ -43,13 +47,7 @@ classdef Sim3DAnimator < handle
             if k > obj.Steps
                 return;
             end
-            obj.Vehicle1.Position = [obj.DataManager.globalVehicle1Data.X(k), ...
-                                     obj.DataManager.globalVehicle1Data.Y(k), 0];
-            obj.Vehicle1.setOrientation(obj.DataManager.globalVehicle1Data.Theta(k));
-
-            obj.Vehicle2.Position = [obj.DataManager.globalVehicle2Data.X(k), ...
-                                     obj.DataManager.globalVehicle2Data.Y(k), 0];
-            obj.Vehicle2.setOrientation(obj.DataManager.globalVehicle2Data.Theta(k));
+            obj.Truck.update(obj.DataManager, k);
         end
     end
 end

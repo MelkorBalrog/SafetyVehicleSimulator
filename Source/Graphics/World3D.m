@@ -9,12 +9,16 @@ classdef World3D < handle
         CameraPosition = [10 10 10]
         CameraTarget = [0 0 0]
         UseGPU = false
+        UseParallel = false
     end
 
     methods
         function addObject(obj, object3d)
             if obj.UseGPU
                 object3d.UseGPU = true;
+            end
+            if obj.UseParallel && isprop(object3d, 'UseParallel')
+                object3d.UseParallel = true;
             end
             obj.Objects(end+1) = object3d;
         end

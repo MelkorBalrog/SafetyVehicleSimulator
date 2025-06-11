@@ -9,18 +9,23 @@ classdef Object3D
         Position = [0 0 0]
         Orientation = eye(3)
         UseGPU = false
+        UseParallel = false
     end
 
     methods
-        function obj = Object3D(boxels, useGPU)
+        function obj = Object3D(boxels, useGPU, useParallel)
             if nargin < 1
                 boxels = Boxel.empty;
             end
             if nargin < 2
                 useGPU = false;
             end
+            if nargin < 3
+                useParallel = false;
+            end
             obj.Boxels = boxels;
             obj.UseGPU = useGPU;
+            obj.UseParallel = useParallel;
         end
 
         function addBoxel(obj, boxel)
@@ -52,21 +57,55 @@ classdef Object3D
             end
             holdState = ishold(ax);
             hold(ax, 'on');
-            for i = 1:numel(obj.Boxels)
-                b = obj.Boxels(i);
-                verts = b.localVertices();
-                if obj.UseGPU && gpuDeviceCount > 0
-                    verts = gpuArray(verts); %#ok<GPUARRAY>
-                    R = gpuArray(obj.Orientation); %#ok<GPUARRAY>
-                    verts = (R * verts.').';
-                    verts = verts + gpuArray(obj.Position);
-                    verts = gather(verts);
-                else
-                    verts = (obj.Orientation * verts.').';
-                    verts = verts + obj.Position;
+            n = numel(obj.Boxels);
+            vertsCell = cell(1,n);
+            facesCell = cell(1,n);
+            colorCell = cell(1,n);
+            boxels = obj.Boxels;
+            R = obj.Orientation;
+            pos = obj.Position;
+            useGPU = obj.UseGPU && gpuDeviceCount > 0;
+            if obj.UseParallel && ~isempty(gcp('nocreate'))
+                parfor i = 1:n
+                    b = boxels(i);
+                    v = b.localVertices();
+                    if useGPU
+                        v = gpuArray(v); %#ok<GPUARRAY>
+                        Rg = gpuArray(R); %#ok<GPUARRAY>
+                        v = (Rg * v.').';
+                        v = v + gpuArray(pos);
+                        v = gather(v);
+                    else
+                        v = (R * v.').';
+                        v = v + pos;
+                    end
+                    vertsCell{i} = v;
+                    facesCell{i} = b.faces();
+                    colorCell{i} = b.Color;
                 end
-                patch(ax, 'Vertices', verts, 'Faces', b.faces(), ...
-                    'FaceColor', b.Color, 'EdgeColor', 'none');
+            else
+                for i = 1:n
+                    b = boxels(i);
+                    v = b.localVertices();
+                    if useGPU
+                        v = gpuArray(v); %#ok<GPUARRAY>
+                        Rg = gpuArray(R); %#ok<GPUARRAY>
+                        v = (Rg * v.').';
+                        v = v + gpuArray(pos);
+                        v = gather(v);
+                    else
+                        v = (R * v.').';
+                        v = v + pos;
+                    end
+                    vertsCell{i} = v;
+                    facesCell{i} = b.faces();
+                    colorCell{i} = b.Color;
+                end
+            end
+
+            for i = 1:n
+                patch(ax, 'Vertices', vertsCell{i}, 'Faces', facesCell{i}, ...
+                    'FaceColor', colorCell{i}, 'EdgeColor', 'none');
             end
             if ~holdState
                 hold(ax, 'off');
@@ -87,28 +126,47 @@ classdef Object3D
                 alpha = 1.5;
             end
 
+            [facesS, vertsS] = obj.getSmoothedMesh(alpha);
+            h = patch(ax, 'Vertices', vertsS, 'Faces', facesS, ...
+                'FaceColor', 'interp', 'EdgeColor', 'none');
+        end
+
+        function [facesS, vertsS] = getSmoothedMesh(obj, alpha)
+            % getSmoothedMesh Computes a smoothed mesh from all boxel vertices
+            if nargin < 2
+                alpha = 1.5;
+            end
             verts = obj.collectMesh();
             shp = alphaShape(verts, alpha);
             [facesS, vertsS] = boundaryFacets(shp);
-
-            h = patch(ax, 'Vertices', vertsS, 'Faces', facesS, ...
-                'FaceColor', 'interp', 'EdgeColor', 'none');
         end
     end
 
     methods (Access = private)
         function verts = collectMesh(obj)
             % collectMesh Collects transformed vertices from all boxels
-            verts = [];
-            idx = 0;
-            for i = 1:numel(obj.Boxels)
-                b = obj.Boxels(i);
-                v = b.localVertices();
-                v = (obj.Orientation * v.').';
-                v = v + obj.Position;
-                verts = [verts; v]; %#ok<AGROW>
-                idx = idx + size(v,1);
+            n = numel(obj.Boxels);
+            vertsCell = cell(1,n);
+            R = obj.Orientation;
+            pos = obj.Position;
+            if obj.UseParallel && ~isempty(gcp('nocreate'))
+                parfor i = 1:n
+                    b = obj.Boxels(i);
+                    v = b.localVertices();
+                    v = (R * v.').';
+                    v = v + pos;
+                    vertsCell{i} = v; %#ok<PFOUS>
+                end
+            else
+                for i = 1:n
+                    b = obj.Boxels(i);
+                    v = b.localVertices();
+                    v = (R * v.').';
+                    v = v + pos;
+                    vertsCell{i} = v;
+                end
             end
+            verts = vertcat(vertsCell{:});
         end
     end
 end

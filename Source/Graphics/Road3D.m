@@ -9,7 +9,8 @@ classdef Road3D < Object3D
             if nargin < 4
                 color = [0.2 0.2 0.2];
             end
-            obj@Object3D();
+
+            obj@Object3D(Boxel.empty, false, false);
             b = Boxel([len/2 0 0], [len width 0.1], color);
             obj.addBoxel(b);
             obj.Position = startPos;
