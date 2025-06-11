@@ -134,6 +134,12 @@ classdef VehicleModel < handle
             obj.simParams.Kp = 1.0;  % Proportional gain
             obj.simParams.Ki = 0.5;  % Integral gain
             obj.simParams.Kd = 0.1;  % Derivative gain
+            obj.simParams.lambda1Accel = 1.0; % Levant differentiator lambda1 for error derivative
+            obj.simParams.lambda2Accel = 1.0; % Levant differentiator lambda2 for error derivative
+            obj.simParams.lambda1Vel = 1.0; % Levant differentiator lambda1 for velocity
+            obj.simParams.lambda2Vel = 1.0; % Levant differentiator lambda2 for velocity
+            obj.simParams.lambda1Jerk = 1.0; % Levant differentiator lambda1 for jerk
+            obj.simParams.lambda2Jerk = 1.0; % Levant differentiator lambda2 for jerk
             obj.simParams.enableSpeedController = true;
             % --- End of PID Speed Controller Parameters ---
             
@@ -387,6 +393,18 @@ classdef VehicleModel < handle
                     obj.guiManager.KpField.Value = simParams.Kp;
                     obj.guiManager.KiField.Value = simParams.Ki;
                     obj.guiManager.KdField.Value = simParams.Kd;
+                    if isprop(obj.guiManager, 'lambda1AccelField') && isprop(obj.guiManager, 'lambda2AccelField')
+                        obj.guiManager.lambda1AccelField.Value = simParams.lambda1Accel;
+                        obj.guiManager.lambda2AccelField.Value = simParams.lambda2Accel;
+                    end
+                    if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
+                        obj.guiManager.lambda1VelField.Value = simParams.lambda1Vel;
+                        obj.guiManager.lambda2VelField.Value = simParams.lambda2Vel;
+                    end
+                    if isprop(obj.guiManager, 'lambda1JerkField') && isprop(obj.guiManager, 'lambda2JerkField')
+                        obj.guiManager.lambda1JerkField.Value = simParams.lambda1Jerk;
+                        obj.guiManager.lambda2JerkField.Value = simParams.lambda2Jerk;
+                    end
                     obj.guiManager.enableSpeedControllerCheckbox.Value = simParams.enableSpeedController;
                 end
         
@@ -843,12 +861,39 @@ classdef VehicleModel < handle
                 simParams.Kp = obj.guiManager.KpField.Value;
                 simParams.Ki = obj.guiManager.KiField.Value;
                 simParams.Kd = obj.guiManager.KdField.Value;
+                if isprop(obj.guiManager, 'lambda1AccelField') && isprop(obj.guiManager, 'lambda2AccelField')
+                    simParams.lambda1Accel = obj.guiManager.lambda1AccelField.Value;
+                    simParams.lambda2Accel = obj.guiManager.lambda2AccelField.Value;
+                else
+                    simParams.lambda1Accel = obj.simParams.lambda1Accel;
+                    simParams.lambda2Accel = obj.simParams.lambda2Accel;
+                end
+                if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
+                    simParams.lambda1Vel = obj.guiManager.lambda1VelField.Value;
+                    simParams.lambda2Vel = obj.guiManager.lambda2VelField.Value;
+                else
+                    simParams.lambda1Vel = obj.simParams.lambda1Vel;
+                    simParams.lambda2Vel = obj.simParams.lambda2Vel;
+                end
+                if isprop(obj.guiManager, 'lambda1JerkField') && isprop(obj.guiManager, 'lambda2JerkField')
+                    simParams.lambda1Jerk = obj.guiManager.lambda1JerkField.Value;
+                    simParams.lambda2Jerk = obj.guiManager.lambda2JerkField.Value;
+                else
+                    simParams.lambda1Jerk = obj.simParams.lambda1Jerk;
+                    simParams.lambda2Jerk = obj.simParams.lambda2Jerk;
+                end
                 simParams.enableSpeedController = obj.guiManager.enableSpeedControllerCheckbox.Value;
             else
                 % Use default PID parameters
                 simParams.Kp = obj.simParams.Kp;
                 simParams.Ki = obj.simParams.Ki;
                 simParams.Kd = obj.simParams.Kd;
+                simParams.lambda1Accel = obj.simParams.lambda1Accel;
+                simParams.lambda2Accel = obj.simParams.lambda2Accel;
+                simParams.lambda1Vel = obj.simParams.lambda1Vel;
+                simParams.lambda2Vel = obj.simParams.lambda2Vel;
+                simParams.lambda1Jerk = obj.simParams.lambda1Jerk;
+                simParams.lambda2Jerk = obj.simParams.lambda2Jerk;
                 simParams.enableSpeedController = obj.simParams.enableSpeedController;
                 warning('PID Controller GUI fields not found. Using default PID parameters.');
             end
@@ -1777,7 +1822,10 @@ classdef VehicleModel < handle
                     Kd, ...
                     minAccelAtMaxSpeed, ...
                     minDecelAtMaxSpeed, ...
-                    'FilterType', 'sma', 'SMAWindowSize', 50 ...
+                    'FilterType', 'sma', 'SMAWindowSize', 50, ...
+                    'Lambda1Accel', simParams.lambda1Accel, 'Lambda2Accel', simParams.lambda2Accel, ...
+                    'Lambda1Vel', simParams.lambda1Vel, 'Lambda2Vel', simParams.lambda2Vel, ...
+                    'Lambda1Jerk', simParams.lambda1Jerk, 'Lambda2Jerk', simParams.lambda2Jerk ...
                     ); % maxAccel and minAccel set to 2.0 and -2.0 m/s^2 respectively
                 logMessages{end+1} = 'pid_SpeedController initialized successfully.';
                 % --- End of SpeedController Initialization ---
