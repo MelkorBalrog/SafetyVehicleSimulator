@@ -80,6 +80,8 @@ classdef VehicleModel < handle
             obj.simParams.includeTrailer = true; % Include trailer by default
             obj.simParams.tractorMass = 8000; % kg (empty tractor mass)
             obj.simParams.trailerMass = 7000; % kg
+            obj.simParams.baseTrailerMass = obj.simParams.trailerMass; % store unscaled mass
+            obj.simParams.trailerMassScaled = false; % flag for scaling when no weight distribution
             obj.simParams.initialVelocity = 10; % m/s
             obj.simParams.I_trailerMultiplier = 1; % Multiplier for inertia
             obj.simParams.maxDeltaDeg = 70; % degrees
@@ -303,6 +305,20 @@ classdef VehicleModel < handle
                 simParams.excelData = obj.simParams.excelData;
             end
         
+            % Ensure baseTrailerMass and scaling flag exist
+            if isfield(simParams, 'baseTrailerMass')
+                baseMass = simParams.baseTrailerMass;
+            else
+                if isfield(simParams, 'trailerMassScaled') && simParams.trailerMassScaled && isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
+                    baseMass = simParams.trailerMass / simParams.trailerNumBoxes;
+                else
+                    baseMass = simParams.trailerMass;
+                end
+                simParams.baseTrailerMass = baseMass;
+            end
+            if ~isfield(simParams, 'trailerMassScaled')
+                simParams.trailerMassScaled = false;
+            end
             obj.simParams = simParams;
         
             % If GUI is enabled, update the GUI fields with the new parameters
@@ -695,9 +711,12 @@ classdef VehicleModel < handle
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             elseif simParams.trailerNumBoxes > 1
                 % No individual weight distributions provided, so scale the
-                % configured trailer mass by the number of boxes. This prevents
-                % unrealistically low mass when multiple boxes are added.
-                simParams.trailerMass = simParams.trailerMass * simParams.trailerNumBoxes;
+                % configured trailer mass by the number of boxes only once.
+                if ~isfield(simParams, 'baseTrailerMass')
+                    simParams.baseTrailerMass = simParams.trailerMass;
+                end
+                simParams.trailerMass = simParams.baseTrailerMass * simParams.trailerNumBoxes;
+                simParams.trailerMassScaled = true;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + simParams.trailerMass);
             end
             % --- Spinner Configuration Parameters ---

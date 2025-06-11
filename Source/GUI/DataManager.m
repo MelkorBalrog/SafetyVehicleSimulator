@@ -233,11 +233,17 @@ classdef DataManager < handle
             numAxles = sum(boxNumAxles);
 
             % Compute trailer mass from weight distributions when available
-            massVal = simParams.trailerMass;
+            if isfield(simParams, 'baseTrailerMass')
+                massVal = simParams.baseTrailerMass;
+            else
+                massVal = simParams.trailerMass;
+            end
             boxMasses = [];
             if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                 boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
                 massVal = sum(boxMasses);
+            elseif isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
+                massVal = massVal * simParams.trailerNumBoxes;
             end
 
             trailerParams = struct(...
