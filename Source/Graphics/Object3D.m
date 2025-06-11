@@ -39,6 +39,22 @@ classdef Object3D
             verts = obj.collectMesh();
         end
 
+        function F = faces(obj)
+            % faces Returns concatenated face indices for all boxels.
+            %   This utility mirrors the localVertices method and exposes the
+            %   triangulation connectivity so that higher level objects can
+            %   generate patch meshes without querying each boxel directly.
+
+            n = numel(obj.Boxels);
+            F = zeros(0,4);
+            offset = 0;
+            for i = 1:n
+                f = obj.Boxels(i).faces();
+                F = [F; f + offset]; %#ok<AGROW>
+                offset = offset + size(obj.Boxels(i).localVertices(),1);
+            end
+        end
+
         function addBoxel(obj, boxel)
             if obj.UseGPU
                 boxel.UseGPU = true;
