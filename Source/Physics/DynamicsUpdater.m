@@ -434,8 +434,18 @@ classdef DynamicsUpdater < handle
             dL_z_dt = totalMoment;
 
             % Lateral acceleration (a_y)
-            a_long = dp_x_dt / m - r * v;
-            a_lat = dp_y_dt / m + r * u;
+            % In body coordinates the dynamic equations are
+            %   m*(du - r*v) = F_x
+            %   m*(dv + r*u) = F_y
+            % where u and v are the longitudinal and lateral velocities.
+            % Rearranging yields
+            %   du = F_x/m + r*v
+            %   dv = F_y/m - r*u
+            % These derivatives correspond to the longitudinal and lateral
+            % accelerations used for load transfer and other dynamic effects.
+
+            a_long = dp_x_dt / m + r * v;
+            a_lat  = dp_y_dt / m - r * u;
 
             % Roll dynamics using inertia from ForceCalculator
             I_xx = obj.forceCalculator.inertia(1);    % Roll moment of inertia from ForceCalculator
