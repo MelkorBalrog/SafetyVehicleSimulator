@@ -401,35 +401,6 @@ classdef purePursuit_PathFollower
             end
             % *** End of Gear Shifting Logic ***
         end
-
-        %% Plot Waypoints
-        function plotWaypoints(obj, varargin)
-            % plotWaypoints Visualize the generated waypoints.
-            %
-            % This method plots the currently generated waypoints stored in the
-            % path follower object.  Additional plotting style arguments can be
-            % provided via varargin and are passed directly to the plot
-            % function.
-
-            if isempty(obj.generatedWaypoints)
-                warning('No generated waypoints available to plot.');
-                return;
-            end
-
-            % Default plot style if none specified
-            if isempty(varargin)
-                plotArgs = {'bo-'};
-            else
-                plotArgs = varargin;
-            end
-
-            plot(obj.generatedWaypoints(:,1), obj.generatedWaypoints(:,2), plotArgs{:});
-            xlabel('X (m)');
-            ylabel('Y (m)');
-            title('Path Follower Waypoints');
-            grid on;
-            axis equal;
-        end
     end
 
     methods (Access = private)
