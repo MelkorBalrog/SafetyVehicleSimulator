@@ -47,15 +47,22 @@ classdef Object3D
         end
 
         function setOrientation(obj, yaw, pitch, roll)
-            % setOrientation Sets the object orientation from yaw, pitch, roll (rad).
-            %   When called with a single matrix argument it assumes a 3x3
-            %   rotation matrix.  Previously the method would also accept a
-            %   scalar which led to invalid orientations and size mismatch
-            %   errors during vertex transformations.
-            if nargin == 2 && ismatrix(yaw) && all(size(yaw) == [3 3])
-                obj.Orientation = yaw;
+            % setOrientation Sets the object orientation.
+            %   Accepts yaw, pitch, roll angles (rad) or a 3x3 rotation
+            %   matrix when supplied as a single argument.  Any other input
+            %   sizes are rejected to avoid invalid states that can lead to
+            %   matrix dimension errors during rendering.
+
+            if nargin == 2 && ismatrix(yaw)
+                if all(size(yaw) == [3 3])
+                    obj.Orientation = yaw;
+                else
+                    error('Object3D:InvalidOrientation', ...
+                        'Orientation matrix must be 3x3.');
+                end
                 return;
             end
+
             if nargin < 4, roll = 0; end
             if nargin < 3, pitch = 0; end
             if nargin < 2, yaw = 0; end
@@ -161,6 +168,11 @@ classdef Object3D
         function verts = collectMesh(obj)
             % collectMesh Collects transformed vertices from all boxels
             n = numel(obj.Boxels);
+            if n == 0
+                verts = zeros(0,3);
+                return;
+            end
+
             vertsCell = cell(1,n);
             R = obj.Orientation;
             pos = obj.Position;
