@@ -1,3 +1,19 @@
+%--------------------------------------------------------------------------
+% This file is part of VDSS - Vehicle Dynamics Safety Simulator.
+%
+% VDSS is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% VDSS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+%--------------------------------------------------------------------------
 %/**
 % * @file ForceCalculator.m
 % * @brief Calculates various forces acting on the vehicle and trailer,
@@ -555,7 +571,9 @@ classdef ForceCalculator
             M_roll= 0;
 
             % Gravity in vehicle frame
-            F_g_vehicle = [obj.vehicleMass*obj.gravity*sin(obj.slopeAngle);
+            % Gravitational force components due to road slope
+            % Positive slopeAngle should resist forward motion (uphill)
+            F_g_vehicle = [-obj.vehicleMass*obj.gravity*sin(obj.slopeAngle);
                            0;
                           -obj.vehicleMass*obj.gravity*cos(obj.slopeAngle)];
             totalForce_vehicle = totalForce_vehicle + F_g_vehicle;
@@ -628,7 +646,8 @@ classdef ForceCalculator
                     F_lat_v = [0;F_y_total;0] + F_side_v;
 
                     % Rolling resistance
-                    F_rr = sum(obj.rollingResistanceCoefficients.*loads);
+                    % Rolling resistance scales with normal force and road slope
+                    F_rr = cos(obj.slopeAngle) * sum(obj.rollingResistanceCoefficients.*loads);
                     F_rr_v = -F_rr*[1;0;0];
 
                     % Suspension
@@ -725,7 +744,7 @@ classdef ForceCalculator
                             else
                                 totalTrMass = obj.trailerMass;
                             end
-                            F_rr_tr = obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity);
+                            F_rr_tr = obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity*cos(obj.slopeAngle));
                             F_rr_tr_local = -F_rr_tr*[1;0;0];
 
                             F_total_tr_local = [F_longitudinal_tr; F_lateral_trailer;0] + ...
@@ -819,7 +838,7 @@ classdef ForceCalculator
                     obj.calculatedForces.M_z       = M_z;
 
                     F_lat_v= [0;F_y_total;0] + F_side_v;
-                    F_rr = sum(obj.rollingResistanceCoefficients.*loads);
+                    F_rr = cos(obj.slopeAngle) * sum(obj.rollingResistanceCoefficients.*loads);
                     F_rr_v= -F_rr*[1;0;0];
                     [F_susp_, ~]= obj.suspensionModel.calculateForcesAndMoments(vehicleState);
                     F_susp_v= [0;0;F_susp_];
@@ -903,7 +922,7 @@ classdef ForceCalculator
                             else
                                 totalTrMass = obj.trailerMass;
                             end
-                            F_rr_tr= obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity);
+                            F_rr_tr= obj.rollingResistanceCoefficients(1)*(totalTrMass*obj.gravity*cos(obj.slopeAngle));
                             F_rr_tr_local= -F_rr_tr*[1;0;0];
                             F_total_tr_local= [F_longitudinal_tr;F_lateral_trailer;0] + ...
                                               F_side_tr_local+ F_rr_tr_local;
