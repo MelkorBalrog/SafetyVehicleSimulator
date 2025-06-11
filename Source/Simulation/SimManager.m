@@ -1153,11 +1153,17 @@ classdef SimManager < handle
             middleAxleIndex   = ceil(numAxlesTractor / 2);
             middleAxlePosition = axlePositionsTractor(middleAxleIndex);
 
-            massVal = simParams.trailerMass;
+            if isfield(simParams, 'baseTrailerMass')
+                massVal = simParams.baseTrailerMass;
+            else
+                massVal = simParams.trailerMass;
+            end
             boxMasses = [];
             if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                 boxMasses = cellfun(@(ld) sum(ld(:,4))/9.81, simParams.trailerBoxWeightDistributions);
                 massVal = sum(boxMasses);
+            elseif isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
+                massVal = massVal * simParams.trailerNumBoxes;
             end
             fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + massVal);
 
