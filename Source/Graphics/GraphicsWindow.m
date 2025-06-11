@@ -42,6 +42,10 @@ classdef GraphicsWindow < handle
 
         function render(obj)
             cla(obj.Axes);
+
+            % Ensure axes limits update to the newly drawn content
+            axis(obj.Axes,'auto');
+
             if ~isempty(obj.World)
                 obj.World.UseGPU = obj.UseGPU;
                 obj.World.UseParallel = obj.UseParallel;

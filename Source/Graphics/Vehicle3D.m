@@ -25,7 +25,6 @@ classdef Vehicle3D < handle
             obj.Params = params;
             obj.UseGPU = useGPU;
             obj.UseParallel = useParallel;
-
             obj.Body = VehiclePart3D('Body', Boxel.empty, bodyColor, useGPU, useParallel);
 
             b = Boxel([params.length/2 0 params.height/2], ...

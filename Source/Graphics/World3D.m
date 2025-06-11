@@ -32,6 +32,9 @@ classdef World3D < handle
             if nargin < 2 || isempty(ax)
                 ax = gca;
             end
+            % Reset axis limits so new geometry is visible even when hold
+            % state is manipulated during drawing.
+            axis(ax,'auto');
             view(ax, 3);
             grid(ax, 'on');
             holdState = ishold(ax);
