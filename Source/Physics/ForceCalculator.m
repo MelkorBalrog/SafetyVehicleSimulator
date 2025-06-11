@@ -395,35 +395,6 @@ classdef ForceCalculator
             M_z = sum(xPos .* Fy);
         end
 
-        %% computeTrailerTireForces (trailer lateral forces and yaw moment)
-        function [F_y_total, M_z] = computeTrailerTireForces(obj, u, v, r)
-            if obj.numTrailerTires == 0
-                F_y_total = 0;
-                M_z = 0;
-                return;
-            end
-            if isempty(obj.mu_tires_trailer)
-                obj.mu_tires_trailer = obj.frictionCoefficient * ones(obj.numTrailerTires,1);
-            end
-            alpha = -atan2(v - (obj.trailerWheelbase/2)*r, u);
-            Fz_each = (obj.trailerMass*obj.gravity)/obj.numTrailerTires;
-            mu_tr = obj.mu_tires_trailer;
-            if strcmp(obj.tireModelFlag,'simple')
-                D = mu_tr * Fz_each;
-                B = obj.B_tires(1);
-                C = obj.C_tires(1);
-                E = obj.E_tires(1);
-                F_y_tires = D .* sin(C .* atan(B .* alpha - E .* (B .* alpha - atan(B .* alpha))));
-            else
-                F_y_tires = zeros(obj.numTrailerTires,1);
-                for k = 1:obj.numTrailerTires
-                    mu_ = mu_tr(k);
-                    F_y_tires(k) = obj.calculateTireForce(alpha, mu_, Fz_each, k);
-                end
-            end
-            F_y_total = sum(F_y_tires);
-            M_z = F_y_total*(obj.trailerWheelbase/2);
-        end
         %% Accessor for filtered forces
         function forces_filtered = getFilteredForces(obj)
             forces_filtered = obj.calculatedForces_filtered;
@@ -735,8 +706,29 @@ classdef ForceCalculator
                             u_tr_ = vel_tr_glob(1);
                             v_tr_ = vel_tr_glob(2);
                             trailer_r = obj.trailerOmega;
+                            if u_tr_~=0
+                                alpha_trailer = -atan2(v_tr_-(obj.trailerWheelbase/2)*trailer_r, u_tr_);
+                            else
+                                alpha_trailer=0;
+                            end
 
-                            [F_y_trailer_total, M_z_tires] = obj.computeTrailerTireForces(u_tr_, v_tr_, trailer_r);
+                            Fz_trail_each = (obj.trailerMass*obj.gravity)/obj.numTrailerTires;
+                            % Vectorized trailer tire lateral forces
+                            if isempty(obj.mu_tires_trailer)
+                                obj.mu_tires_trailer = obj.frictionCoefficient * ones(obj.numTrailerTires,1);
+                            end
+                            mu_tr = obj.mu_tires_trailer;
+                            Fz_tr_each = (obj.trailerMass * obj.gravity) / obj.numTrailerTires;
+                            if strcmp(obj.tireModelFlag, 'simple')
+                                D_tr = mu_tr * Fz_tr_each;
+                                B_tr = obj.B_tires(1);
+                                C_tr = obj.C_tires(1);
+                                E_tr = obj.E_tires(1);
+                                F_y_trailer_tires = D_tr .* sin(C_tr .* atan(B_tr .* alpha_trailer - E_tr .* (B_tr .* alpha_trailer - atan(B_tr .* alpha_trailer))));
+                            else
+                                F_y_trailer_tires = arrayfun(@(m) obj.calculateTireForce(alpha_trailer, m, Fz_tr_each, 1), mu_tr);
+                            end
+                            F_y_trailer_total = sum(F_y_trailer_tires);
 
                             F_lateral_trailer = F_y_trailer_total + F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
@@ -753,7 +745,7 @@ classdef ForceCalculator
                                                F_side_tr_local + F_rr_tr_local;
                             F_total_tr_global= R_tr2g*F_total_tr_local;
 
-                            M_z_tr = M_z_tires;
+                            M_z_tr = F_y_trailer_total*(obj.trailerWheelbase/2);
                             M_z_tr_wind = F_side_tr*(obj.trackWidth/2);
                             M_z_tr_total= M_z_tr + M_z_tr_wind;
 
@@ -905,8 +897,22 @@ classdef ForceCalculator
                             u_tr_= vel_tr_glob(1);
                             v_tr_= vel_tr_glob(2);
                             trailer_r= obj.trailerOmega;
+                            if u_tr_~=0
+                                alpha_trailer= -atan2(v_tr_-(obj.trailerWheelbase/2)*trailer_r, u_tr_);
+                            else
+                                alpha_trailer=0;
+                            end
 
-                            [F_y_trailer_total, M_z_tires] = obj.computeTrailerTireForces(u_tr_, v_tr_, trailer_r);
+                            Fz_trailer_each= (obj.trailerMass*obj.gravity)/obj.numTrailerTires;
+                            F_y_trailer_tires= zeros(obj.numTrailerTires,1);
+                            if isempty(obj.mu_tires_trailer)
+                                obj.mu_tires_trailer= obj.frictionCoefficient*ones(obj.numTrailerTires,1);
+                            end
+                            for it=1:obj.numTrailerTires
+                                mu_= obj.mu_tires_trailer(it);
+                                F_y_trailer_tires(it)= obj.calculateTireForce(alpha_trailer, mu_, Fz_trailer_each,1);
+                            end
+                            F_y_trailer_total= sum(F_y_trailer_tires);
                             F_lateral_trailer= F_y_trailer_total+ F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
 
@@ -921,7 +927,7 @@ classdef ForceCalculator
                                               F_side_tr_local+ F_rr_tr_local;
                             F_total_tr_global= R_tr2g*F_total_tr_local;
 
-                            M_z_tr = M_z_tires;
+                            M_z_tr = F_y_trailer_total*(obj.trailerWheelbase/2);
                             M_z_tr_wind= F_side_tr*(obj.trackWidth/2);
                             M_z_tr_total= M_z_tr+M_z_tr_wind;
 
