@@ -433,16 +433,18 @@ classdef DynamicsUpdater < handle
             % Yaw rate derivative (rate of change of angular momentum)
             dL_z_dt = totalMoment;
 
-            % Lateral acceleration (a_y)
-            % In body coordinates the dynamic equations are
+            %--------------------------------------------------------------
+            % Longitudinal and lateral accelerations
+            %--------------------------------------------------------------
+            % Newton-Euler equations in the body frame:
             %   m*(du - r*v) = F_x
             %   m*(dv + r*u) = F_y
-            % where u and v are the longitudinal and lateral velocities.
-            % Rearranging yields
-            %   du = F_x/m + r*v
-            %   dv = F_y/m - r*u
-            % These derivatives correspond to the longitudinal and lateral
-            % accelerations used for load transfer and other dynamic effects.
+            % where u and v are the longitudinal and lateral velocities and r is
+            % the yaw rate. Solving for the derivatives gives
+            %   du/dt = F_x/m + r*v
+            %   dv/dt = F_y/m - r*u
+            % These correspond to the longitudinal (a_long) and lateral
+            % (a_lat) accelerations used for load transfer and stability.
 
             a_long = dp_x_dt / m + r * v;
             a_lat  = dp_y_dt / m - r * u;
