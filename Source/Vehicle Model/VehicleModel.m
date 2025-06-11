@@ -708,12 +708,23 @@ classdef VehicleModel < handle
                     totalMass = totalMass + boxMass;
                 end
                 simParams.trailerMass = totalMass;
+                simParams.baseTrailerMass = simParams.trailerMass; % store unscaled mass
+                simParams.trailerMassScaled = false;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             elseif simParams.trailerNumBoxes > 1
                 % No individual weight distributions provided, so scale the
                 % configured trailer mass by the number of boxes only once.
-                if ~isfield(simParams, 'baseTrailerMass')
-                    simParams.baseTrailerMass = simParams.trailerMass;
+                % Use the previously stored trailer mass values if available so
+                % repeated calls don't keep multiplying the mass.
+                if ~isfield(simParams, 'baseTrailerMass') || isempty(simParams.baseTrailerMass)
+                    if isfield(obj.simParams, 'baseTrailerMass')
+                        simParams.baseTrailerMass = obj.simParams.baseTrailerMass;
+                    else
+                        simParams.baseTrailerMass = obj.simParams.trailerMass;
+                    end
+                end
+                if ~isfield(simParams, 'trailerMass') || isempty(simParams.trailerMass)
+                    simParams.trailerMass = obj.simParams.trailerMass;
                 end
                 simParams.trailerMass = simParams.baseTrailerMass * simParams.trailerNumBoxes;
                 simParams.trailerMassScaled = true;
