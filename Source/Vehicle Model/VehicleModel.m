@@ -1,3 +1,19 @@
+%--------------------------------------------------------------------------
+% This file is part of VDSS - Vehicle Dynamics Safety Simulator.
+%
+% VDSS is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% VDSS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+%--------------------------------------------------------------------------
 %/**
 % * @file VehicleModel.m
 % * @brief Simulates a Vehicle Model with integrated road conditions such as slope and friction.
@@ -64,6 +80,8 @@ classdef VehicleModel < handle
             obj.simParams.includeTrailer = true; % Include trailer by default
             obj.simParams.tractorMass = 8000; % kg (empty tractor mass)
             obj.simParams.trailerMass = 7000; % kg
+            obj.simParams.baseTrailerMass = obj.simParams.trailerMass; % store unscaled mass
+            obj.simParams.trailerMassScaled = false; % flag for scaling when no weight distribution
             obj.simParams.initialVelocity = 10; % m/s
             obj.simParams.I_trailerMultiplier = 1; % Multiplier for inertia
             obj.simParams.maxDeltaDeg = 70; % degrees
@@ -118,6 +136,12 @@ classdef VehicleModel < handle
             obj.simParams.Kp = 1.0;  % Proportional gain
             obj.simParams.Ki = 0.5;  % Integral gain
             obj.simParams.Kd = 0.1;  % Derivative gain
+            obj.simParams.lambda1Accel = 1.0; % Levant differentiator lambda1 for error derivative
+            obj.simParams.lambda2Accel = 1.0; % Levant differentiator lambda2 for error derivative
+            obj.simParams.lambda1Vel = 1.0; % Levant differentiator lambda1 for velocity
+            obj.simParams.lambda2Vel = 1.0; % Levant differentiator lambda2 for velocity
+            obj.simParams.lambda1Jerk = 1.0; % Levant differentiator lambda1 for jerk
+            obj.simParams.lambda2Jerk = 1.0; % Levant differentiator lambda2 for jerk
             obj.simParams.enableSpeedController = true;
             % --- End of PID Speed Controller Parameters ---
             
@@ -281,6 +305,20 @@ classdef VehicleModel < handle
                 simParams.excelData = obj.simParams.excelData;
             end
         
+            % Ensure baseTrailerMass and scaling flag exist
+            if isfield(simParams, 'baseTrailerMass')
+                baseMass = simParams.baseTrailerMass;
+            else
+                if isfield(simParams, 'trailerMassScaled') && simParams.trailerMassScaled && isfield(simParams,'trailerNumBoxes') && simParams.trailerNumBoxes > 1
+                    baseMass = simParams.trailerMass / simParams.trailerNumBoxes;
+                else
+                    baseMass = simParams.trailerMass;
+                end
+                simParams.baseTrailerMass = baseMass;
+            end
+            if ~isfield(simParams, 'trailerMassScaled')
+                simParams.trailerMassScaled = false;
+            end
             obj.simParams = simParams;
         
             % If GUI is enabled, update the GUI fields with the new parameters
@@ -371,6 +409,18 @@ classdef VehicleModel < handle
                     obj.guiManager.KpField.Value = simParams.Kp;
                     obj.guiManager.KiField.Value = simParams.Ki;
                     obj.guiManager.KdField.Value = simParams.Kd;
+                    if isprop(obj.guiManager, 'lambda1AccelField') && isprop(obj.guiManager, 'lambda2AccelField')
+                        obj.guiManager.lambda1AccelField.Value = simParams.lambda1Accel;
+                        obj.guiManager.lambda2AccelField.Value = simParams.lambda2Accel;
+                    end
+                    if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
+                        obj.guiManager.lambda1VelField.Value = simParams.lambda1Vel;
+                        obj.guiManager.lambda2VelField.Value = simParams.lambda2Vel;
+                    end
+                    if isprop(obj.guiManager, 'lambda1JerkField') && isprop(obj.guiManager, 'lambda2JerkField')
+                        obj.guiManager.lambda1JerkField.Value = simParams.lambda1Jerk;
+                        obj.guiManager.lambda2JerkField.Value = simParams.lambda2Jerk;
+                    end
                     obj.guiManager.enableSpeedControllerCheckbox.Value = simParams.enableSpeedController;
                 end
         
@@ -659,6 +709,23 @@ classdef VehicleModel < handle
                 end
                 simParams.trailerMass = totalMass;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
+            elseif simParams.trailerNumBoxes > 1
+                % No individual weight distributions provided, so scale the
+                % configured trailer mass by the number of boxes only once.
+                % Use the previously stored trailer mass values if available.
+                if ~isfield(simParams, 'baseTrailerMass') || isempty(simParams.baseTrailerMass)
+                    if isfield(obj.simParams, 'baseTrailerMass')
+                        simParams.baseTrailerMass = obj.simParams.baseTrailerMass;
+                    else
+                        simParams.baseTrailerMass = obj.simParams.trailerMass;
+                    end
+                end
+                if ~isfield(simParams, 'trailerMass') || isempty(simParams.trailerMass)
+                    simParams.trailerMass = obj.simParams.trailerMass;
+                end
+                simParams.trailerMass = simParams.baseTrailerMass * simParams.trailerNumBoxes;
+                simParams.trailerMassScaled = true;
+                fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + simParams.trailerMass);
             end
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
@@ -827,12 +894,39 @@ classdef VehicleModel < handle
                 simParams.Kp = obj.guiManager.KpField.Value;
                 simParams.Ki = obj.guiManager.KiField.Value;
                 simParams.Kd = obj.guiManager.KdField.Value;
+                if isprop(obj.guiManager, 'lambda1AccelField') && isprop(obj.guiManager, 'lambda2AccelField')
+                    simParams.lambda1Accel = obj.guiManager.lambda1AccelField.Value;
+                    simParams.lambda2Accel = obj.guiManager.lambda2AccelField.Value;
+                else
+                    simParams.lambda1Accel = obj.simParams.lambda1Accel;
+                    simParams.lambda2Accel = obj.simParams.lambda2Accel;
+                end
+                if isprop(obj.guiManager, 'lambda1VelField') && isprop(obj.guiManager, 'lambda2VelField')
+                    simParams.lambda1Vel = obj.guiManager.lambda1VelField.Value;
+                    simParams.lambda2Vel = obj.guiManager.lambda2VelField.Value;
+                else
+                    simParams.lambda1Vel = obj.simParams.lambda1Vel;
+                    simParams.lambda2Vel = obj.simParams.lambda2Vel;
+                end
+                if isprop(obj.guiManager, 'lambda1JerkField') && isprop(obj.guiManager, 'lambda2JerkField')
+                    simParams.lambda1Jerk = obj.guiManager.lambda1JerkField.Value;
+                    simParams.lambda2Jerk = obj.guiManager.lambda2JerkField.Value;
+                else
+                    simParams.lambda1Jerk = obj.simParams.lambda1Jerk;
+                    simParams.lambda2Jerk = obj.simParams.lambda2Jerk;
+                end
                 simParams.enableSpeedController = obj.guiManager.enableSpeedControllerCheckbox.Value;
             else
                 % Use default PID parameters
                 simParams.Kp = obj.simParams.Kp;
                 simParams.Ki = obj.simParams.Ki;
                 simParams.Kd = obj.simParams.Kd;
+                simParams.lambda1Accel = obj.simParams.lambda1Accel;
+                simParams.lambda2Accel = obj.simParams.lambda2Accel;
+                simParams.lambda1Vel = obj.simParams.lambda1Vel;
+                simParams.lambda2Vel = obj.simParams.lambda2Vel;
+                simParams.lambda1Jerk = obj.simParams.lambda1Jerk;
+                simParams.lambda2Jerk = obj.simParams.lambda2Jerk;
                 simParams.enableSpeedController = obj.simParams.enableSpeedController;
                 warning('PID Controller GUI fields not found. Using default PID parameters.');
             end
@@ -1761,7 +1855,10 @@ classdef VehicleModel < handle
                     Kd, ...
                     minAccelAtMaxSpeed, ...
                     minDecelAtMaxSpeed, ...
-                    'FilterType', 'sma', 'SMAWindowSize', 50 ...
+                    'FilterType', 'sma', 'SMAWindowSize', 50, ...
+                    'Lambda1Accel', simParams.lambda1Accel, 'Lambda2Accel', simParams.lambda2Accel, ...
+                    'Lambda1Vel', simParams.lambda1Vel, 'Lambda2Vel', simParams.lambda2Vel, ...
+                    'Lambda1Jerk', simParams.lambda1Jerk, 'Lambda2Jerk', simParams.lambda2Jerk ...
                     ); % maxAccel and minAccel set to 2.0 and -2.0 m/s^2 respectively
                 logMessages{end+1} = 'pid_SpeedController initialized successfully.';
                 % --- End of SpeedController Initialization ---

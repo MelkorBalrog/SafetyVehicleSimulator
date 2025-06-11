@@ -181,6 +181,7 @@ classdef Object3D
                 verts = zeros(0,3);
                 return;
             end
+
             vertsCell = cell(1,n);
             R = obj.Orientation;
             pos = obj.Position;

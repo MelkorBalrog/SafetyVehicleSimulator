@@ -48,6 +48,7 @@ classdef Vehicle3D < handle
             % setState Updates the vehicle pose in the world.
             obj.Body.Position = [x y 0];
             obj.Body.setOrientation(theta, 0, 0);
+
             R = obj.Body.Orientation;
             for i = 1:numel(obj.Tires)
                 off = obj.Tires(i).Position;
