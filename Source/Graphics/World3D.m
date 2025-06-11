@@ -32,6 +32,9 @@ classdef World3D < handle
             if nargin < 2 || isempty(ax)
                 ax = gca;
             end
+            % Reset axis limits so new geometry is visible even when hold
+            % state is manipulated during drawing.
+            axis(ax,'auto');
             view(ax, 3);
             grid(ax, 'on');
             holdState = ishold(ax);
@@ -44,8 +47,18 @@ classdef World3D < handle
             end
             xlabel(ax,'X'); ylabel(ax,'Y'); zlabel(ax,'Z');
             camproj(ax,'perspective');
-            campos(ax, obj.CameraPosition);
-            camtarget(ax, obj.CameraTarget);
+            pos = double(obj.CameraPosition(:).');
+            tgt = double(obj.CameraTarget(:).');
+            if numel(pos) ~= 3
+                error('World3D:InvalidCameraPosition', ...
+                    'CameraPosition must be a 3-element numeric vector.');
+            end
+            if numel(tgt) ~= 3
+                error('World3D:InvalidCameraTarget', ...
+                    'CameraTarget must be a 3-element numeric vector.');
+            end
+            campos(ax, pos);
+            camtarget(ax, tgt);
         end
     end
 end
