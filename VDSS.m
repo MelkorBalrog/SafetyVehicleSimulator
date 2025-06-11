@@ -488,6 +488,13 @@ function VDSS
     % */
     function startSimulation()
         simulationManager.runSimulations();
+        try
+            gw = GraphicsWindow(World3D(), true);
+            animator = Sim3DAnimator(dataManager, gw);
+            animator.run();
+        catch ME
+            disp(['3D Animation failed: ' ME.message]);
+        end
     end
     
     %/**
