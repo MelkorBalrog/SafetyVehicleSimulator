@@ -10,6 +10,7 @@ classdef World3D < handle
         CameraTarget = [0 0 0]
         UseGPU = false
         UseParallel = false
+        AutoFit = true
     end
 
     methods
@@ -35,6 +36,9 @@ classdef World3D < handle
             % Reset axis limits so new geometry is visible even when hold
             % state is manipulated during drawing.
             axis(ax,'auto');
+            if obj.AutoFit
+                obj.fitCamera();
+            end
             view(ax, 3);
             grid(ax, 'on');
             holdState = ishold(ax);
@@ -49,6 +53,27 @@ classdef World3D < handle
             camproj(ax,'perspective');
             campos(ax, obj.CameraPosition);
             camtarget(ax, obj.CameraTarget);
+        end
+
+        function fitCamera(obj)
+            % fitCamera Adjusts the camera to frame all objects in the world
+            if isempty(obj.Objects)
+                return;
+            end
+            vertsCell = cell(1,numel(obj.Objects));
+            for i = 1:numel(obj.Objects)
+                vertsCell{i} = obj.Objects(i).localVertices();
+            end
+            allVerts = vertcat(vertsCell{:});
+            minV = min(allVerts,[],1);
+            maxV = max(allVerts,[],1);
+            center = (minV + maxV)/2;
+            diagLen = norm(maxV - minV);
+            obj.CameraTarget = center;
+            if diagLen == 0
+                diagLen = 1;
+            end
+            obj.CameraPosition = center + diagLen*[1 1 1];
         end
     end
 end
