@@ -3130,7 +3130,7 @@ classdef VehicleModel < handle
                     % --- Update Engine RPM ---
                     engine.updateRPM(throttle.getThrottle(), loadTorque, dt, transmission.currentGear);
                     logMessages{end+1} = sprintf('Step %d: Engine Torque: %.2f Nm, Wheel Torque: %.2f Nm.', i, engineTorque, wheelTorque);
-
+        
                     % --- **Account for Number of Drive Tires in F_traction Calculation** ---
                     % In practice only the tractor axles are powered. Counting
                     % trailer tires here would unrealistically increase the

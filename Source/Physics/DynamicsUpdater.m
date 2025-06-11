@@ -518,5 +518,28 @@ classdef DynamicsUpdater < handle
                 warning('Trailer angular velocity is only applicable to tractor-trailer configurations.');
             end
         end
+
+        %% setMass
+        function obj = setMass(obj, newMass)
+            % setMass Updates the vehicle mass while preserving velocity.
+            %
+            % Updating the mass directly affects how linear momentum maps to
+            % velocity. To avoid artificial jumps in speed when simulation
+            % parameters change, rescale the stored momentum so that the current
+            % velocity remains unchanged.
+
+            if newMass <= 0
+                error('Mass must be positive');
+            end
+
+            % Compute current velocity from momentum and old mass
+            currentVel = obj.linearMomentum / obj.mass;
+
+            % Update mass and rescale momentum to maintain velocity
+            obj.mass = newMass;
+            obj.linearMomentum = obj.mass * currentVel;
+            obj.velocity = currentVel(1);
+            obj.lateralVelocity = currentVel(2);
+        end
     end
 end
