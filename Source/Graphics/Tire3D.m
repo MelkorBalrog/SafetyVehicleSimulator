@@ -25,6 +25,7 @@ classdef Tire3D < VehiclePart3D
                 useParallel = false;
             end
             obj@VehiclePart3D('Tire', Boxel.empty, color, useGPU, useParallel);
+
             for k = 1:nSegments
                 ang = 2*pi*(k-1)/nSegments;
                 pos = [radius*cos(ang) radius*sin(ang) 0];
