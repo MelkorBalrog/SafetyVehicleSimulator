@@ -123,6 +123,13 @@ function VDSS
     SedanConfig.Kp = 1.0;  % Proportional gain
     SedanConfig.Ki = 0.5;  % Integral gain
     SedanConfig.Kd = 0.1;  % Derivative gain
+    % Levant differentiator lambdas for PID derivatives
+    SedanConfig.lambda1 = 1.0;
+    SedanConfig.lambda2 = 1.0;
+    SedanConfig.lambda1Vel = 1.0;
+    SedanConfig.lambda2Vel = 1.0;
+    SedanConfig.lambda1Jerk = 1.0;
+    SedanConfig.lambda2Jerk = 1.0;
     SedanConfig.enableSpeedController = true;
     % --- End of PID Speed Controller Parameters ---
 
