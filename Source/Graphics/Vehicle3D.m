@@ -25,7 +25,9 @@ classdef Vehicle3D < handle
             obj.Params = params;
             obj.UseGPU = useGPU;
             obj.UseParallel = useParallel;
+
             obj.Body = VehiclePart3D('Body', Boxel.empty, bodyColor, useGPU, useParallel);
+
             b = Boxel([params.length/2 0 params.height/2], ...
                 [params.length params.width params.height], bodyColor);
             obj.Body.addBoxel(b);
@@ -48,6 +50,7 @@ classdef Vehicle3D < handle
             % setState Updates the vehicle pose in the world.
             obj.Body.Position = [x y 0];
             obj.Body.setOrientation(theta, 0, 0);
+
             R = obj.Body.Orientation;
             for i = 1:numel(obj.Tires)
                 off = obj.Tires(i).Position;

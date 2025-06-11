@@ -24,7 +24,9 @@ classdef Trailer3D < VehiclePart3D
             if nargin < 6
                 useParallel = false;
             end
+
             obj@VehiclePart3D('Trailer', Boxel.empty, color, useGPU, useParallel);
+
             b = Boxel([length/2 0 height/2], [length width height], color);
             obj.addBoxel(b);
         end
