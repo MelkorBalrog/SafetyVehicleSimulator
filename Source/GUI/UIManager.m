@@ -1,3 +1,19 @@
+%--------------------------------------------------------------------------
+% This file is part of VDSS - Vehicle Dynamics Safety Simulator.
+%
+% VDSS is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% VDSS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+%--------------------------------------------------------------------------
 %{
 % @file UIManager.m
 % @brief Manages the graphical user interface for simulations.
@@ -30,7 +46,6 @@ classdef UIManager < handle
         % Vehicle Configuration Tabs
         vehicleTab1
         vehicleTab2
-        commandsTab
 
         plotPanel
         sharedAx
@@ -80,15 +95,6 @@ classdef UIManager < handle
         laneCommandsField
         buildMapButton
 
-        % Per-Vehicle Command Tab Fields
-        vehicle1CommandsTab           % Commands tab for Vehicle 1
-        vehicle1SteeringCommandsField
-        vehicle1AccelerationCommandsField
-        vehicle1TirePressureCommandsField
-        vehicle2CommandsTab           % Commands tab for Vehicle 2
-        vehicle2SteeringCommandsField
-        vehicle2AccelerationCommandsField
-        vehicle2TirePressureCommandsField
         % Playback speed for simulation (multiplier)
         playbackSpeedField
 
@@ -175,12 +181,6 @@ classdef UIManager < handle
             obj.vehicleTab2 = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Configuration');
             obj.createVehicle2VehicleConfig(obj.vehicleTab2);
 
-            % Commands Tab for Vehicle 1
-            obj.vehicle1CommandsTab = uitab(obj.tabGroup, 'Title', 'Vehicle 1 Commands');
-            obj.createVehicleCommandsTab(obj.vehicle1CommandsTab, 1);
-            % Commands Tab for Vehicle 2
-            obj.vehicle2CommandsTab = uitab(obj.tabGroup, 'Title', 'Vehicle 2 Commands');
-            obj.createVehicleCommandsTab(obj.vehicle2CommandsTab, 2);
         end
 
         function createVehicle1Config(obj, parent)
@@ -725,46 +725,6 @@ classdef UIManager < handle
             suppressDebug = obj.suppressDebugCheckbox.Value;
         end
 
-        %% Create Commands Panel for Each Vehicle
-        % Hosts steering, acceleration, and tire pressure inputs per vehicle
-        function createVehicleCommandsTab(obj, parent, vehicleIndex)
-            grid = uigridlayout(parent, [3, 2], ...
-                'ColumnWidth', {150, '1x'}, ...
-                'RowHeight', {30, 30, 30}, ...
-                'Padding', [10, 10, 10, 10], ...
-                'RowSpacing', 10, ...
-                'ColumnSpacing', 10);
-
-            % Steering Commands
-            uilabel(grid, 'Text', 'Steering Commands:', 'HorizontalAlignment', 'right');
-            cmdField = uieditfield(grid, 'text', ...
-                'Value', 'simval_(195)|ramp_-30(1)|keep_-30(0.8)|ramp_0(0.2)|keep_0(1)');
-            if vehicleIndex == 1
-                obj.vehicle1SteeringCommandsField = cmdField;
-            else
-                obj.vehicle2SteeringCommandsField = cmdField;
-            end
-
-            % Acceleration Commands
-            uilabel(grid, 'Text', 'Acceleration Commands:', 'HorizontalAlignment', 'right');
-            accField = uieditfield(grid, 'text', ...
-                'Value', 'simval_(200)');
-            if vehicleIndex == 1
-                obj.vehicle1AccelerationCommandsField = accField;
-            else
-                obj.vehicle2AccelerationCommandsField = accField;
-            end
-
-            % Tire Pressure Commands
-            uilabel(grid, 'Text', 'Tire Pressure Commands:', 'HorizontalAlignment', 'right');
-            tpField = uieditfield(grid, 'text', ...
-                'Value', 'pressure_(t:150-[tire:9,psi:70];[tire:2,psi:72];[tire:1,psi:7])');
-            if vehicleIndex == 1
-                obj.vehicle1TirePressureCommandsField = tpField;
-            else
-                obj.vehicle2TirePressureCommandsField = tpField;
-            end
-        end
     end
 end
 

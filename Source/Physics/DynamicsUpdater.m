@@ -1,3 +1,19 @@
+%--------------------------------------------------------------------------
+% This file is part of VDSS - Vehicle Dynamics Safety Simulator.
+%
+% VDSS is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% VDSS is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program. If not, see <https://www.gnu.org/licenses/>.
+%--------------------------------------------------------------------------
 %{
 % @file DynamicsUpdater.m
 % @brief Updates vehicle dynamics using applied forces and moments.
@@ -418,8 +434,18 @@ classdef DynamicsUpdater < handle
             dL_z_dt = totalMoment;
 
             % Lateral acceleration (a_y)
-            a_long = dp_x_dt / m - r * v;
-            a_lat = dp_y_dt / m + r * u;
+            % In body coordinates the dynamic equations are
+            %   m*(du - r*v) = F_x
+            %   m*(dv + r*u) = F_y
+            % where u and v are the longitudinal and lateral velocities.
+            % Rearranging yields
+            %   du = F_x/m + r*v
+            %   dv = F_y/m - r*u
+            % These derivatives correspond to the longitudinal and lateral
+            % accelerations used for load transfer and other dynamic effects.
+
+            a_long = dp_x_dt / m + r * v;
+            a_lat  = dp_y_dt / m - r * u;
 
             % Roll dynamics using inertia from ForceCalculator
             I_xx = obj.forceCalculator.inertia(1);    % Roll moment of inertia from ForceCalculator
