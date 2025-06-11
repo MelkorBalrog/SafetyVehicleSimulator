@@ -730,6 +730,7 @@ classdef VehicleModel < handle
                 simParams.trailerMassScaled = true;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + simParams.trailerMass);
             end
+
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
             simParams.spinnerConfigs = cell(1, nSpinners);
