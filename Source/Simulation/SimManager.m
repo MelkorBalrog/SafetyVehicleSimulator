@@ -490,11 +490,12 @@ classdef SimManager < handle
                                 Btrans = R1 * [Bx'; By'];
                                 obj.dataManager.globalTrailer1Data.Boxes(bi).X     = Btrans(1, :)' + ox1;
                                 obj.dataManager.globalTrailer1Data.Boxes(bi).Y     = Btrans(2, :)' + oy1;
-                                obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = mod(Bt + ang1 + pi, 2*pi) - pi;
+                                % Maintain continuous yaw by avoiding wrap
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = Bt + ang1;
                                 if isfield(obj.dataManager.globalTrailer1Data, 'XBoxes') && ~isempty(obj.dataManager.globalTrailer1Data.XBoxes)
                                     obj.dataManager.globalTrailer1Data.XBoxes(bi,:) = Btrans(1, :) + ox1;
                                     obj.dataManager.globalTrailer1Data.YBoxes(bi,:) = Btrans(2, :) + oy1;
-                                    obj.dataManager.globalTrailer1Data.ThetaBoxes(bi,:) = mod(Bt + ang1 + pi, 2*pi) - pi;
+                                    obj.dataManager.globalTrailer1Data.ThetaBoxes(bi,:) = Bt + ang1;
                                 end
                             end
                         end
@@ -525,11 +526,12 @@ classdef SimManager < handle
                                 Btrans2 = R2 * [Bx2'; By2'];
                                 obj.dataManager.globalTrailer2Data.Boxes(bi).X     = Btrans2(1, :)' + ox2;
                                 obj.dataManager.globalTrailer2Data.Boxes(bi).Y     = Btrans2(2, :)' + oy2;
-                                obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = mod(Bt2 + ang2 + pi, 2*pi) - pi;
+                                % Preserve unwrapped yaw for animation
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = Bt2 + ang2;
                                 if isfield(obj.dataManager.globalTrailer2Data, 'XBoxes') && ~isempty(obj.dataManager.globalTrailer2Data.XBoxes)
                                     obj.dataManager.globalTrailer2Data.XBoxes(bi,:) = Btrans2(1, :) + ox2;
                                     obj.dataManager.globalTrailer2Data.YBoxes(bi,:) = Btrans2(2, :) + oy2;
-                                    obj.dataManager.globalTrailer2Data.ThetaBoxes(bi,:) = mod(Bt2 + ang2 + pi, 2*pi) - pi;
+                                    obj.dataManager.globalTrailer2Data.ThetaBoxes(bi,:) = Bt2 + ang2;
                                 end
                             end
                         end
@@ -578,8 +580,8 @@ classdef SimManager < handle
                     rotatedPositionsV1 = (rotatedPositionsV1 + vehicle1offsetP)';
                     obj.dataManager.globalVehicle1Data.X = rotatedPositionsV1(1, :)';
                     obj.dataManager.globalVehicle1Data.Y = rotatedPositionsV1(2, :)';
-                    obj.dataManager.globalVehicle1Data.Theta = ...
-                        mod(obj.dataManager.globalVehicle1Data.Theta + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                    % Apply rotation without wrapping to keep yaw continuous
+                    obj.dataManager.globalVehicle1Data.Theta = obj.dataManager.globalVehicle1Data.Theta + vehicle1rotationAngleRad;
 
                     if obj.vehicleSim1.simParams.includeTrailer
                         % Transform primary trailer path for rotation
@@ -590,7 +592,7 @@ classdef SimManager < handle
                         rotatedTrailer = (rotatedTrailer + vehicle1offsetP)';
                         obj.dataManager.globalTrailer1Data.X = rotatedTrailer(1, :)';
                         obj.dataManager.globalTrailer1Data.Y = rotatedTrailer(2, :)';
-                        obj.dataManager.globalTrailer1Data.Theta = mod(obj.dataManager.globalTrailer1Data.Theta + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                        obj.dataManager.globalTrailer1Data.Theta = obj.dataManager.globalTrailer1Data.Theta + vehicle1rotationAngleRad;
                         % Transform each additional trailer box
                         if isfield(obj.dataManager.globalTrailer1Data, 'Boxes')
                             for bi = 1:numel(obj.dataManager.globalTrailer1Data.Boxes)
@@ -601,11 +603,11 @@ classdef SimManager < handle
                                 Btrans = (Btrans + vehicle1offsetP)';
                                 obj.dataManager.globalTrailer1Data.Boxes(bi).X     = Btrans(1, :)';
                                 obj.dataManager.globalTrailer1Data.Boxes(bi).Y     = Btrans(2, :)';
-                                obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = mod(Bt + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                                obj.dataManager.globalTrailer1Data.Boxes(bi).Theta = Bt + vehicle1rotationAngleRad;
                                 if isfield(obj.dataManager.globalTrailer1Data, 'XBoxes') && ~isempty(obj.dataManager.globalTrailer1Data.XBoxes)
                                     obj.dataManager.globalTrailer1Data.XBoxes(bi,:) = Btrans(1, :);
                                     obj.dataManager.globalTrailer1Data.YBoxes(bi,:) = Btrans(2, :);
-                                    obj.dataManager.globalTrailer1Data.ThetaBoxes(bi,:) = mod(Bt + vehicle1rotationAngleRad + pi, 2*pi) - pi;
+                                    obj.dataManager.globalTrailer1Data.ThetaBoxes(bi,:) = Bt + vehicle1rotationAngleRad;
                                 end
                             end
                         end
@@ -644,8 +646,8 @@ classdef SimManager < handle
                     rotatedPositionsV2 = (rotatedPositionsV2 + offsetP)';
                     obj.dataManager.globalVehicle2Data.X = rotatedPositionsV2(1, :)';
                     obj.dataManager.globalVehicle2Data.Y = rotatedPositionsV2(2, :)';
-                    obj.dataManager.globalVehicle2Data.Theta = ...
-                        mod(obj.dataManager.globalVehicle2Data.Theta + rotationAngleRad + pi, 2*pi) - pi;
+                    % Apply rotation for Vehicle 2 without angle wrapping
+                    obj.dataManager.globalVehicle2Data.Theta = obj.dataManager.globalVehicle2Data.Theta + rotationAngleRad;
 
                     if obj.vehicleSim2.simParams.includeTrailer
                         % Transform primary trailer path for rotation
@@ -656,7 +658,7 @@ classdef SimManager < handle
                         rotatedTrailer = (rotatedTrailer + offsetP)';
                         obj.dataManager.globalTrailer2Data.X = rotatedTrailer(1, :)';
                         obj.dataManager.globalTrailer2Data.Y = rotatedTrailer(2, :)';
-                        obj.dataManager.globalTrailer2Data.Theta = mod(obj.dataManager.globalTrailer2Data.Theta + rotationAngleRad + pi, 2*pi) - pi;
+                        obj.dataManager.globalTrailer2Data.Theta = obj.dataManager.globalTrailer2Data.Theta + rotationAngleRad;
                         % Transform each additional trailer box
                         if isfield(obj.dataManager.globalTrailer2Data, 'Boxes')
                             for bi = 1:numel(obj.dataManager.globalTrailer2Data.Boxes)
@@ -667,11 +669,11 @@ classdef SimManager < handle
                                 Btrans2 = (Btrans2 + offsetP)';
                                 obj.dataManager.globalTrailer2Data.Boxes(bi).X     = Btrans2(1, :)';
                                 obj.dataManager.globalTrailer2Data.Boxes(bi).Y     = Btrans2(2, :)';
-                                obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = mod(Bt2 + rotationAngleRad + pi, 2*pi) - pi;
+                                obj.dataManager.globalTrailer2Data.Boxes(bi).Theta = Bt2 + rotationAngleRad;
                                 if isfield(obj.dataManager.globalTrailer2Data, 'XBoxes') && ~isempty(obj.dataManager.globalTrailer2Data.XBoxes)
                                     obj.dataManager.globalTrailer2Data.XBoxes(bi,:) = Btrans2(1, :);
                                     obj.dataManager.globalTrailer2Data.YBoxes(bi,:) = Btrans2(2, :);
-                                    obj.dataManager.globalTrailer2Data.ThetaBoxes(bi,:) = mod(Bt2 + rotationAngleRad + pi, 2*pi) - pi;
+                                    obj.dataManager.globalTrailer2Data.ThetaBoxes(bi,:) = Bt2 + rotationAngleRad;
                                 end
                             end
                         end
