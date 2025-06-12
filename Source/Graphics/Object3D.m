@@ -39,6 +39,22 @@ classdef Object3D
             verts = obj.collectMesh();
         end
 
+        function F = faces(obj)
+            % faces Returns concatenated face indices for all boxels.
+            %   This utility mirrors the localVertices method and exposes the
+            %   triangulation connectivity so that higher level objects can
+            %   generate patch meshes without querying each boxel directly.
+
+            n = numel(obj.Boxels);
+            F = zeros(0,4);
+            offset = 0;
+            for i = 1:n
+                f = obj.Boxels(i).faces();
+                F = [F; f + offset]; %#ok<AGROW>
+                offset = offset + size(obj.Boxels(i).localVertices(),1);
+            end
+        end
+
         function addBoxel(obj, boxel)
             if obj.UseGPU
                 boxel.UseGPU = true;
@@ -47,11 +63,31 @@ classdef Object3D
         end
 
         function setOrientation(obj, yaw, pitch, roll)
-            % setOrientation Sets the object orientation from yaw, pitch, roll (rad).
-            if nargin == 2 && ismatrix(yaw)
-                obj.Orientation = yaw;
-                return;
+            % setOrientation Sets the object orientation.
+            %   Accepts yaw, pitch, roll angles (rad) or a 3x3 rotation
+            %   matrix when supplied as a single argument. Single scalar
+            %   input is treated as a yaw angle. Any other input sizes are
+            %   rejected to avoid invalid states that can lead to matrix
+            %   dimension errors during rendering.
+
+            if nargin == 2
+                if isscalar(yaw)
+                    pitch = 0;
+                    roll = 0;
+                elseif ismatrix(yaw)
+                    if all(size(yaw) == [3 3])
+                        obj.Orientation = yaw;
+                        return;
+                    else
+                        error('Object3D:InvalidOrientation', ...
+                            'Orientation matrix must be 3x3.');
+                    end
+                else
+                    error('Object3D:InvalidOrientation', ...
+                        'Invalid orientation input.');
+                end
             end
+
             if nargin < 4, roll = 0; end
             if nargin < 3, pitch = 0; end
             if nargin < 2, yaw = 0; end
@@ -157,6 +193,11 @@ classdef Object3D
         function verts = collectMesh(obj)
             % collectMesh Collects transformed vertices from all boxels
             n = numel(obj.Boxels);
+            if n == 0
+                verts = zeros(0,3);
+                return;
+            end
+
             vertsCell = cell(1,n);
             R = obj.Orientation;
             pos = obj.Position;

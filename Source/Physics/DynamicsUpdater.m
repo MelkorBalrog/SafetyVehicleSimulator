@@ -433,16 +433,18 @@ classdef DynamicsUpdater < handle
             % Yaw rate derivative (rate of change of angular momentum)
             dL_z_dt = totalMoment;
 
-            % Lateral acceleration (a_y)
-            % In body coordinates the dynamic equations are
+            %--------------------------------------------------------------
+            % Longitudinal and lateral accelerations
+            %--------------------------------------------------------------
+            % Newton-Euler equations in the body frame:
             %   m*(du - r*v) = F_x
             %   m*(dv + r*u) = F_y
-            % where u and v are the longitudinal and lateral velocities.
-            % Rearranging yields
-            %   du = F_x/m + r*v
-            %   dv = F_y/m - r*u
-            % These derivatives correspond to the longitudinal and lateral
-            % accelerations used for load transfer and other dynamic effects.
+            % where u and v are the longitudinal and lateral velocities and r is
+            % the yaw rate. Solving for the derivatives gives
+            %   du/dt = F_x/m + r*v
+            %   dv/dt = F_y/m - r*u
+            % These correspond to the longitudinal (a_long) and lateral
+            % (a_lat) accelerations used for load transfer and stability.
 
             a_long = dp_x_dt / m + r * v;
             a_lat  = dp_y_dt / m - r * u;
@@ -515,6 +517,29 @@ classdef DynamicsUpdater < handle
             else
                 warning('Trailer angular velocity is only applicable to tractor-trailer configurations.');
             end
+        end
+
+        %% setMass
+        function obj = setMass(obj, newMass)
+            % setMass Updates the vehicle mass while preserving velocity.
+            %
+            % Updating the mass directly affects how linear momentum maps to
+            % velocity. To avoid artificial jumps in speed when simulation
+            % parameters change, rescale the stored momentum so that the current
+            % velocity remains unchanged.
+
+            if newMass <= 0
+                error('Mass must be positive');
+            end
+
+            % Compute current velocity from momentum and old mass
+            currentVel = obj.linearMomentum / obj.mass;
+
+            % Update mass and rescale momentum to maintain velocity
+            obj.mass = newMass;
+            obj.linearMomentum = obj.mass * currentVel;
+            obj.velocity = currentVel(1);
+            obj.lateralVelocity = currentVel(2);
         end
     end
 end
