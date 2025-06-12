@@ -159,6 +159,9 @@ additional_fields = {
     'CommandedSteerAngles'
 };
 
+% Keep a separate list for any force-related fields discovered later
+force_field_names = {};
+
 % Initialize a structure to hold the extracted signals
 extracted_signals = struct();
 
@@ -189,6 +192,44 @@ for i = 1:length(additional_fields)
         warning(['Warning: Field ''', field, ''' is missing in the loaded data. Filling with NaNs.']);
         extracted_signals.(field) = NaN(length(t),1); % Fill with NaNs if missing
     end
+end
+
+% ==============================================
+% 7b. Extract Force Fields from calculatedForces
+% ==============================================
+
+% Some simulation files store force information inside a struct called
+% 'calculatedForces' (lower or upper case). Extract all numeric vectors
+% within this struct and append them to the exported signals.
+force_struct = [];
+if isfield(data, 'calculatedForces')
+    force_struct = data.calculatedForces;
+elseif isfield(data, 'CalculatedForces')
+    force_struct = data.CalculatedForces;
+end
+
+if ~isempty(force_struct)
+    cf_names = fieldnames(force_struct);
+    for i = 1:length(cf_names)
+        f_name = cf_names{i};
+        temp = force_struct.(f_name);
+        if isvector(temp)
+            temp = temp(:); % ensure column
+        else
+            temp = temp(:,1);
+            warning(['Force field ''', f_name, ''' is multi-dimensional. Taking the first column.']);
+        end
+        if length(temp) < length(t)
+            temp = [temp; NaN(length(t)-length(temp),1)];
+        elseif length(temp) > length(t)
+            temp = temp(1:length(t));
+        end
+        extracted_signals.(f_name) = temp;
+        force_field_names{end+1} = f_name; %#ok<AGROW>
+        disp(['Force field ', f_name, ' extracted.']);
+    end
+else
+    disp('No calculated forces found in the data.');
 end
 
 % ============================
@@ -382,6 +423,49 @@ grid on;
 tight_layout();
 
 % ============================
+% 9c. Plot Force Signals by Category
+% ============================
+
+if ~isempty(force_field_names)
+    categories = struct('General',{{}}, 'Tire',{{}}, 'Trailer',{{}}, 'Moment',{{}}, 'Hitch',{{}});
+    for i = 1:numel(force_field_names)
+        fname = force_field_names{i};
+        lname = lower(fname);
+        if contains(lname,'tire') || contains(lname,'traction') || contains(lname,'f_y')
+            categories.Tire{end+1} = fname;
+        elseif contains(lname,'trailer')
+            categories.Trailer{end+1} = fname;
+        elseif contains(lname,'moment') || strcmpi(fname,'M_z')
+            categories.Moment{end+1} = fname;
+        elseif contains(lname,'hitch')
+            categories.Hitch{end+1} = fname;
+        else
+            categories.General{end+1} = fname;
+        end
+    end
+
+    cat_names = fieldnames(categories);
+    for c = 1:length(cat_names)
+        flds = categories.(cat_names{c});
+        if isempty(flds)
+            continue;
+        end
+        figure('Name', ['Vehicle Forces - ' cat_names{c}], 'NumberTitle', 'off');
+        rows = ceil(numel(flds)/2);
+        cols = 2;
+        tl_force = tiledlayout(rows, cols, 'TileSpacing','compact','Padding','compact'); %#ok<NASGU>
+        for k = 1:numel(flds)
+            nexttile;
+            plot(t, extracted_signals.(flds{k}), 'LineWidth', 1.2);
+            title(strrep(flds{k}, '_', ' '), 'Interpreter','none');
+            ylabel(flds{k});
+            grid on;
+        end
+        tight_layout();
+    end
+end
+
+% ============================
 % 10. Save Results (With Column Names)
 % ============================
 
@@ -410,6 +494,11 @@ column_names = {
     'CommandedSteerAngles (deg)'
 };
 
+% Append names of extracted force fields
+for i = 1:numel(force_field_names)
+    column_names{end+1} = force_field_names{i}; %#ok<AGROW>
+end
+
 % Prepare data for export
 export_data = [t, ...
                st_angle_deg, st_angle_rate_padded, ...
@@ -429,7 +518,13 @@ export_data = [t, ...
                extracted_signals.Throttle, ...
                extracted_signals.Horsepower, ...
                extracted_signals.CommandedAcceleration, ...
+
                extracted_signals.CommandedSteerAngles];
+
+% Append force data to export
+for i = 1:numel(force_field_names)
+    export_data = [export_data, extracted_signals.(force_field_names{i})]; %#ok<AGROW>
+end
 
 % Verify all columns have the same number of rows
 expected_length = length(t);
