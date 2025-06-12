@@ -315,6 +315,7 @@ classdef ForceCalculator
                 else
                     error('Must provide trailer mass, wheelbase, and tire count for tractor-trailer.');
                 end
+
             elseif strcmp(vehicleType, 'tractor') || strcmp(vehicleType, 'passenger')
                 obj.trailerPsi       = [];
                 obj.trailerOmega     = [];
@@ -813,6 +814,33 @@ classdef ForceCalculator
                                 M_boxes = M_z_tr_total;
                             end
 
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
+
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
+
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
+
                             obj.calculatedForces.F_y_trailer = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local = F_total_tr_local;
@@ -1046,7 +1074,6 @@ classdef ForceCalculator
                             F_total_tr_vehicle= R_g2tr*F_total_tr_global;
                             hitchLatForce= F_total_tr_vehicle(2);
                             obj.calculatedForces.hitchLateralForce = hitchLatForce;
-
                             trailer_yaw_accel= M_z_tr_total/obj.trailerInertia;
                             obj.trailerOmega= obj.trailerOmega+ trailer_yaw_accel*obj.dt;
                             obj.trailerPsi  = obj.trailerPsi+ obj.trailerOmega*obj.dt;
@@ -1449,6 +1476,7 @@ classdef ForceCalculator
             lever_arm = obj.trackWidth / 2;
             M_z_wind = F_side * lever_arm;
         end
+
         function obj = applyBrakingForce(obj)
             if obj.vehicleMass>0
                 obj.brakingForce= obj.brakingForce; % already set
