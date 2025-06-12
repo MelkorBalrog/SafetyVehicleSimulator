@@ -708,12 +708,23 @@ classdef VehicleModel < handle
                     totalMass = totalMass + boxMass;
                 end
                 simParams.trailerMass = totalMass;
+                simParams.baseTrailerMass = simParams.trailerMass; % store unscaled mass
+                simParams.trailerMassScaled = false;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + totalMass);
             elseif simParams.trailerNumBoxes > 1
                 % No individual weight distributions provided, so scale the
                 % configured trailer mass by the number of boxes only once.
-                if ~isfield(simParams, 'baseTrailerMass')
-                    simParams.baseTrailerMass = simParams.trailerMass;
+                % Use the previously stored trailer mass values if available so
+                % repeated calls don't keep multiplying the mass.
+                if ~isfield(simParams, 'baseTrailerMass') || isempty(simParams.baseTrailerMass)
+                    if isfield(obj.simParams, 'baseTrailerMass')
+                        simParams.baseTrailerMass = obj.simParams.baseTrailerMass;
+                    else
+                        simParams.baseTrailerMass = obj.simParams.trailerMass;
+                    end
+                end
+                if ~isfield(simParams, 'trailerMass') || isempty(simParams.trailerMass)
+                    simParams.trailerMass = obj.simParams.trailerMass;
                 end
                 simParams.trailerMass = simParams.baseTrailerMass * simParams.trailerNumBoxes;
                 simParams.trailerMassScaled = true;
@@ -2226,6 +2237,11 @@ classdef VehicleModel < handle
                     if isfield(simParams,'trailerBoxWeightDistributions') && ~isempty(simParams.trailerBoxWeightDistributions)
                         % Load distribution is directly provided per trailer box
                         loadDistributionTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
+                        expectedRows = sum(simParams.trailerAxlesPerBox) * simParams.numTiresPerAxleTrailer;
+                        if size(loadDistributionTrailer,1) ~= expectedRows
+                            logMessages{end+1} = sprintf('Normalizing trailerBoxWeightDistributions from %d to %d rows.', size(loadDistributionTrailer,1), expectedRows);
+                            loadDistributionTrailer = normalizeTrailerLoadDistribution(loadDistributionTrailer, expectedRows);
+                        end
                         % Append computed contact areas to the distribution
                         numRowsTrailer = size(loadDistributionTrailer,1);
                         numAreasTrailer = length(trailerContactAreas);
@@ -2536,10 +2552,10 @@ classdef VehicleModel < handle
                 % -------------------------------------------------------------------
                 % %%% NEW LINES %%%: Initialize wheelSpeeds, wheelRadius, wheelInertia
                 % -------------------------------------------------------------------
-                numDriveTires = totalTiresTractor; 
-                if simParams.includeTrailer
-                    numDriveTires = numDriveTires + totalTiresTrailer; 
-                end
+                % Assume only the tractor wheels are driven. Including trailer
+                % tires here would unrealistically multiply available traction
+                % when additional boxes are added.
+                numDriveTires = totalTiresTractor;
                     
                 % %%% NEW LINES for WHEEL INERTIA CALCULATION %%%
                 %
@@ -2565,9 +2581,6 @@ classdef VehicleModel < handle
                 % We have multiple wheels, but "wheelInertia" can be a scalar if all wheels are identical:
                 forceCalc.wheelSpeeds  = zeros(numDriveTires, 1);  % all zeros initially
                 forceCalc.wheelInertia = I_perWheel;               % (kg·m^2) per wheel
-
-                forceCalc.wheelSpeeds  = zeros(numDriveTires, 1);  % all zeros initially
-                forceCalc.wheelInertia = 1.2;     % 1.2 kg·m² example
                 forceCalc.enableSpeedController = simParams.enableSpeedController;
                 % --- Set Flat Tires in ForceCalculator ---
                 if ~isempty(flatTireIndices)
@@ -3122,22 +3135,21 @@ classdef VehicleModel < handle
                     logMessages{end+1} = sprintf('Step %d: Engine Torque: %.2f Nm, Wheel Torque: %.2f Nm.', i, engineTorque, wheelTorque);
         
                     % --- **Account for Number of Drive Tires in F_traction Calculation** ---
-                    % **Assumption:** All tractor and trailer tires are drive tires.
-                    % Adjust these variables if only a subset of tires are drive tires.
-                    numDriveTiresTractor = totalTiresTractor; 
-                    if simParams.includeTrailer
-                        numDriveTiresTrailer = totalTiresTrailer;
-                    else
-                        numDriveTiresTrailer = 0;
-                    end
-        
-                    totalDriveTires = numDriveTiresTractor + numDriveTiresTrailer;
-                    logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor: %d, Trailer: %d)', totalDriveTires, numDriveTiresTractor, numDriveTiresTrailer);
+                    % In practice only the tractor axles are powered. Counting
+                    % trailer tires here would unrealistically increase the
+                    % available traction with additional boxes.
+                    numDriveTiresTractor = totalTiresTractor; % assume all tractor tires are driven
+                    numDriveTiresTrailer = 0;                  % trailer tires free-roll
+
+                    totalDriveTires = numDriveTiresTractor;
+                    logMessages{end+1} = sprintf('Total Drive Tires: %d (Tractor only)', totalDriveTires);
                     % --- End of Drive Tires Accounting ---
         
                     % --- Update ForceCalculator with Traction Force ---
-                    F_traction_per_tire = wheelTorque / wheelRadius; % Traction force per tire
-                    F_traction = F_traction_per_tire; % Total traction force
+                    % Engine torque is distributed across the driven tractor
+                    % wheels. Traction force is therefore the total wheel torque
+                    % divided by the wheel radius.
+                    F_traction = wheelTorque / wheelRadius;
                     forceCalc.updateTractionForce(F_traction);
                     logMessages{end+1} = sprintf('Step %d: Traction Force updated in ForceCalculator as %.2f N.', i, F_traction);
         
@@ -3972,6 +3984,33 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
     accelerationEnded= accelerationEnded(:);
     tirePressureEnded= tirePressureEnded(:);
     % tirePressureData stays NxM
+end
+
+%% normalizeTrailerLoadDistribution
+function ld = normalizeTrailerLoadDistribution(ld, targetRows)
+    % normalizeTrailerLoadDistribution Resizes a trailer load matrix to the
+    % desired number of rows while conserving total load.
+
+    currentRows = size(ld,1);
+    if currentRows == targetRows
+        return;
+    elseif currentRows < targetRows
+        reps = ceil(targetRows / currentRows);
+        ld = repmat(ld, reps, 1);
+        ld = ld(1:targetRows, :);
+    else
+        idxBounds = round(linspace(0, currentRows, targetRows+1));
+        newLd = zeros(targetRows, size(ld,2));
+        for k = 1:targetRows
+            seg = ld(idxBounds(k)+1:idxBounds(k+1), :);
+            newLd(k,1:3) = mean(seg(:,1:3), 1);
+            newLd(k,4) = sum(seg(:,4));
+            if size(ld,2) >= 5
+                newLd(k,5) = sum(seg(:,5));
+            end
+        end
+        ld = newLd;
+    end
 end
 
 %% Helper to fix statuses after interpolation
