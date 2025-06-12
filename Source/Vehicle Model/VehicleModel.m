@@ -707,6 +707,7 @@ classdef VehicleModel < handle
                     boxMass = sum(weightsKgWithExtra);
                     totalMass = totalMass + boxMass;
                 end
+
                 simParams.trailerMass = totalMass;
                 simParams.baseTrailerMass = simParams.trailerMass; % store unscaled mass
                 simParams.trailerMassScaled = false;
@@ -730,6 +731,7 @@ classdef VehicleModel < handle
                 simParams.trailerMassScaled = true;
                 fprintf('Total vehicle mass updated: %.2f kg\n', simParams.tractorMass + simParams.trailerMass);
             end
+
             % --- Spinner Configuration Parameters ---
             nSpinners = max(simParams.trailerNumBoxes - 1, 0);
             simParams.spinnerConfigs = cell(1, nSpinners);
@@ -2242,6 +2244,7 @@ classdef VehicleModel < handle
                             logMessages{end+1} = sprintf('Normalizing trailerBoxWeightDistributions from %d to %d rows.', size(loadDistributionTrailer,1), expectedRows);
                             loadDistributionTrailer = normalizeTrailerLoadDistribution(loadDistributionTrailer, expectedRows);
                         end
+
                         % Append computed contact areas to the distribution
                         numRowsTrailer = size(loadDistributionTrailer,1);
                         numAreasTrailer = length(trailerContactAreas);
