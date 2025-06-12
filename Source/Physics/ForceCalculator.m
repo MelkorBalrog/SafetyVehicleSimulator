@@ -830,16 +830,12 @@ classdef ForceCalculator
                             trailer_yaw_accel = M_z_tr_total/obj.trailerInertia;
                             obj.trailerOmega  = obj.trailerOmega + trailer_yaw_accel*obj.dt;
                             obj.trailerPsi    = obj.trailerPsi+obj.trailerOmega*obj.dt;
-                            obj.trailerPsi    = ForceCalculator.localWrapToPi(obj.trailerPsi);
-
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
                             if obj.numTrailerBoxes > 0
                                 for ib=1:obj.numTrailerBoxes
                                     box_acc = M_boxes(ib)/obj.trailerInertiaBoxes(ib);
                                     obj.trailerOmegaBoxes(ib) = obj.trailerOmegaBoxes(ib) + box_acc*obj.dt;
                                     obj.trailerPsiBoxes(ib) = obj.trailerPsiBoxes(ib) + obj.trailerOmegaBoxes(ib)*obj.dt;
-                                    obj.trailerPsiBoxes(ib) = ForceCalculator.localWrapToPi(obj.trailerPsiBoxes(ib));
-
                                 end
                                 obj.trailerPsi = obj.trailerPsiBoxes(1);
                                 obj.trailerOmega = obj.trailerOmegaBoxes(1);
@@ -1052,7 +1048,6 @@ classdef ForceCalculator
                             trailer_yaw_accel= M_z_tr_total/obj.trailerInertia;
                             obj.trailerOmega= obj.trailerOmega+ trailer_yaw_accel*obj.dt;
                             obj.trailerPsi  = obj.trailerPsi+ obj.trailerOmega*obj.dt;
-                            obj.trailerPsi  = ForceCalculator.localWrapToPi(obj.trailerPsi);
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
 
                             if obj.numTrailerBoxes > 0
@@ -1060,7 +1055,6 @@ classdef ForceCalculator
                                     box_acc = M_boxes(ib)/obj.trailerInertiaBoxes(ib);
                                     obj.trailerOmegaBoxes(ib) = obj.trailerOmegaBoxes(ib) + box_acc*obj.dt;
                                     obj.trailerPsiBoxes(ib) = obj.trailerPsiBoxes(ib) + obj.trailerOmegaBoxes(ib)*obj.dt;
-                                    obj.trailerPsiBoxes(ib) = ForceCalculator.localWrapToPi(obj.trailerPsiBoxes(ib));
                                 end
                                 obj.trailerPsi = obj.trailerPsiBoxes(1);
                                 obj.trailerOmega = obj.trailerOmegaBoxes(1);
@@ -1459,14 +1453,6 @@ classdef ForceCalculator
             end
             % Update braking force
             obj.calculatedForces.braking = [obj.brakingForce;0;0];
-        end
-
-    end
-
-    methods (Static)
-        %% Utility: wrap angle to [-pi, pi]
-        function angle = localWrapToPi(angle)
-            angle = mod(angle + pi, 2*pi) - pi;
         end
     end
 end
