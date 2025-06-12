@@ -707,6 +707,7 @@ classdef VehicleModel < handle
                     boxMass = sum(weightsKgWithExtra);
                     totalMass = totalMass + boxMass;
                 end
+
                 simParams.trailerMass = totalMass;
                 simParams.baseTrailerMass = simParams.trailerMass; % store unscaled mass
                 simParams.trailerMassScaled = false;
@@ -2240,11 +2241,10 @@ classdef VehicleModel < handle
                         loadDistributionTrailer = vertcat(simParams.trailerBoxWeightDistributions{:});
                         expectedRows = sum(simParams.trailerAxlesPerBox) * simParams.numTiresPerAxleTrailer;
                         if size(loadDistributionTrailer,1) ~= expectedRows
-                            logMessages{end+1} = sprintf('Expanding trailerBoxWeightDistributions from %d to %d rows.', size(loadDistributionTrailer,1), expectedRows);
-                            reps = ceil(expectedRows / size(loadDistributionTrailer,1));
-                            loadDistributionTrailer = repmat(loadDistributionTrailer, reps, 1);
-                            loadDistributionTrailer = loadDistributionTrailer(1:expectedRows, :);
+                            logMessages{end+1} = sprintf('Normalizing trailerBoxWeightDistributions from %d to %d rows.', size(loadDistributionTrailer,1), expectedRows);
+                            loadDistributionTrailer = normalizeTrailerLoadDistribution(loadDistributionTrailer, expectedRows);
                         end
+
                         % Append computed contact areas to the distribution
                         numRowsTrailer = size(loadDistributionTrailer,1);
                         numAreasTrailer = length(trailerContactAreas);
@@ -3987,6 +3987,33 @@ function [time, steerAngles, accelerationData, tirePressureData, ...
     accelerationEnded= accelerationEnded(:);
     tirePressureEnded= tirePressureEnded(:);
     % tirePressureData stays NxM
+end
+
+%% normalizeTrailerLoadDistribution
+function ld = normalizeTrailerLoadDistribution(ld, targetRows)
+    % normalizeTrailerLoadDistribution Resizes a trailer load matrix to the
+    % desired number of rows while conserving total load.
+
+    currentRows = size(ld,1);
+    if currentRows == targetRows
+        return;
+    elseif currentRows < targetRows
+        reps = ceil(targetRows / currentRows);
+        ld = repmat(ld, reps, 1);
+        ld = ld(1:targetRows, :);
+    else
+        idxBounds = round(linspace(0, currentRows, targetRows+1));
+        newLd = zeros(targetRows, size(ld,2));
+        for k = 1:targetRows
+            seg = ld(idxBounds(k)+1:idxBounds(k+1), :);
+            newLd(k,1:3) = mean(seg(:,1:3), 1);
+            newLd(k,4) = sum(seg(:,4));
+            if size(ld,2) >= 5
+                newLd(k,5) = sum(seg(:,5));
+            end
+        end
+        ld = newLd;
+    end
 end
 
 %% Helper to fix statuses after interpolation
