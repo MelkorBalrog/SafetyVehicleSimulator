@@ -813,6 +813,15 @@ classdef ForceCalculator
                                 M_boxes = M_z_tr_total;
                             end
 
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
+
                             obj.calculatedForces.F_y_trailer = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local = F_total_tr_local;
