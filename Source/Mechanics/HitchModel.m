@@ -204,7 +204,8 @@ classdef HitchModel
                 omega = 0;
             end
 
-            obj.angularState.psi = psi;
+            % Normalize initial yaw angle to [-pi, pi] to avoid large values
+            obj.angularState.psi = wrapToPi(psi);
             obj.angularState.omega = omega;
         end
 
@@ -336,6 +337,8 @@ classdef HitchModel
                 psi_new = tractorState.orientation(3) + deltaYaw_new;
                 omega_new = 0; % Stop further rotation
             end
+
+
             
             % Update angular state
             obj.angularState.psi = psi_new;

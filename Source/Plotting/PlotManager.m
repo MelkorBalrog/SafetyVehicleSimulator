@@ -1034,7 +1034,9 @@ classdef PlotManager < handle
                 hitchY = hitchY - (vehicleParams1.axleSpacing/2) * sin(th1);
                 % trailer orientation: absolute = tractor orientation + trailer relative yaw
                 relTheta1 = dataManager.globalTrailer1Data.Theta(plotStep);
-                absTheta1 = dataManager.globalVehicle1Data.Theta(plotStep) + relTheta1;
+                % Trailer orientation from simulation is absolute; no need to
+                % add the tractor orientation again.
+                absTheta1 = relTheta1;
                 % plot primary trailer box
                 obj.trl1Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                     hitchX, hitchY, absTheta1, trailerParams1, 'b', false, false, 0, trailerParams1.numTiresPerAxle, trailerParams1.numAxles);
@@ -1045,7 +1047,8 @@ classdef PlotManager < handle
                         Xi = dataManager.globalTrailer1Data.Boxes(bi).X(plotStep);
                         Yi = dataManager.globalTrailer1Data.Boxes(bi).Y(plotStep);
                         relTi = dataManager.globalTrailer1Data.Boxes(bi).Theta(plotStep);
-                        absTi = dataManager.globalVehicle1Data.Theta(plotStep) + relTi;
+                        % Box orientation already absolute
+                        absTi = relTi;
                         hBox = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                             Xi, Yi, absTi, trailerParams1, 'b', false, false, 0, trailerParams1.numTiresPerAxle, trailerParams1.numAxles);
                         obj.trl1Graphics = [obj.trl1Graphics, hBox];
@@ -1076,7 +1079,8 @@ classdef PlotManager < handle
                 hitchY2 = hitchY2 - (vehicleParams2.axleSpacing/2) * sin(th2);
                 % trailer2 orientation: absolute = tractor2 orientation + trailer2 relative yaw
                 relTheta2 = dataManager.globalTrailer2Data.Theta(plotStep);
-                absTheta2 = dataManager.globalVehicle2Data.Theta(plotStep) + relTheta2;
+                % Trailer 2 orientation already absolute
+                absTheta2 = relTheta2;
                 % plot primary trailer2 box
                 obj.trl2Graphics = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                     hitchX2, hitchY2, absTheta2, trailerParams2, 'c', false, false, 0, trailerParams2.numTiresPerAxle, trailerParams2.numAxles);
@@ -1087,7 +1091,8 @@ classdef PlotManager < handle
                         Xi = dataManager.globalTrailer2Data.Boxes(bi).X(plotStep);
                         Yi = dataManager.globalTrailer2Data.Boxes(bi).Y(plotStep);
                         relTi2 = dataManager.globalTrailer2Data.Boxes(bi).Theta(plotStep);
-                        absTi2 = dataManager.globalVehicle2Data.Theta(plotStep) + relTi2;
+                        % Box orientation already absolute
+                        absTi2 = relTi2;
                         hBox2 = VehiclePlotter.plotVehicle(obj.sharedAx, ...
                             Xi, Yi, absTi2, trailerParams2, 'c', false, false, 0, trailerParams2.numTiresPerAxle, trailerParams2.numAxles);
                         obj.trl2Graphics = [obj.trl2Graphics, hBox2];

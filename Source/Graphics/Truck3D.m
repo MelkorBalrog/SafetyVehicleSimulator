@@ -61,7 +61,9 @@ classdef Truck3D < handle
                 hitchX = xMid - hDist * cos(thT) - (vParams.axleSpacing/2)*cos(thT);
                 hitchY = yMid - hDist * sin(thT) - (vParams.axleSpacing/2)*sin(thT);
                 relTheta = dataManager.globalTrailer1Data.Theta(step);
-                absTheta = thT + relTheta;
+                % Orientation provided by the simulation is already in
+                % world coordinates. Do not add the tractor yaw again.
+                absTheta = relTheta;
                 obj.Trailer.setState(hitchX, hitchY, absTheta);
             end
         end
