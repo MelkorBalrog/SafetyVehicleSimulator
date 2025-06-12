@@ -813,6 +813,15 @@ classdef ForceCalculator
                                 M_boxes = M_z_tr_total;
                             end
 
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
+
                             obj.calculatedForces.F_y_trailer = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local = F_total_tr_local;
@@ -831,7 +840,6 @@ classdef ForceCalculator
                             obj.trailerOmega  = obj.trailerOmega + trailer_yaw_accel*obj.dt;
                             obj.trailerPsi    = obj.trailerPsi+obj.trailerOmega*obj.dt;
                             obj.trailerPsi    = ForceCalculator.localWrapToPi(obj.trailerPsi);
-
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
                             if obj.numTrailerBoxes > 0
                                 for ib=1:obj.numTrailerBoxes
@@ -839,7 +847,6 @@ classdef ForceCalculator
                                     obj.trailerOmegaBoxes(ib) = obj.trailerOmegaBoxes(ib) + box_acc*obj.dt;
                                     obj.trailerPsiBoxes(ib) = obj.trailerPsiBoxes(ib) + obj.trailerOmegaBoxes(ib)*obj.dt;
                                     obj.trailerPsiBoxes(ib) = ForceCalculator.localWrapToPi(obj.trailerPsiBoxes(ib));
-
                                 end
                                 obj.trailerPsi = obj.trailerPsiBoxes(1);
                                 obj.trailerOmega = obj.trailerOmegaBoxes(1);

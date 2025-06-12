@@ -204,7 +204,8 @@ classdef HitchModel
                 omega = 0;
             end
 
-            obj.angularState.psi = psi;
+            % Normalize initial yaw angle to [-pi, pi] to avoid large values
+            obj.angularState.psi = wrapToPi(psi);
             obj.angularState.omega = omega;
         end
 
@@ -321,6 +322,8 @@ classdef HitchModel
 
             psi_new = psi0 + dt/6 * (k1(1) + 2*k2(1) + 2*k3(1) + k4(1));
             omega_new = omega0 + dt/6 * (k1(2) + 2*k2(2) + 2*k3(2) + k4(2));
+            % Keep the yaw angle bounded to prevent unwrapping during animation
+            psi_new = wrapToPi(psi_new);
 
             %% Constrain the articulation angle within ±maxDelta
             % Compute the new relative yaw angle
@@ -336,6 +339,9 @@ classdef HitchModel
                 psi_new = tractorState.orientation(3) + deltaYaw_new;
                 omega_new = 0; % Stop further rotation
             end
+
+            % Ensure yaw angle stays within [-pi, pi]
+            psi_new = wrapToPi(psi_new);
             
             % Update angular state
             obj.angularState.psi = psi_new;
