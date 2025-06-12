@@ -2546,6 +2546,7 @@ classdef VehicleModel < handle
                     trailerWheelbaseVal, ...              % trailerWheelbase (0 if no trailer)
                     numTrailerTiresVal, ...               % numTrailerTires (0 if no trailer)
                     boxMasses, ...                        % trailer box masses
+                    simParams.trailerAxlesPerBox, ...     % axles per trailer box
                     'highFidelity', ...                   % simulation fidelity
                     highFidelityTireModel, ...            % high-fidelity tire model
                     windVector, ...                       % wind speed and direction as a vector in 3D
@@ -3189,6 +3190,13 @@ classdef VehicleModel < handle
                         % Update trailer's orientation and yaw rate from HitchModel
                         psi_trailer = hitchModel.angularState.psi;
                         r_trailer = hitchModel.angularState.omega;
+                        forces_local = dynamicsUpdater.forceCalculator.getCalculatedForces();
+                        if isfield(forces_local, 'trailerPsiBoxes') && ~isempty(forces_local.trailerPsiBoxes)
+                            psi_trailer = forces_local.trailerPsiBoxes(1);
+                            r_trailer = forces_local.trailerOmegaBoxes(1);
+                            hitchModel.angularState.psi = psi_trailer;
+                            hitchModel.angularState.omega = r_trailer;
+                        end
         
                         % Update trailerState for next iteration
                         trailerState.orientation(3) = psi_trailer;
@@ -3317,42 +3325,45 @@ classdef VehicleModel < handle
                         % Store orientations for each trailer box
                         % Store main trailer orientation
                         trailerThetaBoxes(1, i) = trailerTheta(i);
-                        % Update and store orientations for each additional trailer box via spinner models
-                        for j = 1:nSpinners
-                            % Determine tractor state for this spinner
-                            if j == 1
-                                tractorState_sp = struct( ...
-                                    'position', [x_hitch; y_hitch; 0], ...
-                                    'orientation', [0; 0; psi_trailer], ...
-                                    'velocity', [u_trailer; v_trailer; 0], ...
-                                    'angularVelocity', [0; 0; r_trailer] ...
-                                );
-                            else
-                                prevPsi  = trailerThetaBoxes(j, i);
-                                prevOmega = spinnerModels{j-1}.angularState.omega;
-                                tractorState_sp = struct( ...
+                        forces_local = dynamicsUpdater.forceCalculator.getCalculatedForces();
+                        if isfield(forces_local,'trailerPsiBoxes') && ~isempty(forces_local.trailerPsiBoxes)
+                            nBoxesLocal = numel(forces_local.trailerPsiBoxes);
+                            trailerThetaBoxes(1:nBoxesLocal, i) = forces_local.trailerPsiBoxes(:);
+                        else
+                            % Update and store orientations for each additional trailer box via spinner models
+                            for j = 1:nSpinners
+                                % Determine tractor state for this spinner
+                                if j == 1
+                                    tractorState_sp = struct( ...
+                                        'position', [x_hitch; y_hitch; 0], ...
+                                        'orientation', [0; 0; psi_trailer], ...
+                                        'velocity', [u_trailer; v_trailer; 0], ...
+                                        'angularVelocity', [0; 0; r_trailer] ...
+                                    );
+                                else
+                                    prevPsi  = trailerThetaBoxes(j, i);
+                                    prevOmega = spinnerModels{j-1}.angularState.omega;
+                                    tractorState_sp = struct( ...
+                                        'position', [0; 0; 0], ...
+                                        'orientation', [0; 0; prevPsi], ...
+                                        'velocity', [0; 0; 0], ...
+                                        'angularVelocity', [0; 0; prevOmega] ...
+                                    );
+                                end
+
+                                currPsi  = spinnerModels{j}.angularState.psi;
+                                currOmega = spinnerModels{j}.angularState.omega;
+                                trailerState_sp = struct( ...
                                     'position', [0; 0; 0], ...
-                                    'orientation', [0; 0; prevPsi], ...
+                                    'orientation', [0; 0; currPsi], ...
                                     'velocity', [0; 0; 0], ...
-                                    'angularVelocity', [0; 0; prevOmega] ...
+                                    'angularVelocity', [0; 0; currOmega] ...
                                 );
+
+                                [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
+
+                                trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
                             end
-
-                            % Current trailer box state taken from spinner model's last state
-                            currPsi  = spinnerModels{j}.angularState.psi;
-                            currOmega = spinnerModels{j}.angularState.omega;
-                            trailerState_sp = struct( ...
-                                'position', [0; 0; 0], ...
-                                'orientation', [0; 0; currPsi], ...
-                                'velocity', [0; 0; 0], ...
-                                'angularVelocity', [0; 0; currOmega] ...
-                            );
-
-                            % Update spinner model dynamics
-                            [spinnerModels{j}, ~, ~] = spinnerModels{j}.calculateForces(tractorState_sp, trailerState_sp);
-
-                            % Store updated box orientation
-                            trailerThetaBoxes(j+1, i) = spinnerModels{j}.angularState.psi;
                         end
                     end
         
