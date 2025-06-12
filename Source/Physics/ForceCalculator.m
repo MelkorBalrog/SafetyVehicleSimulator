@@ -122,6 +122,12 @@ classdef ForceCalculator
         trailerWheelbase
         numTrailerTires
         trailerBoxMasses
+        numTiresPerAxleTrailer
+        trailerAxlesPerBox
+        trailerPsiBoxes
+        trailerOmegaBoxes
+        trailerInertiaBoxes
+        numTrailerBoxes
 
         % --- Adjusted Tire Parameters ---
         mu_tires                 % Adjusted friction coefficients per tractor tire
@@ -192,7 +198,7 @@ classdef ForceCalculator
                 dragCoeff, airDensity, frontalArea, sideArea, sideForceCoeff, ...
                 turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, ...
                 trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, ...
-                dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, ...
+                dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, trailerAxlesPerBox, ...
                 tireModelFlag, highFidelityTireModel, windVector, brakeSystem, varargin)
             % Constructor for ForceCalculator
             %
@@ -282,6 +288,30 @@ classdef ForceCalculator
                     else
                         obj.trailerBoxMasses = [];
                     end
+                    if nargin >= 27
+                        obj.trailerAxlesPerBox = trailerAxlesPerBox;
+                        obj.numTrailerBoxes = numel(trailerAxlesPerBox);
+                        if sum(trailerAxlesPerBox) > 0
+                            obj.numTiresPerAxleTrailer = obj.numTrailerTires / sum(trailerAxlesPerBox);
+                        else
+                            obj.numTiresPerAxleTrailer = 0;
+                        end
+                        obj.trailerPsiBoxes = zeros(obj.numTrailerBoxes,1);
+                        obj.trailerOmegaBoxes = zeros(obj.numTrailerBoxes,1);
+                        if ~isempty(obj.trailerBoxMasses) && numel(obj.trailerBoxMasses)==obj.numTrailerBoxes
+                            segWB = obj.trailerWheelbase/obj.numTrailerBoxes;
+                            obj.trailerInertiaBoxes = (obj.trailerBoxMasses(:).*(segWB^2))/12;
+                        else
+                            obj.trailerInertiaBoxes = (obj.trailerInertia/obj.numTrailerBoxes)*ones(obj.numTrailerBoxes,1);
+                        end
+                    else
+                        obj.trailerAxlesPerBox = [];
+                        obj.numTrailerBoxes = 0;
+                        obj.trailerPsiBoxes = [];
+                        obj.trailerOmegaBoxes = [];
+                        obj.trailerInertiaBoxes = [];
+                        obj.numTiresPerAxleTrailer = 0;
+                    end
                 else
                     error('Must provide trailer mass, wheelbase, and tire count for tractor-trailer.');
                 end
@@ -295,6 +325,12 @@ classdef ForceCalculator
                 obj.trailerWheelbase = [];
                 obj.numTrailerTires  = [];
                 obj.trailerBoxMasses = [];
+                obj.trailerAxlesPerBox = [];
+                obj.trailerPsiBoxes = [];
+                obj.trailerOmegaBoxes = [];
+                obj.trailerInertiaBoxes = [];
+                obj.numTrailerBoxes = 0;
+                obj.numTiresPerAxleTrailer = 0;
                 if strcmp(vehicleType, 'passenger')
                     obj.jointForce = [0; 0; 0];
                 end
@@ -736,6 +772,19 @@ classdef ForceCalculator
                             end
                             F_y_trailer_total = sum(F_y_trailer_tires);
 
+                            if obj.numTrailerBoxes > 0
+                                Fy_boxes = zeros(obj.numTrailerBoxes,1);
+                                idxStart = 1;
+                                for ib=1:obj.numTrailerBoxes
+                                    nTiresBox = obj.trailerAxlesPerBox(ib) * obj.numTiresPerAxleTrailer;
+                                    idxEnd = idxStart + nTiresBox - 1;
+                                    Fy_boxes(ib) = sum(F_y_trailer_tires(idxStart:idxEnd));
+                                    idxStart = idxEnd + 1;
+                                end
+                            else
+                                Fy_boxes = F_y_trailer_total;
+                            end
+
                             F_lateral_trailer = F_y_trailer_total + F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
 
@@ -755,11 +804,23 @@ classdef ForceCalculator
                             M_z_tr_wind = F_side_tr*(obj.trackWidth/2);
                             M_z_tr_total= M_z_tr + M_z_tr_wind;
 
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
+
                             obj.calculatedForces.F_y_trailer = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local = F_total_tr_local;
                             obj.calculatedForces.F_total_trailer_global = F_total_tr_global;
                             obj.calculatedForces.yawMoment_trailer     = M_z_tr_total;
+                            if obj.numTrailerBoxes > 0
+                                obj.calculatedForces.yawMoment_trailer_boxes = M_boxes;
+                            end
 
                             F_total_tr_vehicle= R_g2tr'*F_total_tr_global;
                             hitchLatForce = F_total_tr_vehicle(2);
@@ -770,6 +831,17 @@ classdef ForceCalculator
                             obj.trailerOmega  = obj.trailerOmega + trailer_yaw_accel*obj.dt;
                             obj.trailerPsi    = obj.trailerPsi+obj.trailerOmega*obj.dt;
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
+                            if obj.numTrailerBoxes > 0
+                                for ib=1:obj.numTrailerBoxes
+                                    box_acc = M_boxes(ib)/obj.trailerInertiaBoxes(ib);
+                                    obj.trailerOmegaBoxes(ib) = obj.trailerOmegaBoxes(ib) + box_acc*obj.dt;
+                                    obj.trailerPsiBoxes(ib) = obj.trailerPsiBoxes(ib) + obj.trailerOmegaBoxes(ib)*obj.dt;
+                                end
+                                obj.trailerPsi = obj.trailerPsiBoxes(1);
+                                obj.trailerOmega = obj.trailerOmegaBoxes(1);
+                                obj.calculatedForces.trailerPsiBoxes = obj.trailerPsiBoxes;
+                                obj.calculatedForces.trailerOmegaBoxes = obj.trailerOmegaBoxes;
+                            end
                             obj.calculatedForces.trailerPsi = obj.trailerPsi;
                             obj.calculatedForces.trailerOmega = obj.trailerOmega;
                         else
@@ -780,6 +852,12 @@ classdef ForceCalculator
                             obj.calculatedForces.hitchLateralForce = 0;
                             obj.trailerOmega=0;
                             obj.trailerPsi=0;
+                            if obj.numTrailerBoxes > 0
+                                obj.trailerPsiBoxes(:) = 0;
+                                obj.trailerOmegaBoxes(:) = 0;
+                                obj.calculatedForces.trailerPsiBoxes = obj.trailerPsiBoxes;
+                                obj.calculatedForces.trailerOmegaBoxes = obj.trailerOmegaBoxes;
+                            end
                         end
                     end
                     obj.calculatedForces.totalForce = totalForce_vehicle;
@@ -914,6 +992,20 @@ classdef ForceCalculator
                                 F_y_trailer_tires(it)= obj.calculateTireForce(alpha_trailer, mu_, Fz_trailer_each,1);
                             end
                             F_y_trailer_total= sum(F_y_trailer_tires);
+
+                            if obj.numTrailerBoxes > 0
+                                Fy_boxes = zeros(obj.numTrailerBoxes,1);
+                                idxStart = 1;
+                                for ib=1:obj.numTrailerBoxes
+                                    nTiresBox = obj.trailerAxlesPerBox(ib) * obj.numTiresPerAxleTrailer;
+                                    idxEnd = idxStart + nTiresBox - 1;
+                                    Fy_boxes(ib) = sum(F_y_trailer_tires(idxStart:idxEnd));
+                                    idxStart = idxEnd + 1;
+                                end
+                            else
+                                Fy_boxes = F_y_trailer_total;
+                            end
+
                             F_lateral_trailer= F_y_trailer_total+ F_side_tr_local(2);
                             F_longitudinal_tr= F_drag_tr_local(1);
 
@@ -931,12 +1023,23 @@ classdef ForceCalculator
                             M_z_tr = F_y_trailer_total*(obj.trailerWheelbase/2);
                             M_z_tr_wind= F_side_tr*(obj.trackWidth/2);
                             M_z_tr_total= M_z_tr+M_z_tr_wind;
+                            if obj.numTrailerBoxes > 0
+                                M_boxes = zeros(obj.numTrailerBoxes,1);
+                                for ib=1:obj.numTrailerBoxes
+                                    M_boxes(ib) = Fy_boxes(ib)*(obj.trailerWheelbase/2) + (M_z_tr_wind/obj.numTrailerBoxes);
+                                end
+                            else
+                                M_boxes = M_z_tr_total;
+                            end
 
                             obj.calculatedForces.F_y_trailer            = F_y_trailer_total;
                             obj.calculatedForces.momentZ_trailer       = M_z_tr_total;
                             obj.calculatedForces.F_total_trailer_local  = F_total_tr_local;
                             obj.calculatedForces.F_total_trailer_global = F_total_tr_global;
                             obj.calculatedForces.yawMoment_trailer      = obj.calculatedForces.momentZ_trailer;
+                            if obj.numTrailerBoxes > 0
+                                obj.calculatedForces.yawMoment_trailer_boxes = M_boxes;
+                            end
 
                             F_total_tr_vehicle= R_g2tr*F_total_tr_global;
                             hitchLatForce= F_total_tr_vehicle(2);
@@ -946,6 +1049,18 @@ classdef ForceCalculator
                             obj.trailerOmega= obj.trailerOmega+ trailer_yaw_accel*obj.dt;
                             obj.trailerPsi  = obj.trailerPsi+ obj.trailerOmega*obj.dt;
                             obj.trailerPosition= obj.trailerPosition + vel_tr_glob*obj.dt;
+
+                            if obj.numTrailerBoxes > 0
+                                for ib=1:obj.numTrailerBoxes
+                                    box_acc = M_boxes(ib)/obj.trailerInertiaBoxes(ib);
+                                    obj.trailerOmegaBoxes(ib) = obj.trailerOmegaBoxes(ib) + box_acc*obj.dt;
+                                    obj.trailerPsiBoxes(ib) = obj.trailerPsiBoxes(ib) + obj.trailerOmegaBoxes(ib)*obj.dt;
+                                end
+                                obj.trailerPsi = obj.trailerPsiBoxes(1);
+                                obj.trailerOmega = obj.trailerOmegaBoxes(1);
+                                obj.calculatedForces.trailerPsiBoxes = obj.trailerPsiBoxes;
+                                obj.calculatedForces.trailerOmegaBoxes = obj.trailerOmegaBoxes;
+                            end
 
                             obj.calculatedForces.trailerPsi   = obj.trailerPsi;
                             obj.calculatedForces.trailerOmega = obj.trailerOmega;
@@ -1250,7 +1365,7 @@ classdef ForceCalculator
                 key= forceKeys{iK};
                 val = obj.calculatedForces.(key);
 
-            if isnumeric(val) && numel(val) == 1
+            if isnumeric(val) && numel(val) == 1 && isfield(obj.forceBuffers,key)
                 % Moving average buffer update for scalar forces
                 buffStruct = obj.forceBuffers.(key);
                 buffStruct.index = buffStruct.index + 1;
