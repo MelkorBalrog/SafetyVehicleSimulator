@@ -37,7 +37,6 @@ function [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper(loads, con
         suspensionModel = [];
         trailerInertia = 0; dt = 0.01; trailerMass = 0; trailerWheelbase = 0;
         numTrailerTires = 0; trailerBoxMasses = [];
-        trailerAxlesPerBox = [];
         tireModelFlag = 'simple'; highFidelityModel = [];
         windVector = [0;0;0]; brakeSystem = BrakeSystem();
         varargin = {};
@@ -45,7 +44,7 @@ function [F_y_total, M_z] = ForceCalculator_computeTireForces_wrapper(loads, con
             dragCoeff, airDensity, frontalArea, sideArea, sideForceCoeff, ...
             turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, ...
             trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, ...
-            dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, trailerAxlesPerBox, ...
+            dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, ...
             tireModelFlag, highFidelityModel, windVector, brakeSystem, varargin{:});
     end
     [F_y_total, M_z] = fc.computeTireForces(loads, contactAreas, u, v, r);

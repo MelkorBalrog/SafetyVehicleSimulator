@@ -31,7 +31,6 @@ function [isWiggling,isRollover,isSkidding,isJackknife] = StabilityChecker_check
         suspensionModel = [];
         trailerInertia = 0; dt = 0.01; trailerMass = 0; trailerWheelbase = 0;
         numTrailerTires = 0; trailerBoxMasses = [];
-        trailerAxlesPerBox = [];
         tireModelFlag = 'simple'; highFidelityModel = [];
         windVector = [0;0;0]; brakeSystem = BrakeSystem();
         varargin = {};
@@ -39,7 +38,7 @@ function [isWiggling,isRollover,isSkidding,isJackknife] = StabilityChecker_check
             dragCoeff, airDensity, frontalArea, sideArea, sideForceCoeff, ...
             turnRadius, loadDist, cog, h_CoG, angularVel, slopeAngle, ...
             trackWidth, wheelbase, tireModel, suspensionModel, trailerInertia, ...
-            dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, trailerAxlesPerBox, ...
+            dt, trailerMass, trailerWheelbase, numTrailerTires, trailerBoxMasses, ...
             tireModelFlag, highFidelityModel, windVector, brakeSystem, varargin{:});
         kin = KinematicsCalculator(fc, 1.0, 2.0, 200000, 5000, 5000, 150000, 4000, 8000, dt);
         clutch = Clutch(500, 0.5, 0.5);
