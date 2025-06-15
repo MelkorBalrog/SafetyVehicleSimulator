@@ -186,10 +186,13 @@ classdef ForceCalculator
         % --- Slip Ratio Props ---
         wheelSpeeds     % wheel angular speeds [rad/s] per wheel
         wheelRadius     % wheel radius (m)
-        wheelInertia    % wheel inertia (kg·m²)        
-        
+        wheelInertia    % wheel inertia (kg·m²)
+
         % --- Surface Friction ---
         surfaceFrictionManager  % Instance managing per-tire friction
+
+        %% --- Engine Limits ---
+        maxEngineForce  % Maximum engine traction independent of mass
     end
 
     methods
@@ -213,6 +216,7 @@ classdef ForceCalculator
 
             % Assign main properties
             obj.vehicleMass         = mass;
+            obj.maxEngineForce      = Inf;   % default unlimited unless set
             obj.frictionCoefficient = friction;
             obj.velocity            = velocity;     % [u; v; w]
             obj.dragCoefficient     = dragCoeff;
@@ -1164,7 +1168,14 @@ classdef ForceCalculator
         %% updateTractionForce
         function obj = updateTractionForce(obj, F_traction)
             % updateTractionForce Apply longitudinal traction force with
-            % friction limit.
+            % engine and friction limits.
+
+
+            % Limit requested traction by the maximum engine capability so
+            % that heavier trailers do not increase available drive force.
+            if ~isinf(obj.maxEngineForce)
+                F_traction = min(max(F_traction, -obj.maxEngineForce), obj.maxEngineForce);
+            end
 
             % Compute maximum available traction based on the normal load of
             % the driven tractor tires.  This prevents unrealistically large
