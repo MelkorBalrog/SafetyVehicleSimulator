@@ -1163,27 +1163,7 @@ classdef ForceCalculator
 
         %% updateTractionForce
         function obj = updateTractionForce(obj, F_traction)
-            % updateTractionForce Apply longitudinal traction force with
-            % friction limit.
-
-            % Compute maximum available traction based on the normal load of
-            % the driven tractor tires.  This prevents unrealistically large
-            % accelerations when trailer mass increases.
-            if ~isempty(obj.loadDistribution)
-                loads = obj.loadDistribution(:,4);
-                if strcmp(obj.vehicleType, 'tractor-trailer') || strcmp(obj.vehicleType, 'tractor')
-                    nTractorTires = size(obj.loadDistribution,1) - obj.numTrailerTires;
-                    loads = loads(1:nTractorTires);
-                end
-                maxTraction = sum(loads) * obj.frictionCoefficient;
-            else
-                maxTraction = abs(F_traction); % no information -> no limit
-            end
-
-            % Clamp traction force within [-maxTraction, maxTraction]
-            F_traction = min(max(F_traction, -maxTraction), maxTraction);
-
-            tractionForce = [F_traction;0;0];
+            tractionForce= [F_traction;0;0];
             obj.calculatedForces.traction = tractionForce;
             obj.calculatedForces.traction_force = tractionForce;
         end
