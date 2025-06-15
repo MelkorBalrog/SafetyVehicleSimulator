@@ -2446,12 +2446,7 @@ classdef VehicleModel < handle
                 windVector = [wind_u; wind_v; wind_w]; % [u; v; w] in global frame (m/s)
         
                 if simParams.includeTrailer
-                    if isfield(trailerParams,'boxMasses') && ~isempty(trailerParams.boxMasses)
-                        trailerMassTotal = sum(trailerParams.boxMasses);
-                    else
-                        trailerMassTotal = trailerParams.mass;
-                    end
-                    totalMassToUse = tractorParams.mass + trailerMassTotal; % total mass including all boxes
+                    totalMassToUse = tractorParams.mass + trailerParams.mass; % total mass
                 else
                     totalMassToUse = tractorParams.mass;
                 end
@@ -2459,11 +2454,7 @@ classdef VehicleModel < handle
                 %% --- Instantiate the ForceCalculator with Combined Load Distribution ---
                 % Define additional parameters for ForceCalculator
                 if simParams.includeTrailer
-                    if isfield(trailerParams,'boxMasses') && ~isempty(trailerParams.boxMasses)
-                        trailerMassVal = sum(trailerParams.boxMasses);
-                    else
-                        trailerMassVal = trailerParams.mass;
-                    end
+                    trailerMassVal = trailerParams.mass;
                     trailerWheelbaseVal = trailerParams.wheelbase;
                     numTrailerTiresVal = simParams.numTiresPerAxleTrailer * trailerParams.numAxles;
                 else
