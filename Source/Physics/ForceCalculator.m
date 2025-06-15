@@ -186,10 +186,13 @@ classdef ForceCalculator
         % --- Slip Ratio Props ---
         wheelSpeeds     % wheel angular speeds [rad/s] per wheel
         wheelRadius     % wheel radius (m)
-        wheelInertia    % wheel inertia (kg·m²)        
-        
+        wheelInertia    % wheel inertia (kg·m²)
+
         % --- Surface Friction ---
         surfaceFrictionManager  % Instance managing per-tire friction
+
+        %% --- Engine Limits ---
+        maxEngineForce  % Maximum engine traction independent of mass
     end
 
     methods
@@ -213,6 +216,7 @@ classdef ForceCalculator
 
             % Assign main properties
             obj.vehicleMass         = mass;
+            obj.maxEngineForce      = Inf;   % default unlimited unless set
             obj.frictionCoefficient = friction;
             obj.velocity            = velocity;     % [u; v; w]
             obj.dragCoefficient     = dragCoeff;
@@ -1153,7 +1157,34 @@ classdef ForceCalculator
 
         %% updateTractionForce
         function obj = updateTractionForce(obj, F_traction)
-            tractionForce= [F_traction;0;0];
+            % updateTractionForce Apply longitudinal traction force with
+            % engine and friction limits.
+
+
+            % Limit requested traction by the maximum engine capability so
+            % that heavier trailers do not increase available drive force.
+            if ~isinf(obj.maxEngineForce)
+                F_traction = min(max(F_traction, -obj.maxEngineForce), obj.maxEngineForce);
+            end
+
+            % Compute maximum available traction based on the normal load of
+            % the driven tractor tires.  This prevents unrealistically large
+            % accelerations when trailer mass increases.
+            if ~isempty(obj.loadDistribution)
+                loads = obj.loadDistribution(:,4);
+                if strcmp(obj.vehicleType, 'tractor-trailer') || strcmp(obj.vehicleType, 'tractor')
+                    nTractorTires = size(obj.loadDistribution,1) - obj.numTrailerTires;
+                    loads = loads(1:nTractorTires);
+                end
+                maxTraction = sum(loads) * obj.frictionCoefficient;
+            else
+                maxTraction = abs(F_traction); % no information -> no limit
+            end
+
+            % Clamp traction force within [-maxTraction, maxTraction]
+            F_traction = min(max(F_traction, -maxTraction), maxTraction);
+
+            tractionForce = [F_traction;0;0];
             obj.calculatedForces.traction = tractionForce;
             obj.calculatedForces.traction_force = tractionForce;
         end
