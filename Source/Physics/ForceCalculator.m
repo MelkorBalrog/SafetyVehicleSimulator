@@ -649,6 +649,11 @@ classdef ForceCalculator
                     else
                         F_traction_v = [0;0;0];
                     end
+                    % Limit traction by available friction on the driven tractor tires
+                    numTractorTires = size(obj.loadDistribution,1) - obj.numTrailerTires;
+                    driveLoad = sum(obj.loadDistribution(1:numTractorTires,4));
+                    maxTraction = obj.frictionCoefficient * driveLoad;
+                    F_traction_v(1) = sign(F_traction_v(1)) * min(abs(F_traction_v(1)), maxTraction);
 
                     if size(obj.loadDistribution,2) < 5
                         error('loadDistribution must have 5 columns.');
@@ -886,6 +891,11 @@ classdef ForceCalculator
                     else
                         F_traction_v= [0;0;0];
                     end
+                    % Limit traction by available friction on the driven tractor tires
+                    numTractorTires = size(obj.loadDistribution,1) - obj.numTrailerTires;
+                    driveLoad = sum(obj.loadDistribution(1:numTractorTires,4));
+                    maxTraction = obj.frictionCoefficient * driveLoad;
+                    F_traction_v(1) = sign(F_traction_v(1)) * min(abs(F_traction_v(1)), maxTraction);
 
 
                     if size(obj.loadDistribution,2)<5
