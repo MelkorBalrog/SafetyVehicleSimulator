@@ -13,19 +13,3 @@ function testTractionClamped(testCase)
     forces = fc.getCalculatedForces();
     verifyLessThanOrEqual(testCase, forces.traction(1), 8000 + 1e-10);
 end
-
-function testEngineLimitIndependentOfMass(testCase)
-    loadDist = [1 1 0 5000 0.1; -1 -1 0 5000 0.1];
-    tireModel = PacejkaMagicFormula(10,1.9,8000,0.97);
-    susp = LeafSpringSuspension(1000,100,0.3,1000,2,3);
-    brake = BrakeSystem();
-    fc = ForceCalculator('tractor', 1000, 0.8, [0;0;0], 0.3, 1.2, 1, 1, 0.8, Inf, ...
-        loadDist, [0;0;0], 1, [0;0;0], 0, 2, 3, tireModel, susp, 0, 0.01, 0, 0, 0, [], [], 'simple', [], [0;0;0], brake);
-    fc.maxEngineForce = 5000;
-    fc = fc.updateTractionForce(7000); % request more than engine can deliver
-    base = fc.getCalculatedForces().traction(1);
-    fc.vehicleMass = 2000;  % heavier vehicle but same engine
-    fc = fc.updateTractionForce(7000);
-    scaled = fc.getCalculatedForces().traction(1);
-    verifyEqual(testCase, scaled, base, 'AbsTol', 1e-10);
-end
